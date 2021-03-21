@@ -1,0 +1,41 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v2.5.0
+    hooks:
+      - id: check-yaml
+      - id: check-json
+      - id: pretty-format-json
+      - id: debug-statements
+      - id: requirements-txt-fixer
+  - repo: https://github.com/psf/black
+    rev: 20.8b1
+    hooks:
+      - id: black
+        language_version: python3
+  - repo: https://github.com/pycqa/isort
+    rev: 5.8.0
+    hooks:
+      - id: isort
+        name: isort (python)
+      - id: isort
+        name: isort (cython)
+        types: [cython]
+      - id: isort
+        name: isort (pyi)
+        types: [pyi]
+  - repo: https://github.com/Lucas-C/pre-commit-hooks-safety
+    rev: v1.1.0
+    hooks:
+      - id: python-safety-dependencies-check
+  - repo: local
+    hooks:
+      - id: lint
+        name: linting
+        entry: make lint
+        language: system
+  - repo: local
+    hooks:
+      - id: tests
+        name: tests
+        entry: make test
+        language: system

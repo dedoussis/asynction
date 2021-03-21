@@ -29,7 +29,7 @@ typecheck:
 	mypy --package asynction --config-file setup.cfg
 
 test:
-	pytest --mypy -vvv
+	pytest -vvv --mypy --cov=asynction
 
 format:
 	black .

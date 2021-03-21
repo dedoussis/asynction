@@ -1,8 +1,11 @@
 NOOP=
 SPACE=$(NOOP) $(NOOP)
 
-install: $(wildcard requirements*.txt)
+all-install: $(wildcard requirements*.txt)
 	pip install -r $(subst $(SPACE), -r ,$?)
+
+%-install: %.txt
+	pip install -r $<
 
 clean: clean-pyc clean-build clean-tests clean-mypy
 
@@ -45,4 +48,4 @@ dist: clean
 	python setup.py bdist_wheel
 	ls -l dist
 
-.PHONY: install clean clean-pyc clean-build clean-tests clean-mypy typecheck test format lint release dist
+.PHONY: all-install clean clean-pyc clean-build clean-tests clean-mypy typecheck test format lint release dist

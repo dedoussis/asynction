@@ -18,10 +18,8 @@ jobs:
             ${{ runner.os }}-pip-
             ${{ runner.os }}-
       - name: Install dependencies
-        if: steps.pip-cache.outputs.cache-hit != 'true'
         run: make requirements-install
       - name: Install test dependencies
-        if: steps.pip-cache.outputs.cache-hit != 'true'
         run: make requirements-test-install
       - name: Linting
         run: make lint
@@ -44,10 +42,8 @@ jobs:
             ${{ runner.os }}-pip-
             ${{ runner.os }}-
       - name: Install dependencies
-        if: steps.pip-cache.outputs.cache-hit != 'true'
         run: make requirements-install
       - name: Install test dependencies
-        if: steps.pip-cache.outputs.cache-hit != 'true'
         run: make requirements-test-install
       - name: Test
         run: make test

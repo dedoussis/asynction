@@ -3,5 +3,5 @@ flake8==3.9.0
 isort==5.8.0
 mypy==0.812
 pytest==6.2.2
-pytest-mypy==0.8.0
 pytest-cov==2.11.1
+pytest-mypy==0.8.0

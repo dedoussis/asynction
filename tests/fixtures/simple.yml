@@ -1,12 +1,7 @@
-asyncapi: 2.0.0
-info:
-  title: Account Service
-  version: 1.0.0
-  description: This service is in charge of processing user signups
 channels:
-  user/signedup:
+  signedup:
     subscribe:
-      operationId: tests.fixtures.handlers.user_signedup
+      operationId: tests.fixtures.handlers.my_handler
       message:
         $ref: '#/components/messages/UserSignedUp'
 components:

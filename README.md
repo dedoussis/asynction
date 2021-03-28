@@ -3,7 +3,7 @@
 
 SocketIO python framework driven by the [AsyncAPI](https://www.asyncapi.com/) specification. Built on top of [Flask-SocketIO](https://github.com/miguelgrinberg/Flask-SocketIO). Inspired by [Connexion](https://github.com/zalando/connexion).
 
-The purpose of `asynction` is to empower a specification first approach when developing [SocketIO](https://socket.io/) APIs in Python.
+The purpose of Asynction is to empower a specification first approach when developing [SocketIO](https://socket.io/) APIs in Python.
 
 *Disclaimer: Asynction is still at a very early stage and should not be used in production codebases.*
 
@@ -40,6 +40,8 @@ components:
     UserSignedUp:
       payload:
         type: object
+x-namespaces:
+  user: {}
 ```
 
 Bootstrap the AsynctionSocketIO server:
@@ -57,10 +59,9 @@ asio = AsynctionSocketIO.from_spec(
 )
 ```
 The `AsynctionSocketIO` class extends the `SocketIO` class of the Flask-SocketIO library.  
-The above `asio` server object is ready be run without the need to register the event handlers.
-
+The above `asio` server object has all the event and error handlers registered, and is ready to run.
 
 ## TODOs
-1. `on_error` handlers
-2. Increase JSON Schema reference resolution test coverage 
-3. Payload validation
+1. Payload validation
+2. Increase JSON Schema reference resolution test coverage. Allow refs to be used with other keys. Merge upon ref resolution.
+3. Authentication

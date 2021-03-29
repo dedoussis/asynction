@@ -43,7 +43,7 @@ def test_load_spec_with_namespaces_spec(fixture_paths: FixturePaths):
     assert isinstance(loaded.x_namespaces["/user"], Namespace)
 
 
-def test_channel_raises_value_error_if_operation_id_is_not_defined_in_subscribe_operation(
+def test_channel_raises_value_error_if_operation_id_is_not_defined_in_sub_operation(
     faker: Faker,
 ):
     with pytest.raises(ValueError):
@@ -154,7 +154,7 @@ def test_register_event_handlers_with_namespace(
     assert registered_namespace == f"/{namespace}"
 
 
-def test_register_event_handlers_raises_value_error_if_namespace_not_defined_in_definitions(
+def test_register_event_handlers_raises_value_error_if_namespace_not_defined_in_defs(
     faker: Faker,
 ):
     server = SocketIO()

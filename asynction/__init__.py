@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from dataclasses import field
-from dataclasses import fields
+from dataclasses import replace
 from importlib import import_module
 from pathlib import Path
 from pathlib import PurePath
@@ -82,22 +82,23 @@ class AsyncApiSpec:
         default_factory=lambda: DEFAULT_NAMESPACES
     )
 
+    @classmethod
+    def forge(
+        cls, _: Type["AsyncApiSpec"], data: JSONMapping, forge: Forge
+    ) -> "AsyncApiSpec":
+        forged = cls(channels=forge(cls.__annotations__["channels"], data["channels"]))
+        x_namespaces_data = data.get("x-namespaces")
 
-def forge_namespace_extended(type_: Type, data: JSONMapping, forge: Forge):
-    typed_kwargs: Mapping[str, Any] = {}
-    for field_ in fields(type_):
-        field_data = (
-            data.get("x-namespaces")
-            if field_.name == "x_namespaces"
-            else data.get(field_.name)
+        if x_namespaces_data is None:
+            return forged
+
+        return replace(
+            forged,
+            x_namespaces=forge(cls.__annotations__["x_namespaces"], x_namespaces_data),
         )
-        if field_data is not None:
-            typed_kwargs = {**typed_kwargs, field_.name: forge(field_.type, field_data)}
-
-    return type_(**typed_kwargs)
 
 
-register_forge(AsyncApiSpec, forge_namespace_extended)
+register_forge(AsyncApiSpec, AsyncApiSpec.forge)
 
 
 def resolve_references(raw_spec: JSONMapping) -> JSONMapping:

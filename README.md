@@ -76,7 +76,7 @@ An `x-namespaces` field has been defined as a top level key of the [AsyncAPI](ht
 #### Namespace Definitions Object
 | Field Pattern                           | Type                                          | Description                                                                                                                                                                                            |
 |-----------------------------------------|-----------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `^[A-Za-z0-9_\-]+/$` | [Namespace Item Object](#NamespaceItemObject) | Each key must correspond to a namespace supported by the SocketIO server. Each value is a [Namespace Item Object](#NamespaceItemObject), providing the definition of that namespace. |
+| `^[A-Za-z0-9_\-]+/$` | [Namespace Item Object](#namespace-item-object) | Each key must correspond to a namespace supported by the SocketIO server. Each value is a [Namespace Item Object](#namespace-item-object), providing the definition of that namespace. |
 
 #### Namespace Item Object
 | Field Name   | Type     | Description                                         |
@@ -85,7 +85,7 @@ An `x-namespaces` field has been defined as a top level key of the [AsyncAPI](ht
 | errorHandler | `string` | Dot joint path to the python error handler callable |
 
 ### Event handler namespacing (semantic)
-A new semantic added to the AsyncAPI 2.0.0 spec is the prefixing of the channel paths (keys of the [Channels Object](https://www.asyncapi.com/docs/specifications/2.0.0#channelsObject)). This allows the registration of an event handler under a particular namespace. The prefix expressed namespace should be included in the [Namespace Definitions Object](#NamespaceDefinitionsObject). 
+A new semantic added to the AsyncAPI 2.0.0 spec is the prefixing of the channel paths (keys of the [Channels Object](https://www.asyncapi.com/docs/specifications/2.0.0#channelsObject)). This allows the registration of an event handler under a particular namespace. The prefix expressed namespace should be included in the [Namespace Definitions Object](#namespace-definitions-object). 
 
 The pattern of the channel path is: `^(?<namespace>[A-Za-z0-9_\-]+/)?(?<channel_name>[A-Za-z0-9_\-/]+)$`
 

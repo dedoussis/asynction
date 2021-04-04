@@ -28,8 +28,11 @@ clean-mypy:
 typecheck:
 	mypy --package asynction --config-file setup.cfg
 
-test:
-	pytest -vvv --mypy --cov=asynction
+test-unit:
+	pytest -vvv --mypy --cov=asynction tests/unit
+
+test-integration:
+	pytest -vvv --mypy tests/integration
 
 format:
 	black .
@@ -48,4 +51,4 @@ dist: clean
 	python setup.py bdist_wheel
 	ls -l dist
 
-.PHONY: all-install clean clean-pyc clean-build clean-tests clean-mypy typecheck test format lint release dist
+.PHONY: all-install clean clean-pyc clean-build clean-tests clean-mypy typecheck test-unit test-integration format lint release dist

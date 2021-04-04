@@ -34,7 +34,7 @@ info:
   description: This service is in charge of processing user signups
 channels:
   user/signedup:  # A namespace can be specified by prefixing the channel name
-    subscribe:
+    publish:
       operationId: my_api.handlers.user_signedup
       message:
         $ref: '#/components/messages/UserSignedUp'

@@ -1,6 +1,6 @@
 channels:
   signedup:
-    subscribe:
+    publish:
       operationId: tests.fixtures.handlers.my_handler
       message:
         $ref: '#/components/messages/UserSignedUp'

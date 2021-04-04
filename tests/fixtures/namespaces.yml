@@ -1,7 +1,7 @@
 channels:
   user/signedup:
     publish:
-      operationId: tests.fixtures.handlers.user_signedup
+      operationId: tests.fixtures.handlers.my_handler
       message:
         $ref: '#/components/messages/UserSignedUp'
     subscribe:
@@ -10,9 +10,9 @@ channels:
 x-namespaces:
   /:
     description: Main namespace
-    errorHandler: test.fixtures_handlers.default_error_handler
+    errorHandler: test.fixtures_handlers.my_other_handler
   /user:
-    errorHandler: test.fixtures_handlers.user_signedup_error
+    errorHandler: test.fixtures_handlers.my_other_handler
 components:
   messages:
     UserSignedUp:

@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from dataclasses import field
 from dataclasses import replace
+from functools import wraps
 from importlib import import_module
 from pathlib import Path
 from pathlib import PurePath
@@ -8,13 +9,14 @@ from typing import Any
 from typing import Callable
 from typing import Mapping
 from typing import Optional
+from typing import Sequence
 from typing import Tuple
 from typing import Type
 
+import jsonschema
 import yaml
 from flask import Flask
 from flask_socketio import SocketIO
-from jsonschema import RefResolver
 from svarog import forge
 from svarog import register_forge
 from svarog.types import Forge
@@ -66,6 +68,24 @@ class Channel:
             raise ValueError("operationId is required for publish operations.")
 
 
+@dataclass(frozen=True)
+class ChannelPath:
+    event_name: str
+    namespace: str = MAIN_NAMESPACE
+
+    @staticmethod
+    def forge(type_: Type["ChannelPath"], data: str, _: Any) -> "ChannelPath":
+        pp = PurePath(data if data.startswith("/") else f"/{data}")
+        cp = type_(event_name=pp.name)
+        if pp.parent.name:
+            return replace(cp, namespace=str(pp.parent))
+
+        return cp
+
+
+register_forge(ChannelPath, ChannelPath.forge)
+
+
 @dataclass
 class AsyncApiSpec:
     """
@@ -77,16 +97,18 @@ class AsyncApiSpec:
     The `x_namespaces` field is serialized as `x-namespaces`.
     """
 
-    channels: Mapping[str, Channel]
+    channels: Mapping[ChannelPath, Channel]
     x_namespaces: Mapping[str, Namespace] = field(
         default_factory=lambda: DEFAULT_NAMESPACES
     )
 
-    @classmethod
+    @staticmethod
     def forge(
-        cls, _: Type["AsyncApiSpec"], data: JSONMapping, forge: Forge
+        type_: Type["AsyncApiSpec"], data: JSONMapping, forge: Forge
     ) -> "AsyncApiSpec":
-        forged = cls(channels=forge(cls.__annotations__["channels"], data["channels"]))
+        forged = type_(
+            channels=forge(type_.__annotations__["channels"], data["channels"])
+        )
         x_namespaces_data = data.get("x-namespaces")
 
         if x_namespaces_data is None:
@@ -94,7 +116,9 @@ class AsyncApiSpec:
 
         return replace(
             forged,
-            x_namespaces=forge(cls.__annotations__["x_namespaces"], x_namespaces_data),
+            x_namespaces=forge(
+                type_.__annotations__["x_namespaces"], x_namespaces_data
+            ),
         )
 
 
@@ -102,7 +126,7 @@ register_forge(AsyncApiSpec, AsyncApiSpec.forge)
 
 
 def resolve_references(raw_spec: JSONMapping) -> JSONMapping:
-    resolver = RefResolver.from_schema(raw_spec)
+    resolver = jsonschema.RefResolver.from_schema(raw_spec)
 
     def deep_resolve(unresolved: JSONMapping) -> JSONMapping:
         def transform(
@@ -132,51 +156,112 @@ def load_spec(spec_path: Path) -> AsyncApiSpec:
     return forge(AsyncApiSpec, raw_resolved)
 
 
-def decompose_channel_path(channel_path: str) -> Tuple[str, Optional[str]]:
-    pp = PurePath(channel_path if channel_path.startswith("/") else f"/{channel_path}")
-    return pp.name, None if not pp.parent.name else str(pp.parent)
-
-
-def load_handler(handler_id: str) -> Callable[..., None]:
+def load_handler(handler_id: str) -> Callable:
     *module_path_elements, object_name = handler_id.split(".")
     module = import_module(".".join(module_path_elements))
 
     return getattr(module, object_name)
 
 
-def register_event_handlers(server: SocketIO, spec: AsyncApiSpec) -> None:
-    for channel_path, channel in spec.channels.items():
-        if channel.publish is not None:
-            channel_name, namespace = decompose_channel_path(channel_path)
-            if namespace is not None and namespace not in spec.x_namespaces:
-                raise ValueError(
-                    f"Namespace {namespace} is not defined in x-namespaces."
-                )
-            assert channel.publish.operationId is not None
-            handler = load_handler(channel.publish.operationId)
-            server.on_event(channel_name, handler, namespace)
+def validate_args(args: Sequence, schema: JSONSchema) -> None:
+    schema_type = schema["type"]
+    if schema_type == "array":
+        jsonschema.validate(args, schema)
+    else:
+        if len(args) > 1:
+            raise RuntimeError(
+                "Multiple handler arguments provided, "
+                f"although schema type is: {schema_type}"
+            )
+        jsonschema.validate(args[0], schema)
 
 
-def register_error_handlers(server: SocketIO, spec: AsyncApiSpec) -> None:
-    for ns_name, ns_definition in spec.x_namespaces.items():
-        if ns_definition.errorHandler is None:
-            continue
+def validator_factory(schema: JSONSchema) -> Callable:
+    def decorator(handler: Callable):
+        @wraps(handler)
+        def handler_with_validation(*args):
+            validate_args(args, schema)
+            return handler(*args)
 
-        exc_handler = load_handler(ns_definition.errorHandler)
+        return handler_with_validation
 
-        if ns_name == MAIN_NAMESPACE:
-            server.on_error_default(exc_handler)
-        else:
-            server.on_error(ns_name)(exc_handler)
+    return decorator
 
 
 class AsynctionSocketIO(SocketIO):
+    def __init__(
+        self,
+        spec: AsyncApiSpec,
+        validation: bool = True,
+        app: Optional[Flask] = None,
+        **kwargs,
+    ):
+        super().__init__(app=app, **kwargs)
+        self.spec = spec
+        self.validation = validation
+
     @classmethod
     def from_spec(
-        cls, spec_path: Path, app: Optional[Flask] = None, **kwargs
+        cls,
+        spec_path: Path,
+        validation: bool = True,
+        app: Optional[Flask] = None,
+        **kwargs,
     ) -> SocketIO:
-        sio = cls(app, **kwargs)
         spec = load_spec(spec_path=spec_path)
-        register_event_handlers(server=sio, spec=spec)
-        register_error_handlers(server=sio, spec=spec)
-        return sio
+        asio = cls(spec, validation, app, **kwargs)
+        asio._register_event_handlers()
+        asio._register_error_handlers()
+        return asio
+
+    def _register_event_handlers(self) -> None:
+        for cp, channel in self.spec.channels.items():
+            if channel.publish is not None:
+                if (
+                    cp.namespace is not None
+                    and cp.namespace not in self.spec.x_namespaces
+                ):
+                    raise ValueError(
+                        f"Namespace {cp.namespace} is not defined in x-namespaces."
+                    )
+
+                assert channel.publish.operationId is not None
+                handler = load_handler(channel.publish.operationId)
+
+                if self.validation and None not in (
+                    channel.publish.message,
+                    channel.publish.message.payload,
+                ):
+                    with_validation = validator_factory(
+                        schema=channel.publish.message.payload
+                    )
+                    handler = with_validation(handler)
+
+                self.on_event(cp.event_name, handler, cp.namespace)
+
+    def _register_error_handlers(self) -> None:
+        for ns_name, ns_definition in self.spec.x_namespaces.items():
+            if ns_definition.errorHandler is None:
+                continue
+
+            exc_handler = load_handler(ns_definition.errorHandler)
+
+            if ns_name == MAIN_NAMESPACE:
+                self.on_error_default(exc_handler)
+            else:
+                self.on_error(ns_name)(exc_handler)
+
+    def emit(self, event: str, *args, **kwargs) -> None:
+        if self.validation:
+            cp = ChannelPath(
+                event_name=event, namespace=kwargs.get("namespace", MAIN_NAMESPACE)
+            )
+            channel = self.spec.channels[cp]
+            if (
+                channel.subscribe is not None
+                and channel.subscribe.message is not None
+                and channel.subscribe.message.payload is not None
+            ):
+                validate_args(args, channel.subscribe.message.payload)
+
+        return super().emit(event, *args, **kwargs)

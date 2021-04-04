@@ -95,3 +95,7 @@ If the namespace prefix is omitted, the main namespaced (`/`) is assumed.
 1. Payload validation
 2. Increase JSON Schema reference resolution test coverage. Allow refs to be used with other keys. Merge upon ref resolution.
 3. Authentication
+4. How does json and message unnamed events behave if not defined in spec. Do they need definition?
+
+## Limitations
+1. How can the spec express event handler return types (that are to be passed as args to the client callbacks)

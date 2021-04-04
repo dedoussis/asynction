@@ -2,25 +2,24 @@ from typing import Optional
 
 import pytest
 from faker import Faker
-from flask_socketio import SocketIO
+from svarog import forge
 
 from asynction import DEFAULT_NAMESPACES
 from asynction import MAIN_NAMESPACE
 from asynction import AsyncApiSpec
 from asynction import AsynctionSocketIO
 from asynction import Channel
+from asynction import ChannelPath
 from asynction import Message
 from asynction import Namespace
 from asynction import Operation
-from asynction import decompose_channel_path
 from asynction import load_handler
 from asynction import load_spec
-from asynction import register_error_handlers
-from asynction import register_event_handlers
 from asynction import resolve_references
 from tests.fixtures import FixturePaths
 from tests.fixtures.handlers import my_handler
 from tests.fixtures.handlers import my_other_handler
+from tests.utils import deep_wrapped
 
 
 def test_asynction_socketio_from_spec(fixture_paths: FixturePaths):
@@ -80,21 +79,25 @@ def test_resolve_references_resolves_successfully():
     argnames=("channel_path", "expected_name", "expected_namespace"),
     argvalues=[
         ("foo/bar", "bar", "/foo"),
-        ("foo", "foo", None),
+        ("foo", "foo", MAIN_NAMESPACE),
+        ("/foo", "foo", MAIN_NAMESPACE),
         ("foo/bar/baz", "baz", "/foo/bar"),
         ("/foo/bar", "bar", "/foo"),
     ],
     ids=[
         "path_with_namespace",
         "path_without_namespace",
+        "path_without_namespace_and_leading_separator",
         "path_with_nested_namespace",
         "path_with_leading_separator",
     ],
 )
-def test_decompose_channel_path(
+def test_channel_path_deserialization(
     channel_path: str, expected_name: str, expected_namespace: Optional[str]
 ):
-    assert decompose_channel_path(channel_path) == (expected_name, expected_namespace)
+    cp = forge(ChannelPath, channel_path)
+    assert cp.event_name == expected_name
+    assert cp.namespace == expected_namespace
 
 
 def test_load_handler():
@@ -106,10 +109,9 @@ def test_register_event_handlers_without_namespace_uses_main(
     faker: Faker,
 ):
     channel_name = faker.pystr()
-    server = SocketIO()
     spec = AsyncApiSpec(
         channels={
-            channel_name: Channel(
+            ChannelPath(event_name=channel_name): Channel(
                 publish=Operation(
                     message=Message(payload={"type": "object"}),
                     operationId="tests.fixtures.handlers.my_handler",
@@ -117,24 +119,24 @@ def test_register_event_handlers_without_namespace_uses_main(
             )
         }
     )
+    server = AsynctionSocketIO(spec)
 
-    register_event_handlers(server=server, spec=spec)
+    server._register_event_handlers()
     assert len(server.handlers) == 1
     registered_event, registered_handler, registered_namespace = server.handlers[0]
     assert registered_event == channel_name
-    assert registered_handler.__wrapped__ == my_handler
+    assert deep_wrapped(registered_handler) == my_handler
     assert registered_namespace == MAIN_NAMESPACE
 
 
 def test_register_event_handlers_with_namespace(
     faker: Faker,
 ):
-    namespace = f"{faker.pystr()}"
+    namespace = f"/{faker.pystr()}"
     channel_name = faker.pystr()
-    server = SocketIO()
     spec = AsyncApiSpec(
         channels={
-            f"{namespace}/{channel_name}": Channel(
+            ChannelPath(event_name=channel_name, namespace=namespace): Channel(
                 publish=Operation(
                     message=Message(payload={"type": "object"}),
                     operationId="tests.fixtures.handlers.my_handler",
@@ -142,25 +144,25 @@ def test_register_event_handlers_with_namespace(
             )
         },
         x_namespaces={
-            f"/{namespace}": Namespace(),
+            namespace: Namespace(),
         },
     )
+    server = AsynctionSocketIO(spec)
 
-    register_event_handlers(server=server, spec=spec)
+    server._register_event_handlers()
     assert len(server.handlers) == 1
     registered_event, registered_handler, registered_namespace = server.handlers[0]
     assert registered_event == channel_name
-    assert registered_handler.__wrapped__ == my_handler
-    assert registered_namespace == f"/{namespace}"
+    assert deep_wrapped(registered_handler) == my_handler
+    assert registered_namespace == namespace
 
 
 def test_register_event_handlers_raises_value_error_if_namespace_not_defined_in_defs(
     faker: Faker,
 ):
-    server = SocketIO()
     spec = AsyncApiSpec(
         channels={
-            f"{faker.pystr()}/{faker.pystr()}": Channel(
+            ChannelPath(event_name=faker.pystr(), namespace=faker.pystr()): Channel(
                 publish=Operation(
                     message=Message(payload={"type": "object"}),
                     operationId="tests.fixtures.handlers.my_handler",
@@ -168,13 +170,13 @@ def test_register_event_handlers_raises_value_error_if_namespace_not_defined_in_
             )
         },
     )
+    server = AsynctionSocketIO(spec)
 
     with pytest.raises(ValueError):
-        register_event_handlers(server=server, spec=spec)
+        server._register_event_handlers()
 
 
 def test_register_error_handlers_for_each_namespace(faker: Faker):
-    server = SocketIO()
     custom_namespace = f"/{faker.pystr()}"
     spec = AsyncApiSpec(
         channels={},
@@ -187,7 +189,8 @@ def test_register_error_handlers_for_each_namespace(faker: Faker):
             ),
         },
     )
+    server = AsynctionSocketIO(spec)
 
-    register_error_handlers(server=server, spec=spec)
+    server._register_error_handlers()
     assert server.default_exception_handler == my_handler
     assert server.exception_handlers[custom_namespace] == my_other_handler

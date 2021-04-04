@@ -1,0 +1,17 @@
+channels:
+  echo:
+    publish:
+      operationId: tests.fixtures.handlers.echo
+      message:
+        $ref: '#/components/messages/EchoCommand'
+    subscribe:
+      message:
+        $ref: '#/components/messages/EchoResponse'
+components:
+  messages:
+    EchoCommand:
+      payload:
+        type: string
+    EchoResponse:
+      payload:
+        type: string

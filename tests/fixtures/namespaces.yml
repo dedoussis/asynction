@@ -1,10 +1,10 @@
 channels:
   user/signedup:
-    subscribe:
+    publish:
       operationId: tests.fixtures.handlers.user_signedup
       message:
         $ref: '#/components/messages/UserSignedUp'
-    publish:
+    subscribe:
       message:
         $ref: '#/components/messages/UserSignedUp'
 x-namespaces:

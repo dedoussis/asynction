@@ -35,7 +35,7 @@ repos:
         language: system
   - repo: local
     hooks:
-      - id: tests
-        name: tests
-        entry: make test
+      - id: unit-tests
+        name: unit tests
+        entry: make test-unit
         language: system

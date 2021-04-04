@@ -47,14 +47,14 @@ def test_channel_raises_value_error_if_operation_id_is_not_defined_in_sub_operat
     faker: Faker,
 ):
     with pytest.raises(ValueError):
-        Channel(subscribe=Operation(Message(payload=faker.pydict())))
+        Channel(publish=Operation(Message(payload=faker.pydict())))
 
 
 def test_resolve_references_resolves_successfully():
     raw_spec = {
         "channels": {
             "user/signedup": {
-                "subscribe": {"message": {"$ref": "#/components/messages/UserSignedUp"}}
+                "publish": {"message": {"$ref": "#/components/messages/UserSignedUp"}}
             }
         },
         "components": {"messages": {"UserSignedUp": {"type": "object"}}},
@@ -63,7 +63,7 @@ def test_resolve_references_resolves_successfully():
     resolved = {
         "channels": {
             "user/signedup": {
-                "subscribe": {
+                "publish": {
                     "message": {
                         "type": "object",
                     }
@@ -110,7 +110,7 @@ def test_register_event_handlers_without_namespace_uses_main(
     spec = AsyncApiSpec(
         channels={
             channel_name: Channel(
-                subscribe=Operation(
+                publish=Operation(
                     message=Message(payload={"type": "object"}),
                     operationId="tests.fixtures.handlers.my_handler",
                 )
@@ -135,7 +135,7 @@ def test_register_event_handlers_with_namespace(
     spec = AsyncApiSpec(
         channels={
             f"{namespace}/{channel_name}": Channel(
-                subscribe=Operation(
+                publish=Operation(
                     message=Message(payload={"type": "object"}),
                     operationId="tests.fixtures.handlers.my_handler",
                 ),
@@ -161,7 +161,7 @@ def test_register_event_handlers_raises_value_error_if_namespace_not_defined_in_
     spec = AsyncApiSpec(
         channels={
             f"{faker.pystr()}/{faker.pystr()}": Channel(
-                subscribe=Operation(
+                publish=Operation(
                     message=Message(payload={"type": "object"}),
                     operationId="tests.fixtures.handlers.my_handler",
                 ),

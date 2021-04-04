@@ -62,8 +62,8 @@ class Channel:
     publish: Optional[Operation] = None
 
     def __post_init__(self):
-        if self.subscribe is not None and self.subscribe.operationId is None:
-            raise ValueError("operationId is required for subsbribe operations.")
+        if self.publish is not None and self.publish.operationId is None:
+            raise ValueError("operationId is required for publish operations.")
 
 
 @dataclass
@@ -146,14 +146,14 @@ def load_handler(handler_id: str) -> Callable[..., None]:
 
 def register_event_handlers(server: SocketIO, spec: AsyncApiSpec) -> None:
     for channel_path, channel in spec.channels.items():
-        if channel.subscribe is not None:
+        if channel.publish is not None:
             channel_name, namespace = decompose_channel_path(channel_path)
             if namespace is not None and namespace not in spec.x_namespaces:
                 raise ValueError(
                     f"Namespace {namespace} is not defined in x-namespaces."
                 )
-            assert channel.subscribe.operationId is not None
-            handler = load_handler(channel.subscribe.operationId)
+            assert channel.publish.operationId is not None
+            handler = load_handler(channel.publish.operationId)
             server.on_event(channel_name, handler, namespace)
 
 

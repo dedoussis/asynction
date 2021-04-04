@@ -47,6 +47,15 @@ jobs:
         run: make requirements-test-install
       - name: Test
         run: make test-unit
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1
+        with:
+          files: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: true
+          path_to_write_report: ./coverage/codecov_report.txt
+          verbose: true
   integration:
     runs-on: ubuntu-latest
     steps:

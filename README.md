@@ -57,7 +57,7 @@ from flask import Flask
 flask_app = Flask(__name__)
 
 asio = AsynctionSocketIO.from_spec(
-    spec_path="./docs/asyncapi",
+    spec_path="./docs/asyncapi.yaml",
     app=flask_app,
     message_queue="redis://",
     # any other kwarg that the flask_socketio.SocketIO constructor accepts

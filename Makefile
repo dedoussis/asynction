@@ -29,7 +29,7 @@ typecheck:
 	mypy --package asynction --config-file setup.cfg
 
 test-unit:
-	pytest -vvv --mypy --cov=asynction tests/unit
+	pytest -vvv --mypy --cov=asynction --cov-report=xml tests/unit
 
 test-integration:
 	pytest -vvv --mypy tests/integration

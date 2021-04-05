@@ -89,7 +89,7 @@ A new semantic added to the AsyncAPI 2.0.0 spec is the prefixing of the channel 
 
 The pattern of the channel path is: `^(?<namespace>[A-Za-z0-9_\-]+/)?(?<channel_name>[A-Za-z0-9_\-/]+)$`
 
-If the namespace prefix is omitted, the main namespaced (`/`) is assumed.
+If the namespace prefix is omitted, the main namespace (`/`) is assumed.
 
 ## TODOs
 1. Payload validation

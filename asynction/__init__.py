@@ -52,7 +52,7 @@ DEFAULT_NAMESPACES = {MAIN_NAMESPACE: Namespace(description="Main namespace")}
 class Operation:
     """https://www.asyncapi.com/docs/specifications/2.0.0#operationObject"""
 
-    message: Message
+    message: Optional[Message] = None
     operationId: Optional[str] = None
 
 
@@ -163,7 +163,17 @@ def load_handler(handler_id: str) -> Callable:
     return getattr(module, object_name)
 
 
-def validate_args(args: Sequence, schema: JSONSchema) -> None:
+def validate_payload(args: Sequence, operation: Operation) -> None:
+    if operation.message is None or operation.message.payload is None:
+        if args:
+            raise RuntimeError(
+                "Args provided for operation that has no message payload defined."
+            )
+        # No validation needed since no message is expected
+        # and no args have been provided.
+        return
+
+    schema = operation.message.payload
     schema_type = schema["type"]
     if schema_type == "array":
         jsonschema.validate(args, schema)
@@ -176,11 +186,11 @@ def validate_args(args: Sequence, schema: JSONSchema) -> None:
         jsonschema.validate(args[0], schema)
 
 
-def validator_factory(schema: JSONSchema) -> Callable:
+def validator_factory(operation: Operation) -> Callable:
     def decorator(handler: Callable):
         @wraps(handler)
         def handler_with_validation(*args):
-            validate_args(args, schema)
+            validate_payload(args, operation)
             return handler(*args)
 
         return handler_with_validation
@@ -228,13 +238,8 @@ class AsynctionSocketIO(SocketIO):
                 assert channel.publish.operationId is not None
                 handler = load_handler(channel.publish.operationId)
 
-                if self.validation and None not in (
-                    channel.publish.message,
-                    channel.publish.message.payload,
-                ):
-                    with_validation = validator_factory(
-                        schema=channel.publish.message.payload
-                    )
+                if self.validation:
+                    with_validation = validator_factory(operation=channel.publish)
                     handler = with_validation(handler)
 
                 self.on_event(cp.event_name, handler, cp.namespace)
@@ -256,12 +261,19 @@ class AsynctionSocketIO(SocketIO):
             cp = ChannelPath(
                 event_name=event, namespace=kwargs.get("namespace", MAIN_NAMESPACE)
             )
-            channel = self.spec.channels[cp]
-            if (
-                channel.subscribe is not None
-                and channel.subscribe.message is not None
-                and channel.subscribe.message.payload is not None
-            ):
-                validate_args(args, channel.subscribe.message.payload)
+            channel = self.spec.channels.get(cp)
+
+            if channel is None:
+                raise RuntimeError(
+                    f"Failed to emit because {cp} is not defined in the API spec."
+                )
+
+            if channel.subscribe is None:
+                raise RuntimeError(
+                    f"Failed to emit because {cp} does not"
+                    " have a subscribe operation defined."
+                )
+
+            validate_payload(args, channel.subscribe)
 
         return super().emit(event, *args, **kwargs)

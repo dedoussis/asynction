@@ -1,9 +1,13 @@
+from typing import Mapping
 from typing import Optional
+from unittest import mock
 
+import jsonschema
 import pytest
 from faker import Faker
 from svarog import forge
 
+import asynction
 from asynction import DEFAULT_NAMESPACES
 from asynction import MAIN_NAMESPACE
 from asynction import AsyncApiSpec
@@ -16,6 +20,8 @@ from asynction import Operation
 from asynction import load_handler
 from asynction import load_spec
 from asynction import resolve_references
+from asynction import validate_payload
+from asynction import validator_factory
 from tests.fixtures import FixturePaths
 from tests.fixtures.handlers import my_handler
 from tests.fixtures.handlers import my_other_handler
@@ -194,3 +200,271 @@ def test_register_error_handlers_for_each_namespace(faker: Faker):
     server._register_error_handlers()
     assert server.default_exception_handler == my_handler
     assert server.exception_handlers[custom_namespace] == my_other_handler
+
+
+def test_emit_event_not_defined_in_spec_raises_runtime_error(faker: Faker):
+    namespace = f"/{faker.pystr()}"
+    channel_name = faker.pystr()
+    spec = AsyncApiSpec(
+        channels={
+            ChannelPath(event_name=channel_name, namespace=namespace): Channel(
+                subscribe=Operation(
+                    message=Message(payload={"type": "object"}),
+                    operationId="tests.fixtures.handlers.my_handler",
+                ),
+            )
+        },
+        x_namespaces={
+            namespace: Namespace(),
+        },
+    )
+    server = AsynctionSocketIO(spec)
+
+    with pytest.raises(RuntimeError):
+        # Correct event name but no namespace:
+        server.emit(channel_name, faker.pydict(value_types=[str, int]))
+
+
+def test_emit_event_that_has_no_subscribe_operation_raises_runtime_error(faker: Faker):
+    namespace = f"/{faker.pystr()}"
+    channel_name = faker.pystr()
+    spec = AsyncApiSpec(
+        channels={
+            ChannelPath(event_name=channel_name, namespace=namespace): Channel(
+                publish=Operation(
+                    message=Message(payload={"type": "object"}),
+                    operationId="tests.fixtures.handlers.my_handler",
+                ),
+            )
+        },
+        x_namespaces={
+            namespace: Namespace(),
+        },
+    )
+    server = AsynctionSocketIO(spec)
+
+    with pytest.raises(RuntimeError):
+        server.emit(
+            channel_name, faker.pydict(value_types=[str, int]), namespace=namespace
+        )
+
+
+def test_emit_event_with_invalid_args_fails_validation(faker: Faker):
+    namespace = f"/{faker.pystr()}"
+    channel_name = faker.pystr()
+    spec = AsyncApiSpec(
+        channels={
+            ChannelPath(event_name=channel_name, namespace=namespace): Channel(
+                subscribe=Operation(
+                    message=Message(payload={"type": "object"}),
+                    operationId="tests.fixtures.handlers.my_handler",
+                ),
+            )
+        },
+        x_namespaces={
+            namespace: Namespace(),
+        },
+    )
+    server = AsynctionSocketIO(spec)
+
+    with pytest.raises(jsonschema.ValidationError):
+        # Event args have invalid schema
+        server.emit(channel_name, faker.pystr(), namespace=namespace)
+
+
+@mock.patch.object(asynction.SocketIO, "emit")
+def test_emit_valid_event_invokes_super_method(
+    super_method_mock: mock.Mock, faker: Faker
+):
+    namespace = f"/{faker.pystr()}"
+    channel_name = faker.pystr()
+    spec = AsyncApiSpec(
+        channels={
+            ChannelPath(event_name=channel_name, namespace=namespace): Channel(
+                subscribe=Operation(
+                    message=Message(payload={"type": "string"}),
+                    operationId="tests.fixtures.handlers.my_handler",
+                ),
+            )
+        },
+        x_namespaces={
+            namespace: Namespace(),
+        },
+    )
+    server = AsynctionSocketIO(spec)
+
+    event_args = [faker.pystr()]
+    server.emit(channel_name, *event_args, namespace=namespace)
+    super_method_mock.assert_called_once_with(
+        channel_name, *event_args, namespace=namespace
+    )
+
+
+@mock.patch.object(asynction.SocketIO, "emit")
+def test_emit_validiation_is_ginored_if_validation_flag_is_false(
+    super_method_mock: mock.Mock, faker: Faker
+):
+    namespace = f"/{faker.pystr()}"
+    channel_name = faker.pystr()
+    spec = AsyncApiSpec(
+        channels={
+            ChannelPath(event_name=channel_name, namespace=namespace): Channel(
+                subscribe=Operation(
+                    message=Message(payload={"type": "object"}),
+                    operationId="tests.fixtures.handlers.my_handler",
+                ),
+            )
+        },
+        x_namespaces={
+            namespace: Namespace(),
+        },
+    )
+    server = AsynctionSocketIO(spec, validation=False)
+
+    event_args = [faker.pystr()]  # invalid args
+    server.emit(channel_name, *event_args, namespace=namespace)
+
+    # super method called because validation was skipped
+    super_method_mock.assert_called_once_with(
+        channel_name, *event_args, namespace=namespace
+    )
+
+
+def test_validate_payload_with_no_defined_message_and_empty_args():
+    validate_payload(args=(), operation=Operation())
+    assert True
+
+
+def test_validate_payload_with_no_defined_message_and_args_fails(faker: Faker):
+    with pytest.raises(RuntimeError):
+        validate_payload(args=faker.pylist(), operation=Operation())
+
+
+def test_validate_payload_with_defined_message_object_and_valid_single_arg(
+    faker: Faker,
+):
+    validate_payload(
+        args=[{"hello": faker.pystr()}],
+        operation=Operation(
+            message=Message(
+                payload={"type": "object", "properties": {"hello": {"type": "string"}}}
+            )
+        ),
+    )
+    assert True
+
+
+def test_validate_payload_with_defined_message_object_and_single_invalid_arg(
+    faker: Faker,
+):
+    with pytest.raises(jsonschema.ValidationError):
+        validate_payload(
+            args=[{"hello": faker.pyint()}],
+            operation=Operation(
+                message=Message(
+                    payload={
+                        "type": "object",
+                        "properties": {"hello": {"type": "string"}},
+                    }
+                )
+            ),
+        )
+
+
+def test_validate_payload_with_defined_message_object_and_multiple_valid_args(
+    faker: Faker,
+):
+    with pytest.raises(RuntimeError):
+        validate_payload(
+            args=[{"hello": faker.pystr()}] * faker.pyint(min_value=2, max_value=10),
+            operation=Operation(
+                message=Message(
+                    payload={
+                        "type": "object",
+                        "properties": {"hello": {"type": "string"}},
+                    }
+                )
+            ),
+        )
+
+
+def test_validate_payload_with_defined_message_array_and_multiple_valid_args(
+    faker: Faker,
+):
+    validate_payload(
+        args=[{"hello": faker.pystr()}, faker.pyint()],
+        operation=Operation(
+            message=Message(
+                payload={
+                    "type": "array",
+                    "items": [
+                        {"type": "object", "properties": {"hello": {"type": "string"}}},
+                        {"type": "number"},
+                    ],
+                }
+            )
+        ),
+    )
+    assert True
+
+
+def test_validate_payload_with_defined_message_array_and_multiple_invalidvalid_args(
+    faker: Faker,
+):
+    with pytest.raises(jsonschema.ValidationError):
+        validate_payload(
+            args=[{"hello": faker.pystr()}, faker.pyint()],
+            operation=Operation(
+                message=Message(
+                    payload={
+                        "type": "array",
+                        "items": [
+                            {
+                                "type": "object",
+                                "properties": {"hello": {"type": "string"}},
+                            },
+                            {"type": "string"},
+                        ],
+                    }
+                )
+            ),
+        )
+
+
+def test_validator_factory_validates_valid_args_successfully(faker: Faker):
+    with_validation = validator_factory(
+        Operation(
+            message=Message(
+                payload={
+                    "type": "object",
+                    "properties": {"hello": {"type": "string"}},
+                }
+            )
+        )
+    )
+
+    @with_validation
+    def handler(message: Mapping) -> None:
+        assert "hello" in message
+
+    handler({"hello": faker.pystr()})
+
+
+def test_validator_factory_fails_to_validate_invalid_args(faker: Faker):
+    with_validation = validator_factory(
+        Operation(
+            message=Message(
+                payload={
+                    "type": "object",
+                    "properties": {"hello": {"type": "string"}},
+                }
+            )
+        )
+    )
+
+    @with_validation
+    def handler(message: Mapping) -> None:
+        assert "hello" in message
+
+    with pytest.raises(jsonschema.ValidationError):
+        handler({"hello": faker.pyint()})

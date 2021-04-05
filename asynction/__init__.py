@@ -70,6 +70,13 @@ class Channel:
 
 @dataclass(frozen=True)
 class ChannelPath:
+    """
+    Ιmplements the event handler namespacing semantic.
+    This added semantic allows the registration
+    of an event handler or a message validator
+    under a particular namespace.
+    """
+
     event_name: str
     namespace: str = MAIN_NAMESPACE
 

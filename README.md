@@ -7,6 +7,10 @@ The purpose of Asynction is to empower a specification first approach when devel
 
 *Disclaimer: Asynction is still at a very early stage and should not be used in production codebases.*
 
+## Features
+* Payload validation (for both incoming and outgoing events), based on the message schemata within the API specification.
+* Automatic registration of all event and error handlers defined within the API specification.
+
 ## Prerequisites
 * Python 3.7 (or higher)
 
@@ -18,7 +22,7 @@ $ pip install asynction
 ## Usage
 Example event and error handler callables sitting under `./my_api/handlers.py`:
 ```python
-def user_signedup():
+def user_signedup(message):
     logger.info("Registered user")
 
 def user_error(e):
@@ -41,7 +45,7 @@ channels:
 components:
   messages:
     UserSignedUp:
-      payload:
+      payload:  # Asynction uses payload JSON Schemata for message validation
         type: object
 x-namespaces:
   /user:
@@ -64,8 +68,9 @@ asio = AsynctionSocketIO.from_spec(
 )
 ```
 The `AsynctionSocketIO` class extends the `SocketIO` class of the Flask-SocketIO library.  
-The above `asio` server object has all the event and error handlers registered, and is ready to run.
-Without Asynction, one would need to add additional boilerplate to register the handlers (as shown [here](https://flask-socketio.readthedocs.io/en/latest/#error-handling)).
+The above `asio` server object has all the event and error handlers registered, and is ready to run.  
+Validation of the message payloads is also enabled by default.  
+Without Asynction, one would need to add additional boilerplate to register the handlers (as shown [here](https://flask-socketio.readthedocs.io/en/latest/#error-handling)) and implement the respective validators.
 
 ## Specification Extentions (support for SocketIO Namespaces)
 Asynction has extended the AsyncAPI 2.0.0 specification to provide support for the [Namespaces](https://socket.io/docs/v4/namespaces/) concept of the SocketIO protocol. The extentions introduced adhere to the [Specification Extention guidelines](https://www.asyncapi.com/docs/specifications/2.0.0#specificationExtensions) of the AsyncAPI spec.
@@ -85,17 +90,19 @@ An `x-namespaces` field has been defined as a top level key of the [AsyncAPI](ht
 | errorHandler | `string` | Dot joint path to the python error handler callable |
 
 ### Event handler namespacing (semantic)
-A new semantic added to the AsyncAPI 2.0.0 spec is the prefixing of the channel paths (keys of the [Channels Object](https://www.asyncapi.com/docs/specifications/2.0.0#channelsObject)). This allows the registration of an event handler under a particular namespace. The prefix expressed namespace should be included in the [Namespace Definitions Object](#namespace-definitions-object). 
+A new semantic added to the AsyncAPI 2.0.0 spec is the prefixing of the channel paths (keys of the [Channels Object](https://www.asyncapi.com/docs/specifications/2.0.0#channelsObject)). This allows the registration of an event handler or a message validator under a particular namespace. The prefix expressed namespace should be included in the [Namespace Definitions Object](#namespace-definitions-object). 
 
-The pattern of the channel path is: `^(?<namespace>[A-Za-z0-9_\-]+/)?(?<channel_name>[A-Za-z0-9_\-/]+)$`
+The pattern of the channel path is: `^(?<namespace>[A-Za-z0-9_\-/]+/)?(?<channel_name>[A-Za-z0-9_\-]+)$`
 
 If the namespace prefix is omitted, the main namespace (`/`) is assumed.
 
 ## TODOs
-1. Payload validation
-2. Increase JSON Schema reference resolution test coverage. Allow refs to be used with other keys. Merge upon ref resolution.
-3. Authentication
-4. How does json and message unnamed events behave if not defined in spec. Do they need definition?
+1. Split the functionality into multiple atomic modules.
+2. Binding validation (query params and headers)
+3. Unnamed events (`json` and `message` - see the Flask-SocketIO docs)
+4. Authentication
+5. Expose spec via a flask route. Provide a [playground](https://playground.asyncapi.io/?load=https://raw.githubusercontent.com/asyncapi/asyncapi/master/examples/2.0.0/simple.yml).
+6. Increase JSON Schema reference resolution test coverage. Allow refs to be used with other keys. Merge upon ref resolution.
 
-## Limitations
-1. How can the spec express event handler return types (that are to be passed as args to the client callbacks)
+## Limitations / Thoughts
+1. How can the spec express event handler return types (that are to be passed as args to the client callbacks)?

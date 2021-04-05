@@ -37,10 +37,10 @@ setup(
     package_data={
         "asynction": ["py.typed"],
     },
-    keywords="asyncapi openapi oai swagger rest api oauth flask microservice framework",
+    keywords="asyncapi websockets socketio socket.io api oauth flask microservice framework specification flask-socketio connexion",
     name="asynction",
     packages=find_packages(include=["asynction", "asynction.*"]),
     url="https://github.com/dedoussis/asynction",
-    version="0.0.2",
+    version="0.0.3",
     zip_safe=False,
 )

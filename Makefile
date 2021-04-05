@@ -21,6 +21,7 @@ clean-build:
 
 clean-tests:
 	rm -rf .pytest_cache
+	rm -rf .coverage* coverage.*
 
 clean-mypy:
 	rm -rf .mypy_cache

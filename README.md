@@ -97,12 +97,11 @@ The pattern of the channel path is: `^(?<namespace>[A-Za-z0-9_\-/]+/)?(?<channel
 If the namespace prefix is omitted, the main namespace (`/`) is assumed.
 
 ## TODOs
-1. Split the functionality into multiple atomic modules.
-2. Binding validation (query params and headers)
-3. Unnamed events (`json` and `message` - see the Flask-SocketIO docs)
-4. Authentication
-5. Expose spec via a flask route. Provide a [playground](https://playground.asyncapi.io/?load=https://raw.githubusercontent.com/asyncapi/asyncapi/master/examples/2.0.0/simple.yml).
-6. Increase JSON Schema reference resolution test coverage. Allow refs to be used with other keys. Merge upon ref resolution.
+1. Binding validation (query params and headers)
+1. Unnamed events (`json` and `message` - see the Flask-SocketIO docs)
+1. Authentication
+1. Expose spec via a flask route. Provide a [playground](https://playground.asyncapi.io/?load=https://raw.githubusercontent.com/asyncapi/asyncapi/master/examples/2.0.0/simple.yml).
+1. Increase JSON Schema reference resolution test coverage. Allow refs to be used with other keys. Merge upon ref resolution.
 
 ## Limitations / Thoughts
 1. How can the spec express event handler return types (that are to be passed as args to the client callbacks)?

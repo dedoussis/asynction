@@ -1,0 +1,21 @@
+name: Label checker
+
+on:
+  pull_request:
+    types: [opened, labeled, unlabeled, synchronize, reopened]
+
+jobs:
+  label-check-category:
+    runs-on: ubuntu-latest
+    name: Label checker (category)
+    steps:
+    - uses: zwaldowski/match-label-action@v2
+      with:
+        allowed: fix, bugfix, bug, chore, feature, enhancement
+  label-check-version-increment:
+    runs-on: ubuntu-latest
+    name: Label checker (version increment)
+    steps:
+    - uses: zwaldowski/match-label-action@v2
+      with:
+        allowed: major, minor, patch

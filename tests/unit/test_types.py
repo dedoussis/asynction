@@ -173,7 +173,8 @@ def test_async_api_spec_from_dict_allows_extra_attrs(faker: Faker):
                     faker.word(): faker.pystr(),
                 },
             }
-        }
+        },
+        "servers": {"development": {"url": "localhost"}},
     }
 
     forged = forge(AsyncApiSpec, data)

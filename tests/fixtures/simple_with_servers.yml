@@ -1,0 +1,17 @@
+servers:
+  development:
+    url: localhost
+  production:
+    url: my-company.com/api/socket.io
+channels:
+  /:
+    publish:
+      message:
+        $ref: '#/components/messages/PingMessage'
+components:
+  messages:
+    PingMessage:
+      name: ping
+      x-handler: tests.fixtures.handlers.ping
+      payload:
+        type: object

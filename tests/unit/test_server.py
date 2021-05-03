@@ -37,6 +37,56 @@ def test_asynction_socketio_from_spec(fixture_paths: FixturePaths):
     assert isinstance(asio, AsynctionSocketIO)
 
 
+def test_asynction_socketio_from_spec_uses_spec_server_path_as_socketio_path(
+    fixture_paths: FixturePaths,
+):
+    asio = AsynctionSocketIO.from_spec(
+        spec_path=fixture_paths.simple_with_servers, server_name="production"
+    )
+    assert asio.server_options["path"] == "/api/socket.io"
+
+
+def test_asynction_socketio_from_spec_path_kwarg_takes_precedence_over_server_name(
+    fixture_paths: FixturePaths,
+):
+    p = "/async/socket.io"
+    asio = AsynctionSocketIO.from_spec(
+        spec_path=fixture_paths.simple_with_servers, path=p, server_name="production"
+    )
+    assert asio.server_options["path"] == p
+
+
+def test_asynction_socketio_from_spec_resource_kwarg_takes_precedence_over_server_name(
+    fixture_paths: FixturePaths,
+):
+    p = "/async/socket.io"
+    asio = AsynctionSocketIO.from_spec(
+        spec_path=fixture_paths.simple_with_servers,
+        resource=p,
+        server_name="production",
+    )
+    assert "path" not in asio.server_options
+    assert asio.server_options["resource"] == p
+
+
+def test_asynction_socketio_from_spec_empty_server_path_is_ignored(
+    fixture_paths: FixturePaths,
+):
+    asio = AsynctionSocketIO.from_spec(
+        spec_path=fixture_paths.simple_with_servers, server_name="development"
+    )
+    assert "path" not in asio.server_options
+
+
+def test_asynction_socketio_from_spec_raises_value_error_for_non_existent_server_name(
+    fixture_paths: FixturePaths,
+):
+    with pytest.raises(ValueError):
+        AsynctionSocketIO.from_spec(
+            spec_path=fixture_paths.simple_with_servers, server_name="not-production"
+        )
+
+
 def test_resolve_references_resolves_successfully():
     raw_spec = {
         "channels": {
@@ -51,7 +101,7 @@ def test_resolve_references_resolves_successfully():
                     }
                 },
                 "bindings": {
-                    "$ref": "#/components/channelBindings/AuthenticatedWsBinding"
+                    "$ref": "#/components/channelBindings/AuthenticatedWsBindings"
                 },
             }
         },
@@ -61,7 +111,7 @@ def test_resolve_references_resolves_successfully():
                 "UserResponse": {"payload": {"type": "object"}},
             },
             "channelBindings": {
-                "AuthenticatedWsBinding": {
+                "AuthenticatedWsBindings": {
                     "ws": {
                         "query": {
                             "type": "object",
@@ -111,7 +161,7 @@ def test_resolve_references_resolves_successfully():
                 "UserResponse": {"payload": {"type": "object"}},
             },
             "channelBindings": {
-                "AuthenticatedWsBinding": {
+                "AuthenticatedWsBindings": {
                     "ws": {
                         "query": {
                             "type": "object",

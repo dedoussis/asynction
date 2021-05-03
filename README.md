@@ -57,6 +57,11 @@ info:
   version: 1.0.0
   description: This service is in charge of processing user accounts
 
+servers:
+  production:
+    url: my-company.com/api/socket.io  # Customizes the `path` kwarg that is fed into the `SocketIO` constructor
+    protocol: wss
+
 channels:
   /user:  # A channel is essentially a SocketIO namespace
     publish:
@@ -74,14 +79,8 @@ channels:
     x-handlers:
       connect: my_api.handlers.authenticated_connect  # Equivelant of: `@socketio.on("connect", namespace="/admin")
       error: my_api.handlers.admin_error
-    bindings:
-      ws:  # Bindings are used to validate the HTTP request upon connection
-        query:
-          type: object
-          properties:
-            token:
-              type: string
-          required: [token]
+    bindings: # Bindings are used to validate the HTTP request upon connection
+      $ref: '#/components/channelBindings/AuthenticatedWsBindings'
 
 components:
   messages:
@@ -100,6 +99,16 @@ components:
       payload:
         type: string
         enum: [signup, login]
+
+  channelBindings:
+    AuthenticatedWsBindings:
+      ws:  
+        query:
+          type: object
+          properties:
+            token:
+              type: string
+          required: [token]
 ```
 
 Bootstrap the AsynctionSocketIO server:

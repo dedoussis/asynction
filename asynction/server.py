@@ -91,10 +91,25 @@ class AsynctionSocketIO(SocketIO):
         cls,
         spec_path: Path,
         validation: bool = True,
+        server_name: Optional[str] = None,
         app: Optional[Flask] = None,
         **kwargs,
     ) -> SocketIO:
         spec = load_spec(spec_path=spec_path)
+
+        if (
+            server_name is not None
+            and kwargs.get("path") is None
+            and kwargs.get("resource") is None
+        ):
+            server = spec.servers.get(server_name)
+            if server is None:
+                raise ValueError(f"Server {server_name} is not defined in the spec.")
+            host_length = len(server.url.split("/")[0])
+            server_path = server.url[host_length:]
+            if server_path:
+                kwargs["path"] = server_path
+
         asio = cls(spec, validation, app, **kwargs)
         asio._register_handlers()
         return asio

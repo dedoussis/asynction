@@ -75,7 +75,7 @@ channels:
       connect: my_api.handlers.authenticated_connect  # Equivelant of: `@socketio.on("connect", namespace="/admin")
       error: my_api.handlers.admin_error
     bindings:
-      ws:
+      ws:  # Bindings are used to validate the HTTP request upon connection
         query:
           type: object
           properties:

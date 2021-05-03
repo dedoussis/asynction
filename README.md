@@ -26,7 +26,7 @@ def user_sign_up(data):
     logger.info("Signing up user")
 
 def user_log_in(data):
-    logger.info("Logging in users")
+    logger.info("Logging in user")
 
 def user_error(e):
     logger.error("Error: %s", e)

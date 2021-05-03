@@ -109,8 +109,8 @@ class AsynctionSocketIO(SocketIO):
             handler = load_handler(channel_handlers.connect)
 
             if self.validation:
-                with_binding_validation = bindings_validator_factory(channel_bindings)
-                handler = with_binding_validation(handler)
+                with_bindings_validation = bindings_validator_factory(channel_bindings)
+                handler = with_bindings_validation(handler)
 
             self.on_event("connect", handler, namespace)
 

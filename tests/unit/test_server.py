@@ -226,7 +226,7 @@ def test_register_namespace_handlers_registers_main_nsp_error_handler_as_default
     assert server.default_exception_handler == some_error
 
 
-def test_emit_event_not_defined_in_spec_raises_runtime_error(faker: Faker):
+def test_emit_event_with_non_existent_namespace_raises_runtime_error(faker: Faker):
     namespace = f"/{faker.pystr()}"
     event_name = faker.pystr()
     spec = AsyncApiSpec(
@@ -277,6 +277,35 @@ def test_emit_event_that_has_no_subscribe_operation_raises_runtime_error(faker: 
     with pytest.raises(RuntimeError):
         server.emit(
             event_name, faker.pydict(value_types=[str, int]), namespace=namespace
+        )
+
+
+def test_emit_event_not_defined_under_given_valid_namespace_raises_runtime_error(
+    faker: Faker,
+):
+    namespace = f"/{faker.pystr()}"
+    spec = AsyncApiSpec(
+        channels={
+            namespace: Channel(
+                subscribe=Operation(
+                    message=OneOfMessages(
+                        oneOf=[
+                            Message(
+                                name=faker.pystr(),
+                                payload={"type": "object"},
+                            )
+                        ]
+                    ),
+                )
+            )
+        },
+    )
+    server = AsynctionSocketIO(spec)
+
+    with pytest.raises(RuntimeError):
+        # Correct namespace but undefined event:
+        server.emit(
+            faker.pystr(), faker.pydict(value_types=[str, int]), namespace=namespace
         )
 
 

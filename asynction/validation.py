@@ -1,14 +1,15 @@
 from functools import wraps
 from typing import Callable
+from typing import Optional
 from typing import Sequence
 
 import jsonschema
 
-from asynction.types import Operation
+from asynction.types import JSONSchema
 
 
-def validate_payload(args: Sequence, operation: Operation) -> None:
-    if operation.message is None or operation.message.payload is None:
+def validate_payload(args: Sequence, schema: Optional[JSONSchema]) -> None:
+    if schema is None:
         if args:
             raise RuntimeError(
                 "Args provided for operation that has no message payload defined."
@@ -17,7 +18,6 @@ def validate_payload(args: Sequence, operation: Operation) -> None:
         # and no args have been provided.
         return
 
-    schema = operation.message.payload
     schema_type = schema["type"]
     if schema_type == "array":
         jsonschema.validate(args, schema)
@@ -30,11 +30,11 @@ def validate_payload(args: Sequence, operation: Operation) -> None:
         jsonschema.validate(args[0], schema)
 
 
-def validator_factory(operation: Operation) -> Callable:
+def payload_validator_factory(schema: Optional[JSONSchema]) -> Callable:
     def decorator(handler: Callable):
         @wraps(handler)
         def handler_with_validation(*args):
-            validate_payload(args, operation)
+            validate_payload(args, schema)
             return handler(*args)
 
         return handler_with_validation

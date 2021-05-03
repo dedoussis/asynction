@@ -1,13 +1,19 @@
 #!/usr/bin/env python
 
+import os
+
 from setuptools import find_packages
 from setuptools import setup
 
 with open("README.md") as readme_file:
     readme = readme_file.read()
 
+
 with open("requirements.txt") as requiremets_file:
     requirements = requiremets_file.read().split()
+
+
+version = os.environ["PKG_VERSION"]
 
 
 setup(
@@ -41,6 +47,6 @@ setup(
     name="asynction",
     packages=find_packages(include=["asynction", "asynction.*"]),
     url="https://github.com/dedoussis/asynction",
-    version="0.0.3",
+    version=version,
     zip_safe=False,
 )

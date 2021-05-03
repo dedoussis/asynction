@@ -1,17 +1,21 @@
 channels:
-  echo:
+  /:
     publish:
-      operationId: tests.fixtures.handlers.echo
       message:
-        $ref: '#/components/messages/EchoCommand'
+        oneOf:
+          - $ref: '#/components/messages/EchoCommand'
     subscribe:
       message:
-        $ref: '#/components/messages/EchoResponse'
+        oneOf:
+          - $ref: '#/components/messages/EchoResponse'
 components:
   messages:
     EchoCommand:
+      name: echo
+      x-handler: tests.fixtures.handlers.echo
       payload:
         type: string
     EchoResponse:
+      name: echo
       payload:
         type: string

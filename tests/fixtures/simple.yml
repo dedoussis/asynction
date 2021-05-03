@@ -1,11 +1,12 @@
 channels:
-  signedup:
+  /:
     publish:
-      operationId: tests.fixtures.handlers.my_handler
       message:
-        $ref: '#/components/messages/UserSignedUp'
+        $ref: '#/components/messages/PingMessage'
 components:
   messages:
-    UserSignedUp:
+    PingMessage:
+      name: ping
+      x-handler: tests.fixtures.handlers.ping
       payload:
         type: object

@@ -1,15 +1,33 @@
+from typing import Any
+
+from flask import request
 from flask_socketio import emit
 
 
-def my_handler() -> None:
+def ping(message: Any) -> None:
     # Dummy handler
     pass
 
 
-def my_other_handler() -> None:
+def connect() -> None:
+    # Dummy handler
+    pass
+
+
+def disconnect() -> None:
+    # Dummy handler
+    pass
+
+
+def some_error() -> None:
     # Dummy handler
     pass
 
 
 def echo(message: str) -> None:
+    emit("echo", message)
+
+
+def authenticated_connect(message: str) -> None:
+    assert request.args.get("token")
     emit("echo", message)

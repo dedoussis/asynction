@@ -79,14 +79,14 @@ Asynction has extended the AsyncAPI 2.0.0 specification to provide support for t
 An `x-namespaces` field has been defined as a top level key of the [AsyncAPI](https://www.asyncapi.com/docs/specifications/2.0.0#A2SObject) object. The value of this field is a Namespace Definitions Object. The Namespace Definitions Object is a map object (with patterned fields).
 
 #### Namespace Definitions Object
-| Field Pattern                           | Type                                          | Description                                                                                                                                                                                            |
-|-----------------------------------------|-----------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Field Pattern | Type  | Description |
+|-|-|-|
 | `^[A-Za-z0-9_\-]+/$` | [Namespace Item Object](#namespace-item-object) | Each key must correspond to a namespace supported by the SocketIO server. Each value is a [Namespace Item Object](#namespace-item-object), providing the definition of that namespace. |
 
 #### Namespace Item Object
-| Field Name   | Type     | Description                                         |
-|--------------|----------|-----------------------------------------------------|
-| description  | `string` | An optional description of this namespace           |
+| Field Name | Type | Description |
+|-|-|-|
+| description  | `string` | An optional description of this namespace |
 | errorHandler | `string` | Dot joint path to the python error handler callable |
 
 ### Event handler namespacing (semantic)
@@ -97,9 +97,8 @@ The pattern of the channel path is: `^(?<namespace>[A-Za-z0-9_\-/]+/)?(?<channel
 If the namespace prefix is omitted, the main namespace (`/`) is assumed.
 
 ## TODOs
-1. Binding validation (query params and headers)
 1. Unnamed events (`json` and `message` - see the Flask-SocketIO docs)
-1. Authentication
+1. Authentication à la https://connexion.readthedocs.io/en/latest/security.html
 1. Expose spec via a flask route. Provide a [playground](https://playground.asyncapi.io/?load=https://raw.githubusercontent.com/asyncapi/asyncapi/master/examples/2.0.0/simple.yml).
 1. Increase JSON Schema reference resolution test coverage. Allow refs to be used with other keys. Merge upon ref resolution.
 

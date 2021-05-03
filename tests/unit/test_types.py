@@ -1,43 +1,134 @@
-from typing import Optional
-
 import pytest
 from faker import Faker
 from svarog import forge
 
 from asynction.types import MAIN_NAMESPACE
+from asynction.types import AsyncApiSpec
 from asynction.types import Channel
-from asynction.types import ChannelPath
 from asynction.types import Message
+from asynction.types import OneOfMessages
 from asynction.types import Operation
 
 
-def test_channel_raises_value_error_if_operation_id_is_not_defined_in_sub_operation(
-    faker: Faker,
-):
+def test_message_deserialisation(faker: Faker):
+    name = faker.pystr()
+    payload = faker.pydict(value_types=[str, int])
+    x_handler = faker.pystr()
+    message = forge(Message, {"name": name, "payload": payload, "x-handler": x_handler})
+
+    assert message.name == name
+    assert message.payload == payload
+    assert message.x_handler == x_handler
+
+
+def test_one_of_messages_deserialisation_of_one_of_structure(faker: Faker):
+    n = faker.pyint(min_value=2, max_value=10)
+    data = {
+        "oneOf": [
+            {
+                "name": faker.pystr(),
+                "payload": faker.pydict(value_types=[str, int]),
+                "x-handler": faker.pystr(),
+            }
+            for _ in range(n)
+        ]
+    }
+
+    one_of_messages = forge(OneOfMessages, data)
+    assert len(one_of_messages.oneOf) == n
+
+
+def test_one_of_messages_deserialisation_of_message_structure(faker: Faker):
+    name = faker.pystr()
+    payload = faker.pydict(value_types=[str, int])
+    x_handler = faker.pystr()
+    data = {"name": name, "payload": payload, "x-handler": x_handler}
+
+    one_of_messages = forge(OneOfMessages, data)
+    assert len(one_of_messages.oneOf) == 1
+    assert one_of_messages.oneOf[0].name == name
+    assert one_of_messages.oneOf[0].payload == payload
+    assert one_of_messages.oneOf[0].x_handler == x_handler
+
+
+def test_channel_raises_value_error_if_publish_messages_miss_handler(faker: Faker):
     with pytest.raises(ValueError):
-        Channel(publish=Operation(Message(payload=faker.pydict())))
+        Channel(
+            subscribe=Operation(
+                message=OneOfMessages(
+                    oneOf=[
+                        Message(
+                            name=faker.pystr(),
+                            payload=faker.pydict(value_types=[str, int]),
+                        )
+                    ]
+                )
+            ),
+            publish=Operation(
+                message=OneOfMessages(
+                    oneOf=[
+                        *[
+                            Message(
+                                name=faker.pystr(),
+                                payload=faker.pydict(value_types=[str, int]),
+                                x_handler=faker.pystr(),
+                            )
+                            for _ in range(faker.pyint(min_value=2, max_value=10))
+                        ],
+                        Message(
+                            name=faker.pystr(),
+                            payload=faker.pydict(value_types=[str, int]),
+                        ),
+                    ]
+                )
+            ),
+        )
 
 
-@pytest.mark.parametrize(
-    argnames=("channel_path", "expected_name", "expected_namespace"),
-    argvalues=[
-        ("foo/bar", "bar", "/foo"),
-        ("foo", "foo", MAIN_NAMESPACE),
-        ("/foo", "foo", MAIN_NAMESPACE),
-        ("foo/bar/baz", "baz", "/foo/bar"),
-        ("/foo/bar", "bar", "/foo"),
-    ],
-    ids=[
-        "path_with_namespace",
-        "path_without_namespace",
-        "path_without_namespace_and_leading_separator",
-        "path_with_nested_namespace",
-        "path_with_leading_separator",
-    ],
-)
-def test_channel_path_deserialization(
-    channel_path: str, expected_name: str, expected_namespace: Optional[str]
-):
-    cp = forge(ChannelPath, channel_path)
-    assert cp.event_name == expected_name
-    assert cp.namespace == expected_namespace
+def test_async_api_spec_from_dict_allows_extra_attrs(faker: Faker):
+    data = {
+        "channels": {
+            MAIN_NAMESPACE: {
+                "description": faker.pystr(),
+                "subscribe": {
+                    "message": {
+                        "oneOf": [
+                            {
+                                "name": faker.pystr(),
+                                "summary": faker.sentence(),
+                                "payload": faker.pydict(value_types=[str, int]),
+                            }
+                            for _ in range(faker.pyint(min_value=2, max_value=10))
+                        ]
+                    }
+                },
+                "publish": {
+                    "message": {
+                        "oneOf": [
+                            {
+                                "title": faker.word(),
+                                "name": faker.pystr(),
+                                "payload": faker.pydict(value_types=[str, int]),
+                                "x-handler": faker.pydict(value_types=[str, int]),
+                            }
+                            for _ in range(faker.pyint(min_value=2, max_value=10))
+                        ]
+                    }
+                },
+                "bindings": {
+                    "ws": {
+                        "method": faker.pystr(),
+                        "query": faker.pydict(value_types=[str, int]),
+                    }
+                },
+                "x-handlers": {
+                    "connect": faker.pystr(),
+                    "disconnect": faker.pystr(),
+                    faker.word(): faker.pystr(),
+                },
+            }
+        }
+    }
+
+    forged = forge(AsyncApiSpec, data)
+    assert isinstance(forged, AsyncApiSpec)

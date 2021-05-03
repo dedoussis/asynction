@@ -11,11 +11,11 @@ from flask_socketio import SocketIO
 
 from asynction.types import MAIN_NAMESPACE
 from asynction.types import AsyncApiSpec
-from asynction.types import ChannelPath
+from asynction.types import ChannelHandlers
 from asynction.types import JSONMapping
 from asynction.types import JSONMappingValue
+from asynction.validation import payload_validator_factory
 from asynction.validation import validate_payload
-from asynction.validation import validator_factory
 
 
 def resolve_references(raw_spec: JSONMapping) -> JSONMapping:
@@ -29,6 +29,16 @@ def resolve_references(raw_spec: JSONMapping) -> JSONMapping:
             if isinstance(v, dict):
                 resolved_v = (
                     resolver.resolve(v["$ref"])[-1] if "$ref" in v else deep_resolve(v)
+                )
+                return k, resolved_v
+            if isinstance(v, (list, tuple, set)):
+                resolved_v = v.__class__(
+                    [
+                        resolver.resolve(item["$ref"])[-1]
+                        if "$ref" in item
+                        else deep_resolve(item)
+                        for item in v
+                    ]
                 )
                 return k, resolved_v
             else:
@@ -78,60 +88,68 @@ class AsynctionSocketIO(SocketIO):
     ) -> SocketIO:
         spec = load_spec(spec_path=spec_path)
         asio = cls(spec, validation, app, **kwargs)
-        asio._register_event_handlers()
-        asio._register_error_handlers()
+        asio._register_handlers()
         return asio
 
-    def _register_event_handlers(self) -> None:
-        for cp, channel in self.spec.channels.items():
-            if channel.publish is not None:
-                if (
-                    cp.namespace is not None
-                    and cp.namespace not in self.spec.x_namespaces
-                ):
-                    raise ValueError(
-                        f"Namespace {cp.namespace} is not defined in x-namespaces."
-                    )
+    def _register_namespace_handlers(
+        self, namespace: str, channel_handlers: ChannelHandlers
+    ) -> None:
+        if channel_handlers.connect is not None:
+            handler = load_handler(channel_handlers.connect)
+            self.on_event("connect", handler, namespace)
 
-                assert channel.publish.operationId is not None
-                handler = load_handler(channel.publish.operationId)
+        if channel_handlers.disconnect is not None:
+            handler = load_handler(channel_handlers.disconnect)
+            self.on_event("disconnect", handler, namespace)
 
-                if self.validation:
-                    with_validation = validator_factory(operation=channel.publish)
-                    handler = with_validation(handler)
-
-                self.on_event(cp.event_name, handler, cp.namespace)
-
-    def _register_error_handlers(self) -> None:
-        for ns_name, ns_definition in self.spec.x_namespaces.items():
-            if ns_definition.errorHandler is None:
-                continue
-
-            exc_handler = load_handler(ns_definition.errorHandler)
-
-            if ns_name == MAIN_NAMESPACE:
-                self.on_error_default(exc_handler)
+        if channel_handlers.error is not None:
+            handler = load_handler(channel_handlers.error)
+            if namespace == MAIN_NAMESPACE:
+                self.on_error_default(handler)
             else:
-                self.on_error(ns_name)(exc_handler)
+                self.on_error(namespace)(handler)
+
+    def _register_handlers(self) -> None:
+        for namespace, channel in self.spec.channels.items():
+            if channel.publish is not None:
+                for message in channel.publish.message.oneOf:
+                    assert message.x_handler is not None
+                    handler = load_handler(message.x_handler)
+
+                    if self.validation:
+                        with_payload_validation = payload_validator_factory(
+                            schema=message.payload
+                        )
+                        handler = with_payload_validation(handler)
+
+                    self.on_event(message.name, handler, namespace)
+
+            if channel.x_handlers is not None:
+                self._register_namespace_handlers(namespace, channel.x_handlers)
 
     def emit(self, event: str, *args, **kwargs) -> None:
         if self.validation:
-            cp = ChannelPath(
-                event_name=event, namespace=kwargs.get("namespace", MAIN_NAMESPACE)
-            )
-            channel = self.spec.channels.get(cp)
+            namespace = kwargs.get("namespace", MAIN_NAMESPACE)
+            channel = self.spec.channels.get(namespace)
 
             if channel is None:
                 raise RuntimeError(
-                    f"Failed to emit because {cp} is not defined in the API spec."
+                    f"Failed to emit because the {namespace} "
+                    "namespace is not defined in the API spec."
                 )
 
             if channel.subscribe is None:
                 raise RuntimeError(
-                    f"Failed to emit because {cp} does not"
-                    " have a subscribe operation defined."
+                    f"Failed to emit because {namespace} does not"
+                    " have any subscribe operation defined."
                 )
 
-            validate_payload(args, channel.subscribe)
+            message = channel.subscribe.message.with_name(event)
+            if message is None:
+                raise RuntimeError(
+                    f"Event {event} is not registered under namespace {namespace}"
+                )
+
+            validate_payload(args, message.payload)
 
         return super().emit(event, *args, **kwargs)

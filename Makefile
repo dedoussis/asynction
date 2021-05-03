@@ -1,5 +1,6 @@
 NOOP=
 SPACE=$(NOOP) $(NOOP)
+PGK_VERSION=$(shell git describe --abbrev=0 --tags)
 
 all-install: $(wildcard requirements*.txt)
 	pip install -r $(subst $(SPACE), -r ,$?)

@@ -79,7 +79,7 @@ channels:
     x-handlers:
       connect: my_api.handlers.authenticated_connect  # Equivelant of: `@socketio.on("connect", namespace="/admin")
       error: my_api.handlers.admin_error
-    bindings: # Bindings are used to validate the HTTP request upon connection
+    bindings:  # Bindings are used to validate the HTTP request upon connection
       $ref: '#/components/channelBindings/AuthenticatedWsBindings'
 
 components:

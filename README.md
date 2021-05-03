@@ -35,10 +35,12 @@ def user_error(e):
 Example specification located at `./docs/asyncapi.yaml`:
 ```yaml
 asyncapi: 2.0.0
+
 info:
   title: User Account Service
   version: 1.0.0
   description: This service is in charge of processing user accounts
+
 channels:
   /user:  # A channel is essentially a SocketIO namespace
     publish:
@@ -48,6 +50,7 @@ channels:
           - $ref: '#/components/messages/UserLogIn'
     x-handers:  # Default namespace handlers (such as connect, disconnect and error)
       error: my_api.handlers.user_error  # Equivelant of: `@socketio.on_error("/user")
+
 components:
   messages:
     UserSignUp:

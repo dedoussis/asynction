@@ -28,6 +28,5 @@ def echo(message: str) -> None:
     emit("echo", message)
 
 
-def authenticated_connect(message: str) -> None:
+def authenticated_connect() -> None:
     assert request.args.get("token")
-    emit("echo", message)

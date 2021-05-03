@@ -98,7 +98,7 @@ class WebSocketsChannelBindings:
 
     method: Optional[str] = None
     query: Optional[JSONSchema] = None
-    headers: Optional[JSONSchema] = None
+    headers: Optional[JSONSchema] = None  # TODO: Convert header properties to lowercase
     bindingVersion: str = "latest"
 
 
@@ -142,6 +142,27 @@ class Channel:
                         "Every message under a publish operation "
                         "should have a handler defined."
                     )
+
+    @staticmethod
+    def forge(type_: Type["Channel"], data: JSONMapping, forge: Forge) -> "Channel":
+        forged = type_(
+            subscribe=forge(type_.__annotations__["subscribe"], data.get("subscribe")),
+            publish=forge(type_.__annotations__["publish"], data.get("publish")),
+            bindings=forge(type_.__annotations__["bindings"], data.get("bindings")),
+        )
+
+        x_handlers_data = data.get("x-handlers")
+
+        if x_handlers_data is None:
+            return forged
+
+        return replace(
+            forged,
+            x_handlers=forge(type_.__annotations__["x_handlers"], x_handlers_data),
+        )
+
+
+register_forge(Channel, Channel.forge)
 
 
 @dataclass

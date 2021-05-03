@@ -9,7 +9,10 @@ The purpose of Asynction is to empower a specification first approach when devel
 
 ## Features
 * Payload validation (for both incoming and outgoing events), based on the message schemata within the API specification.
+* HTTP request validation, upon connection, based on the channel binding schemata within the API specification.
 * Automatic registration of all event and error handlers defined within the API specification.
+* AsyncAPI [playground](https://playground.asyncapi.io/?load=https://raw.githubusercontent.com/asyncapi/asyncapi/master/examples/2.0.0/simple.yml) *(coming soon)*
+* Authentication à la [Connexion](https://connexion.readthedocs.io/en/latest/security.html) *(coming soon)*
 
 ## Prerequisites
 * Python 3.7 (or higher)
@@ -22,14 +25,27 @@ $ pip install asynction
 ## Usage
 Example event and error handler callables located at `./my_api/handlers.py`:
 ```python
+# /user namespace
+
 def user_sign_up(data):
-    logger.info("Signing up user")
+    logger.info("Signing up user...")
+    emit("metrics", "signup", namespace="/admin")
 
 def user_log_in(data):
-    logger.info("Logging in user")
+    logger.info("Logging in user...")
+    emit("metrics", "login", namespace="/admin")
 
 def user_error(e):
     logger.error("Error: %s", e)
+
+
+# /admin namespace
+
+def authenticated_connect():
+    token = request.args["token"]
+
+def admin_error(e):
+    logger.error("Admin error: %s", e)
 ```
 
 Example specification located at `./docs/asyncapi.yaml`:
@@ -45,24 +61,45 @@ channels:
   /user:  # A channel is essentially a SocketIO namespace
     publish:
       message:
-        oneOf:  # The oneOf Messages relationship expresses the supported events that a client may emit under the `user` namespace
+        oneOf:  # The oneOf Messages relationship expresses the supported events that a client may emit under the `/user` namespace
           - $ref: '#/components/messages/UserSignUp'
           - $ref: '#/components/messages/UserLogIn'
-    x-handers:  # Default namespace handlers (such as connect, disconnect and error)
+    x-handlers:  # Default namespace handlers (such as connect, disconnect and error)
       error: my_api.handlers.user_error  # Equivelant of: `@socketio.on_error("/user")
+  /admin:
+    subscribe:
+      message:
+        oneOf:
+          - '#/components/messages/Metrics'
+    x-handlers:
+      connect: my_api.handlers.authenticated_connect  # Equivelant of: `@socketio.on("connect", namespace="/admin")
+      error: my_api.handlers.admin_error
+    bindings:
+      ws:  # Bindings are used to validate the HTTP request upon connection
+        query:
+          type: object
+          properties:
+            token:
+              type: string
+          required: [token]
 
 components:
   messages:
     UserSignUp:
-      name: sign up  # The SocketIO event name
+      name: sign up  # The SocketIO event name. Use `message` or `json` for unnamed events.
       payload:  # Asynction uses payload JSON Schemata for message validation
         type: object
-      x-hander: my_api.handlers.user_sign_up  # The handler that is to be registered. Equivelant of: `@socketio.on("sign up", namespace="/user")
+      x-handler: my_api.handlers.user_sign_up  # The handler that is to be registered. Equivelant of: `@socketio.on("sign up", namespace="/user")
     UserLogIn:
       name: log in
       payload:
         type: object
-      x-hander: my_api.handlers.user_log_in
+      x-handler: my_api.handlers.user_log_in
+    Metrics:
+      name: metrics
+      payload:
+        type: string
+        enum: [signup, login]
 ```
 
 Bootstrap the AsynctionSocketIO server:
@@ -81,7 +118,7 @@ asio = AsynctionSocketIO.from_spec(
 ```
 The `AsynctionSocketIO` class extends the `SocketIO` class of the Flask-SocketIO library.  
 The above `asio` server object has all the event and error handlers registered, and is ready to run.  
-Validation of the message payloads is also enabled by default.  
+Validation of the message payloads and the channel bindings is also enabled by default.  
 Without Asynction, one would need to add additional boilerplate to register the handlers (as shown [here](https://flask-socketio.readthedocs.io/en/latest/#error-handling)) and implement the respective validators.
 
 ## Specification Extentions
@@ -102,12 +139,6 @@ The `x-handlers` field MAY be defined as an additional property of the [Channel 
 | connect  | `string` | Dot joint path to the python connect handler callable |
 | disconnect | `string` | Dot joint path to the python disconnect handler callable |
 | error | `string` | Dot joint path to the python error handler callable |
-
-## TODOs
-1. Binding validation
-1. Authentication à la https://connexion.readthedocs.io/en/latest/security.html
-1. Expose spec via a flask route. Provide a [playground](https://playground.asyncapi.io/?load=https://raw.githubusercontent.com/asyncapi/asyncapi/master/examples/2.0.0/simple.yml).
-1. Increase JSON Schema reference resolution test coverage. Allow refs to be used together with other keys. Merge upon ref resolution.
 
 ## Limitations / Thoughts
 1. How can the spec express event handler return types (that are to be passed as args to the client callbacks)?

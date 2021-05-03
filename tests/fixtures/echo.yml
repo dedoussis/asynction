@@ -8,6 +8,25 @@ channels:
       message:
         oneOf:
           - $ref: '#/components/messages/EchoResponse'
+  /admin:
+    publish:
+      message:
+        oneOf:
+          - $ref: '#/components/messages/EchoCommand'
+    subscribe:
+      message:
+        oneOf:
+          - $ref: '#/components/messages/EchoResponse'
+    x-handlers:
+      connect: tests.fixtures.handlers.authenticated_connect
+    bindings:
+      ws:
+        query:
+          type: object
+          properties:
+            token:
+              type: string
+          required: [token]
 components:
   messages:
     EchoCommand:

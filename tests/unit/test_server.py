@@ -3,6 +3,7 @@ from unittest import mock
 import jsonschema
 import pytest
 from faker import Faker
+from flask import Flask
 
 from asynction.server import AsynctionSocketIO
 from asynction.server import SocketIO
@@ -12,10 +13,12 @@ from asynction.server import resolve_references
 from asynction.types import GLOBAL_NAMESPACE
 from asynction.types import AsyncApiSpec
 from asynction.types import Channel
+from asynction.types import ChannelBindings
 from asynction.types import ChannelHandlers
 from asynction.types import Message
 from asynction.types import OneOfMessages
 from asynction.types import Operation
+from asynction.types import WebSocketsChannelBindings
 from tests.fixtures import FixturePaths
 from tests.fixtures.handlers import connect
 from tests.fixtures.handlers import disconnect
@@ -47,12 +50,28 @@ def test_resolve_references_resolves_successfully():
                         ]
                     }
                 },
+                "bindings": {
+                    "$ref": "#/components/channelBindings/AuthenticatedWsBinding"
+                },
             }
         },
         "components": {
             "messages": {
                 "UserMessage": {"payload": {"type": "string"}},
                 "UserResponse": {"payload": {"type": "object"}},
+            },
+            "channelBindings": {
+                "AuthenticatedWsBinding": {
+                    "ws": {
+                        "query": {
+                            "type": "object",
+                            "properties": {
+                                "token": {"type": "string"},
+                            },
+                            "required": ["token"],
+                        }
+                    }
+                }
             },
         },
     }
@@ -73,12 +92,36 @@ def test_resolve_references_resolves_successfully():
                         ]
                     }
                 },
+                "bindings": {
+                    "ws": {
+                        "query": {
+                            "type": "object",
+                            "properties": {
+                                "token": {"type": "string"},
+                            },
+                            "required": ["token"],
+                        }
+                    }
+                },
             }
         },
         "components": {
             "messages": {
                 "UserMessage": {"payload": {"type": "string"}},
                 "UserResponse": {"payload": {"type": "object"}},
+            },
+            "channelBindings": {
+                "AuthenticatedWsBinding": {
+                    "ws": {
+                        "query": {
+                            "type": "object",
+                            "properties": {
+                                "token": {"type": "string"},
+                            },
+                            "required": ["token"],
+                        }
+                    }
+                }
             },
         },
     }
@@ -214,7 +257,7 @@ def test_register_handlers_omits_validator_if_validation_is_disabled(faker: Fake
 
     assert handler_with_validation == actual_handler
     args = (faker.pyint(),)
-    actual_handler(*args)  # actual handler does not raise validation errors
+    handler_with_validation(*args)  # handler does not raise validation errors
     assert True
 
 
@@ -222,8 +265,56 @@ def test_register_namespace_handlers_registers_global_nsp_error_handler_as_defau
     channel_handlers = ChannelHandlers(error="tests.fixtures.handlers.some_error")
     server = AsynctionSocketIO(mock.Mock())
 
-    server._register_namespace_handlers(GLOBAL_NAMESPACE, channel_handlers)
+    server._register_namespace_handlers(GLOBAL_NAMESPACE, channel_handlers, None)
     assert server.default_exception_handler == some_error
+
+
+def test_register_namespace_handlers_wraps_bindings_validator_if_validation_enabled():
+    channel_handlers = ChannelHandlers(connect="tests.fixtures.handlers.connect")
+    channel_bindings = ChannelBindings(
+        ws=WebSocketsChannelBindings(
+            method="GET",
+        )
+    )
+    server = AsynctionSocketIO(mock.Mock())
+
+    server._register_namespace_handlers(
+        GLOBAL_NAMESPACE, channel_handlers, channel_bindings
+    )
+    event_name, registered_handler, _ = server.handlers[0]
+    assert event_name == "connect"
+    handler_with_validation = deep_unwrap(registered_handler, depth=1)
+    actual_handler = deep_unwrap(handler_with_validation)
+
+    with Flask(__name__).test_client() as c:
+        c.post()  # Inject invalid POST request
+        actual_handler()  # actual handler does not raise validation errors
+        with pytest.raises(RuntimeError):
+            handler_with_validation()
+
+
+def test_register_namespace_handlers_omits_bindings_validator_if_validation_disabled():
+    channel_handlers = ChannelHandlers(connect="tests.fixtures.handlers.connect")
+    channel_bindings = ChannelBindings(
+        ws=WebSocketsChannelBindings(
+            method="GET",
+        )
+    )
+    server = AsynctionSocketIO(mock.Mock(), False)
+
+    server._register_namespace_handlers(
+        GLOBAL_NAMESPACE, channel_handlers, channel_bindings
+    )
+    event_name, registered_handler, _ = server.handlers[0]
+    assert event_name == "connect"
+    handler_with_validation = deep_unwrap(registered_handler, depth=1)
+    actual_handler = deep_unwrap(handler_with_validation)
+
+    with Flask(__name__).test_client() as c:
+        c.post()  # Inject invalid POST request
+        assert handler_with_validation == actual_handler
+        handler_with_validation()  # handler does not raise validation errors
+        assert True
 
 
 def test_emit_event_with_non_existent_namespace_raises_runtime_error(faker: Faker):

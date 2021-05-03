@@ -55,7 +55,7 @@ def test_client_emitting_invalid_message(
         flask_app, flask_test_client=flask_test_client
     )
     socketio_test_client.get_received()
-    with pytest.raises(jsonschema.exceptions.ValidationError):
+    with pytest.raises(jsonschema.ValidationError):
         socketio_test_client.emit("echo", faker.pyint())
 
 
@@ -65,5 +65,42 @@ def test_server_emitting_invalid_message(
     faker: Faker,
 ):
     socketio_server = asynction_socketio_server_factory(spec_path=fixture_paths.echo)
-    with pytest.raises(jsonschema.exceptions.ValidationError):
+    with pytest.raises(jsonschema.ValidationError):
         socketio_server.emit("echo", faker.pyint())
+
+
+def test_client_connecting_with_valid_bindings(
+    asynction_socketio_server_factory: AsynctionFactory,
+    flask_app: Flask,
+    faker: Faker,
+    fixture_paths: FixturePaths,
+):
+    socketio_server = asynction_socketio_server_factory(spec_path=fixture_paths.echo)
+    flask_test_client = flask_app.test_client()
+
+    restricted_namespace = "/admin"
+    socketio_test_client = socketio_server.test_client(
+        flask_app,
+        namespace=restricted_namespace,
+        query_string=f"?token={faker.pystr()}",
+        flask_test_client=flask_test_client,
+    )
+    socketio_test_client.get_received(restricted_namespace)
+    assert True
+
+
+def test_client_connecting_with_invalid_bindings(
+    asynction_socketio_server_factory: AsynctionFactory,
+    flask_app: Flask,
+    fixture_paths: FixturePaths,
+):
+    socketio_server = asynction_socketio_server_factory(spec_path=fixture_paths.echo)
+    flask_test_client = flask_app.test_client()
+
+    with pytest.raises(jsonschema.ValidationError):
+        socketio_server.test_client(
+            flask_app,
+            namespace="/admin",
+            query_string="",
+            flask_test_client=flask_test_client,
+        )

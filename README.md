@@ -54,7 +54,7 @@ channels:
 components:
   messages:
     UserSignUp:
-      name: sign up  # The SocketIO event name
+      name: sign up  # The SocketIO event name. Use `message` or `json` for unnamed events.
       payload:  # Asynction uses payload JSON Schemata for message validation
         type: object
       x-hander: my_api.handlers.user_sign_up  # The handler that is to be registered. Equivelant of: `@socketio.on("sign up", namespace="/user")
@@ -104,7 +104,6 @@ The `x-handlers` field MAY be defined as an additional property of the [Channel 
 | error | `string` | Dot joint path to the python error handler callable |
 
 ## TODOs
-1. Binding validation
 1. Authentication à la https://connexion.readthedocs.io/en/latest/security.html
 1. Expose spec via a flask route. Provide a [playground](https://playground.asyncapi.io/?load=https://raw.githubusercontent.com/asyncapi/asyncapi/master/examples/2.0.0/simple.yml).
 1. Increase JSON Schema reference resolution test coverage. Allow refs to be used together with other keys. Merge upon ref resolution.

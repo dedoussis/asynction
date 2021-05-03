@@ -5,6 +5,8 @@ from svarog import forge
 from asynction.types import GLOBAL_NAMESPACE
 from asynction.types import AsyncApiSpec
 from asynction.types import Channel
+from asynction.types import ChannelBindings
+from asynction.types import ChannelHandlers
 from asynction.types import Message
 from asynction.types import OneOfMessages
 from asynction.types import Operation
@@ -49,6 +51,50 @@ def test_one_of_messages_deserialisation_of_message_structure(faker: Faker):
     assert one_of_messages.oneOf[0].name == name
     assert one_of_messages.oneOf[0].payload == payload
     assert one_of_messages.oneOf[0].x_handler == x_handler
+
+
+def test_channel_deserialization(faker: Faker):
+    data = {
+        "subscribe": {
+            "message": {
+                "oneOf": [
+                    {
+                        "name": faker.pystr(),
+                        "payload": faker.pydict(value_types=[str, int]),
+                    }
+                    for _ in range(faker.pyint(min_value=2, max_value=10))
+                ]
+            }
+        },
+        "publish": {
+            "message": {
+                "oneOf": [
+                    {
+                        "name": faker.pystr(),
+                        "payload": faker.pydict(value_types=[str, int]),
+                        "x-handler": faker.pydict(value_types=[str, int]),
+                    }
+                    for _ in range(faker.pyint(min_value=2, max_value=10))
+                ]
+            }
+        },
+        "bindings": {
+            "ws": {
+                "method": faker.pystr(),
+                "query": faker.pydict(value_types=[str, int]),
+            }
+        },
+        "x-handlers": {
+            "connect": faker.pystr(),
+            "disconnect": faker.pystr(),
+        },
+    }
+
+    channel = forge(Channel, data)
+    assert isinstance(channel.publish, Operation)
+    assert isinstance(channel.subscribe, Operation)
+    assert isinstance(channel.bindings, ChannelBindings)
+    assert isinstance(channel.x_handlers, ChannelHandlers)
 
 
 def test_channel_raises_value_error_if_publish_messages_miss_handler(faker: Faker):

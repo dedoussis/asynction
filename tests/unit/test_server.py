@@ -3,8 +3,8 @@ from unittest import mock
 import jsonschema
 import pytest
 from faker import Faker
+from flask import Flask
 
-import asynction.validation
 from asynction.server import AsynctionSocketIO
 from asynction.server import SocketIO
 from asynction.server import load_handler
@@ -269,10 +269,7 @@ def test_register_namespace_handlers_registers_global_nsp_error_handler_as_defau
     assert server.default_exception_handler == some_error
 
 
-@mock.patch.object(asynction.validation, "current_flask_request")
-def test_register_namespace_handlers_wraps_bindings_validator_if_validation_enabled(
-    mock_current_flask_request: mock.Mock,
-):
+def test_register_namespace_handlers_wraps_bindings_validator_if_validation_enabled():
     channel_handlers = ChannelHandlers(connect="tests.fixtures.handlers.connect")
     channel_bindings = ChannelBindings(
         ws=WebSocketsChannelBindings(
@@ -289,16 +286,14 @@ def test_register_namespace_handlers_wraps_bindings_validator_if_validation_enab
     handler_with_validation = deep_unwrap(registered_handler, depth=1)
     actual_handler = deep_unwrap(handler_with_validation)
 
-    mock_current_flask_request.method = "POST"  # Inject invalid request
-    actual_handler()  # actual handler does not raise validation errors
-    with pytest.raises(RuntimeError):
-        handler_with_validation()
+    with Flask(__name__).test_client() as c:
+        c.post()  # Inject invalid POST request
+        actual_handler()  # actual handler does not raise validation errors
+        with pytest.raises(RuntimeError):
+            handler_with_validation()
 
 
-@mock.patch.object(asynction.validation, "current_flask_request")
-def test_register_namespace_handlers_omits_bindings_validator_if_validation_disabled(
-    mock_current_flask_request: mock.Mock,
-):
+def test_register_namespace_handlers_omits_bindings_validator_if_validation_disabled():
     channel_handlers = ChannelHandlers(connect="tests.fixtures.handlers.connect")
     channel_bindings = ChannelBindings(
         ws=WebSocketsChannelBindings(
@@ -315,10 +310,11 @@ def test_register_namespace_handlers_omits_bindings_validator_if_validation_disa
     handler_with_validation = deep_unwrap(registered_handler, depth=1)
     actual_handler = deep_unwrap(handler_with_validation)
 
-    mock_current_flask_request.method = "POST"  # Inject invalid request
-    assert handler_with_validation == actual_handler
-    handler_with_validation()  # handler does not raise validation errors
-    assert True
+    with Flask(__name__).test_client() as c:
+        c.post()  # Inject invalid POST request
+        assert handler_with_validation == actual_handler
+        handler_with_validation()  # handler does not raise validation errors
+        assert True
 
 
 def test_emit_event_with_non_existent_namespace_raises_runtime_error(faker: Faker):

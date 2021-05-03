@@ -59,7 +59,9 @@ def validate_request_bindings(
         )
 
     if bindings.ws.headers is not None:
-        jsonschema.validate(request.headers, bindings.ws.headers)
+        jsonschema.validate(
+            {k.lower(): v for k, v in request.headers.items()}, bindings.ws.headers
+        )
 
     if bindings.ws.query is not None:
         jsonschema.validate(request.args.to_dict(), bindings.ws.query)

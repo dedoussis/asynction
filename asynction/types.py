@@ -98,7 +98,7 @@ class WebSocketsChannelBindings:
 
     method: Optional[str] = None
     query: Optional[JSONSchema] = None
-    headers: Optional[JSONSchema] = None
+    headers: Optional[JSONSchema] = None  # TODO: Convert header properties to lowercase
     bindingVersion: str = "latest"
 
 

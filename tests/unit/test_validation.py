@@ -4,9 +4,9 @@ from unittest import mock
 import jsonschema
 import pytest
 from faker import Faker
+from flask import Flask
 from werkzeug.datastructures import ImmutableMultiDict
 
-import asynction.validation
 from asynction.types import ChannelBindings
 from asynction.types import WebSocketsChannelBindings
 from asynction.validation import bindings_validator_factory
@@ -222,12 +222,7 @@ def test_validate_request_bindings_with_invalid_headers_raises_validation_error(
         validate_request_bindings(request, bindings)
 
 
-@mock.patch.object(asynction.validation, "current_flask_request")
-def test_bindings_validator_factory_validates_valid_request_successfully(
-    mock_current_flask_request: mock.Mock, faker: Faker
-):
-    mock_current_flask_request.headers = {"foo": "baz"}
-
+def test_bindings_validator_factory_validates_valid_request_successfully(faker: Faker):
     with_validation = bindings_validator_factory(
         bindings=ChannelBindings(
             ws=WebSocketsChannelBindings(
@@ -243,29 +238,29 @@ def test_bindings_validator_factory_validates_valid_request_successfully(
     def handler(message: Mapping) -> None:
         assert "hello" in message
 
-    handler({"hello": faker.word()})
-
-
-@mock.patch.object(asynction.validation, "current_flask_request")
-def test_bindings_validator_factory_invalid_request_fails_validation(
-    mock_current_flask_request: mock.Mock, faker: Faker
-):
-    mock_current_flask_request.headers = {"foo": "not_baz"}
-
-    with_validation = bindings_validator_factory(
-        bindings=ChannelBindings(
-            ws=WebSocketsChannelBindings(
-                headers={
-                    "type": "object",
-                    "properties": {"foo": {"type": "string", "enum": ["baz"]}},
-                }
-            )
-        ),
-    )
-
-    @with_validation
-    def handler(message: Mapping) -> None:
-        assert "hello" in message
-
-    with pytest.raises(jsonschema.ValidationError):
+    with Flask(__name__).test_client() as c:
+        c.get(headers={"foo": "baz"})
         handler({"hello": faker.word()})
+
+
+def test_bindings_validator_factory_invalid_request_fails_validation(faker: Faker):
+
+    with_validation = bindings_validator_factory(
+        bindings=ChannelBindings(
+            ws=WebSocketsChannelBindings(
+                headers={
+                    "type": "object",
+                    "properties": {"foo": {"type": "string", "enum": ["baz"]}},
+                }
+            )
+        ),
+    )
+
+    @with_validation
+    def handler(message: Mapping) -> None:
+        assert "hello" in message
+
+    with Flask(__name__).test_client() as c:
+        c.get(headers={"foo": "not_baz"})
+        with pytest.raises(jsonschema.ValidationError):
+            handler({"hello": faker.word()})

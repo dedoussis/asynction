@@ -49,8 +49,7 @@ release: dist
 	twine upload dist/*
 
 dist: clean
-	python setup.py sdist
-	python setup.py bdist_wheel
+	PGK_VERSION=$(PGK_VERSION) python setup.py sdist bdist_wheel
 	ls -l dist
 
 .PHONY: all-install clean clean-pyc clean-build clean-tests clean-mypy typecheck test-unit test-integration format lint release dist

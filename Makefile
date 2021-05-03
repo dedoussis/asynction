@@ -1,6 +1,6 @@
 NOOP=
 SPACE=$(NOOP) $(NOOP)
-PGK_VERSION=$(shell git describe --abbrev=0 --tags)
+PKG_VERSION=$(shell git describe --abbrev=0 --tags)
 
 all-install: $(wildcard requirements*.txt)
 	pip install -r $(subst $(SPACE), -r ,$?)
@@ -49,7 +49,7 @@ release: dist
 	twine upload dist/*
 
 dist: clean
-	PGK_VERSION=$(PGK_VERSION) python setup.py sdist bdist_wheel
+	PKG_VERSION=$(PKG_VERSION) python setup.py sdist bdist_wheel
 	ls -l dist
 
 .PHONY: all-install clean clean-pyc clean-build clean-tests clean-mypy typecheck test-unit test-integration format lint release dist

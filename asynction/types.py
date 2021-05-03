@@ -14,7 +14,7 @@ JSONMappingValue = Any
 JSONMapping = Mapping[str, JSONMappingValue]
 JSONSchema = JSONMapping
 
-MAIN_NAMESPACE = "/"
+GLOBAL_NAMESPACE = "/"
 
 
 @dataclass

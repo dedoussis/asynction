@@ -9,7 +9,7 @@ import yaml
 from flask import Flask
 from flask_socketio import SocketIO
 
-from asynction.types import MAIN_NAMESPACE
+from asynction.types import GLOBAL_NAMESPACE
 from asynction.types import AsyncApiSpec
 from asynction.types import ChannelHandlers
 from asynction.types import JSONMapping
@@ -104,7 +104,7 @@ class AsynctionSocketIO(SocketIO):
 
         if channel_handlers.error is not None:
             handler = load_handler(channel_handlers.error)
-            if namespace == MAIN_NAMESPACE:
+            if namespace == GLOBAL_NAMESPACE:
                 self.on_error_default(handler)
             else:
                 self.on_error(namespace)(handler)
@@ -129,7 +129,7 @@ class AsynctionSocketIO(SocketIO):
 
     def emit(self, event: str, *args, **kwargs) -> None:
         if self.validation:
-            namespace = kwargs.get("namespace", MAIN_NAMESPACE)
+            namespace = kwargs.get("namespace", GLOBAL_NAMESPACE)
             channel = self.spec.channels.get(namespace)
 
             if channel is None:

@@ -20,37 +20,46 @@ $ pip install asynction
 ```
 
 ## Usage
-Example event and error handler callables sitting under `./my_api/handlers.py`:
+Example event and error handler callables located at `./my_api/handlers.py`:
 ```python
-def user_signedup(message):
-    logger.info("Registered user")
+def user_sign_up(data):
+    logger.info("Signing up user")
+
+def user_log_in(data):
+    logger.info("Logging in users")
 
 def user_error(e):
     logger.error("Error: %s", e)
 ```
 
-Example specification sitting under `./docs/asyncapi.yaml`:
+Example specification located at `./docs/asyncapi.yaml`:
 ```yaml
 asyncapi: 2.0.0
 info:
-  title: Account Service
+  title: User Account Service
   version: 1.0.0
-  description: This service is in charge of processing user signups
+  description: This service is in charge of processing user accounts
 channels:
-  user/signedup:  # A namespace can be specified by prefixing the channel name
+  /user:  # A channel is essentially a SocketIO namespace
     publish:
-      operationId: my_api.handlers.user_signedup
       message:
-        $ref: '#/components/messages/UserSignedUp'
+        oneOf:  # The oneOf Messages relationship expresses the supported events that a client may emit under the `user` namespace
+          - $ref: '#/components/messages/UserSignUp'
+          - $ref: '#/components/messages/UserLogIn'
+    x-handers:  # Default namespace handlers (such as connect, disconnect and error)
+      error: my_api.handlers.user_error  # Equivelant of: `@socketio.on_error("/user")
 components:
   messages:
-    UserSignedUp:
+    UserSignUp:
+      name: sign up  # The SocketIO event name
       payload:  # Asynction uses payload JSON Schemata for message validation
         type: object
-x-namespaces:
-  /user:
-    description: Special namespace that only registered users have access to
-    errorHandler: my_api.handlers.user_error
+      x-hander: my_api.handlers.user_sign_up  # The handler that is to be registered. Equivelant of: `@socketio.on("sign up", namespace="/user")
+    UserLogIn:
+      name: log in
+      payload:
+        type: object
+      x-hander: my_api.handlers.user_log_in
 ```
 
 Bootstrap the AsynctionSocketIO server:
@@ -72,35 +81,30 @@ The above `asio` server object has all the event and error handlers registered, 
 Validation of the message payloads is also enabled by default.  
 Without Asynction, one would need to add additional boilerplate to register the handlers (as shown [here](https://flask-socketio.readthedocs.io/en/latest/#error-handling)) and implement the respective validators.
 
-## Specification Extentions (support for SocketIO Namespaces)
-Asynction has extended the AsyncAPI 2.0.0 specification to provide support for the [Namespaces](https://socket.io/docs/v4/namespaces/) concept of the SocketIO protocol. The extentions introduced adhere to the [Specification Extention guidelines](https://www.asyncapi.com/docs/specifications/2.0.0#specificationExtensions) of the AsyncAPI spec.
+## Specification Extentions
+Asynction has extended the AsyncAPI 2.0.0 specification to provide support for coupling SocketIO entities (such as namespaces and events) to python objects (handlers). The extentions introduced adhere to the [Specification Extention guidelines](https://www.asyncapi.com/docs/specifications/2.0.0#specificationExtensions) of the AsyncAPI spec.
 
-### Namespace definition (object)
-An `x-namespaces` field has been defined as a top level key of the [AsyncAPI](https://www.asyncapi.com/docs/specifications/2.0.0#A2SObject) object. The value of this field is a Namespace Definitions Object. The Namespace Definitions Object is a map object (with patterned fields).
+### Event handler
+The `x-handler` field MAY be defined as an additional property of the [Message Object](https://www.asyncapi.com/docs/specifications/2.0.0#messageObject). The value of this field MUST be of `string` type, expressing a dot joint path to a python callable (the event handler).
 
-#### Namespace Definitions Object
-| Field Pattern | Type  | Description |
-|-|-|-|
-| `^[A-Za-z0-9_\-]+/$` | [Namespace Item Object](#namespace-item-object) | Each key must correspond to a namespace supported by the SocketIO server. Each value is a [Namespace Item Object](#namespace-item-object), providing the definition of that namespace. |
+Message Objects listed under a `subscribe` [operation](https://www.asyncapi.com/docs/specifications/2.0.0#operationObject) MUST include the `x-handler` field.  
+Message Objects listed under a `publish` [operation](https://www.asyncapi.com/docs/specifications/2.0.0#operationObject) SHOULD NOT include the `x-handler` field.
 
-#### Namespace Item Object
+### Default namespace handlers
+The `x-handlers` field MAY be defined as an additional property of the [Channel Item Object](https://www.asyncapi.com/docs/specifications/2.0.0#channelItemObject). The value of this field SHOULD be a [Channel Handlers Object](#channel-handlers-object).
+
+#### Channel Handlers Object
 | Field Name | Type | Description |
 |-|-|-|
-| description  | `string` | An optional description of this namespace |
-| errorHandler | `string` | Dot joint path to the python error handler callable |
-
-### Event handler namespacing (semantic)
-A new semantic added to the AsyncAPI 2.0.0 spec is the prefixing of the channel paths (keys of the [Channels Object](https://www.asyncapi.com/docs/specifications/2.0.0#channelsObject)). This allows the registration of an event handler or a message validator under a particular namespace. The prefix expressed namespace should be included in the [Namespace Definitions Object](#namespace-definitions-object). 
-
-The pattern of the channel path is: `^(?<namespace>[A-Za-z0-9_\-/]+/)?(?<channel_name>[A-Za-z0-9_\-]+)$`
-
-If the namespace prefix is omitted, the main namespace (`/`) is assumed.
+| connect  | `string` | Dot joint path to the python connect handler callable |
+| disconnect | `string` | Dot joint path to the python disconnect handler callable |
+| error | `string` | Dot joint path to the python error handler callable |
 
 ## TODOs
-1. Unnamed events (`json` and `message` - see the Flask-SocketIO docs)
+1. Binding validation
 1. Authentication à la https://connexion.readthedocs.io/en/latest/security.html
 1. Expose spec via a flask route. Provide a [playground](https://playground.asyncapi.io/?load=https://raw.githubusercontent.com/asyncapi/asyncapi/master/examples/2.0.0/simple.yml).
-1. Increase JSON Schema reference resolution test coverage. Allow refs to be used with other keys. Merge upon ref resolution.
+1. Increase JSON Schema reference resolution test coverage. Allow refs to be used together with other keys. Merge upon ref resolution.
 
 ## Limitations / Thoughts
 1. How can the spec express event handler return types (that are to be passed as args to the client callbacks)?

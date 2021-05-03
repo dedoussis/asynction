@@ -9,7 +9,7 @@ from asynction.server import SocketIO
 from asynction.server import load_handler
 from asynction.server import load_spec
 from asynction.server import resolve_references
-from asynction.types import MAIN_NAMESPACE
+from asynction.types import GLOBAL_NAMESPACE
 from asynction.types import AsyncApiSpec
 from asynction.types import Channel
 from asynction.types import ChannelHandlers
@@ -218,11 +218,11 @@ def test_register_handlers_omits_validator_if_validation_is_disabled(faker: Fake
     assert True
 
 
-def test_register_namespace_handlers_registers_main_nsp_error_handler_as_default():
+def test_register_namespace_handlers_registers_global_nsp_error_handler_as_default():
     channel_handlers = ChannelHandlers(error="tests.fixtures.handlers.some_error")
     server = AsynctionSocketIO(mock.Mock())
 
-    server._register_namespace_handlers(MAIN_NAMESPACE, channel_handlers)
+    server._register_namespace_handlers(GLOBAL_NAMESPACE, channel_handlers)
     assert server.default_exception_handler == some_error
 
 

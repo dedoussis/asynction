@@ -2,7 +2,7 @@ import pytest
 from faker import Faker
 from svarog import forge
 
-from asynction.types import MAIN_NAMESPACE
+from asynction.types import GLOBAL_NAMESPACE
 from asynction.types import AsyncApiSpec
 from asynction.types import Channel
 from asynction.types import Message
@@ -88,7 +88,7 @@ def test_channel_raises_value_error_if_publish_messages_miss_handler(faker: Fake
 def test_async_api_spec_from_dict_allows_extra_attrs(faker: Faker):
     data = {
         "channels": {
-            MAIN_NAMESPACE: {
+            GLOBAL_NAMESPACE: {
                 "description": faker.pystr(),
                 "subscribe": {
                     "message": {

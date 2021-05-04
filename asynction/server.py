@@ -201,14 +201,14 @@ class AsynctionSocketIO(SocketIO):
 
             if channel.subscribe is None:
                 raise RuntimeError(
-                    f"Failed to emit because {namespace} does not"
-                    " have any subscribe operation defined."
+                    f"Failed to emit because the {namespace} namespace "
+                    "does not have any subscribe operations defined."
                 )
 
             message = channel.subscribe.message.with_name(event)
             if message is None:
                 raise RuntimeError(
-                    f"Event {event} is not registered under namespace {namespace}"
+                    f"Event {event} is not registered under the {namespace} namespace"
                 )
 
             validate_payload(args, message.payload)

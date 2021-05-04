@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import Callable
+from typing import Optional
 
 import pytest
 from flask import Flask
@@ -18,7 +19,11 @@ def flask_app() -> Flask:
 def asynction_socketio_server_factory(
     fixture_paths: FixturePaths, flask_app: Flask
 ) -> Callable[[Path], SocketIO]:
-    def factory(spec_path: Path = fixture_paths.simple) -> SocketIO:
-        return AsynctionSocketIO.from_spec(spec_path=spec_path, app=flask_app)
+    def factory(
+        spec_path: Path = fixture_paths.simple, server_name: Optional[str] = None
+    ) -> SocketIO:
+        return AsynctionSocketIO.from_spec(
+            spec_path=spec_path, server_name=server_name, app=flask_app
+        )
 
     return factory

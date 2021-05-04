@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from dataclasses import field
 from dataclasses import replace
 from typing import Any
 from typing import Mapping
@@ -166,10 +167,18 @@ register_forge(Channel, Channel.forge)
 
 
 @dataclass
+class Server:
+    """https://www.asyncapi.com/docs/specifications/2.0.0#serverObject"""
+
+    url: str
+
+
+@dataclass
 class AsyncApiSpec:
     """https://www.asyncapi.com/docs/specifications/2.0.0#A2SObject"""
 
     channels: Mapping[str, Channel]
+    servers: Mapping[str, Server] = field(default_factory=dict)
 
     @staticmethod
     def from_dict(data: JSONMapping) -> "AsyncApiSpec":

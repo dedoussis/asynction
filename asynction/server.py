@@ -82,6 +82,9 @@ class AsynctionSocketIO(SocketIO):
         app: Optional[Flask] = None,
         **kwargs,
     ):
+        """This is a private constructor.
+        Use the ``AsynctionSocketIO.from_spec`` factory instead.
+        """
         super().__init__(app=app, **kwargs)
         self.spec = spec
         self.validation = validation
@@ -91,10 +94,50 @@ class AsynctionSocketIO(SocketIO):
         cls,
         spec_path: Path,
         validation: bool = True,
+        server_name: Optional[str] = None,
         app: Optional[Flask] = None,
         **kwargs,
     ) -> SocketIO:
+        """Create a Flask-SocketIO server from an AsyncAPI spec.
+        This is the single entrypoint to the Asynction API.
+
+        :param spec_path: The path where the AsyncAPI YAML specification is located.
+        :param validation: When set to ``False``, message payloads and channel
+                           bindings are NOT validated. Defaults to ``True``.
+        :param server_name: The server to pick from the Async API ``servers`` object.
+                            The server object is then used to configure
+                            the path ``kwarg`` of the SocketIO server.
+        :param app: The flask application instance. Defaults to ``None``.
+        :param kwargs: Flask-SocketIO, Socket.IO and Engine.IO server options.
+
+        :returns: A Flask-SocketIO server.
+                  The server has all the event and error handlers registered.
+
+        Example::
+
+            asio = AsynctionSocketIO.from_spec(
+                spec_path="./docs/asyncapi.yaml",
+                app=flask_app,
+                message_queue="redis://",
+                # any other kwarg that the flask_socketio.SocketIO constructor accepts
+            )
+
+        """
         spec = load_spec(spec_path=spec_path)
+
+        if (
+            server_name is not None
+            and kwargs.get("path") is None
+            and kwargs.get("resource") is None
+        ):
+            server = spec.servers.get(server_name)
+            if server is None:
+                raise ValueError(f"Server {server_name} is not defined in the spec.")
+            host_length = len(server.url.split("/")[0])
+            server_path = server.url[host_length:]
+            if server_path:
+                kwargs["path"] = server_path
+
         asio = cls(spec, validation, app, **kwargs)
         asio._register_handlers()
         return asio

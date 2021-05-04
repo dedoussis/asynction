@@ -104,3 +104,21 @@ def test_client_connecting_with_invalid_bindings(
             query_string="",
             flask_test_client=flask_test_client,
         )
+
+
+def test_client_can_connect_to_server_that_uses_server_name(
+    asynction_socketio_server_factory: AsynctionFactory,
+    flask_app: Flask,
+    fixture_paths: FixturePaths,
+):
+    socketio_server = asynction_socketio_server_factory(
+        spec_path=fixture_paths.simple_with_servers, server_name="production"
+    )
+    flask_test_client = flask_app.test_client()
+
+    socketio_test_client = socketio_server.test_client(
+        flask_app,
+        flask_test_client=flask_test_client,
+    )
+    socketio_test_client.get_received()
+    assert True

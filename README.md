@@ -23,7 +23,7 @@ The purpose of Asynction is to empower a specification first approach when devel
 ## Install
 
 ```bash
-pip install asynction
+$ pip install asynction
 ```
 
 ## Usage

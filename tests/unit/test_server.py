@@ -1,10 +1,11 @@
 from unittest import mock
 
-import jsonschema
 import pytest
 from faker import Faker
 from flask import Flask
 
+from asynction.exceptions import PayloadValidationException
+from asynction.exceptions import ValidationException
 from asynction.server import AsynctionSocketIO
 from asynction.server import SocketIO
 from asynction.server import load_handler
@@ -274,7 +275,7 @@ def test_register_handlers_adds_validator_if_validation_is_enabled(faker: Faker)
     args = (faker.pyint(),)
 
     actual_handler(*args)  # actual handler does not raise validation errors
-    with pytest.raises(jsonschema.ValidationError):
+    with pytest.raises(PayloadValidationException):
         handler_with_validation(*args)
 
 
@@ -339,7 +340,7 @@ def test_register_namespace_handlers_wraps_bindings_validator_if_validation_enab
     with Flask(__name__).test_client() as c:
         c.post()  # Inject invalid POST request
         actual_handler()  # actual handler does not raise validation errors
-        with pytest.raises(RuntimeError):
+        with pytest.raises(ValidationException):
             handler_with_validation()
 
 
@@ -367,7 +368,7 @@ def test_register_namespace_handlers_omits_bindings_validator_if_validation_disa
         assert True
 
 
-def test_emit_event_with_non_existent_namespace_raises_runtime_error(faker: Faker):
+def test_emit_event_with_non_existent_namespace_raises_validation_exc(faker: Faker):
     namespace = f"/{faker.pystr()}"
     event_name = faker.pystr()
     spec = AsyncApiSpec(
@@ -388,12 +389,12 @@ def test_emit_event_with_non_existent_namespace_raises_runtime_error(faker: Fake
     )
     server = AsynctionSocketIO(spec)
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(ValidationException):
         # Correct event name but no namespace:
         server.emit(event_name, faker.pydict(value_types=[str, int]))
 
 
-def test_emit_event_that_has_no_subscribe_operation_raises_runtime_error(faker: Faker):
+def test_emit_event_that_has_no_subscribe_operation_raises_validation_exc(faker: Faker):
     namespace = f"/{faker.pystr()}"
     event_name = faker.pystr()
     spec = AsyncApiSpec(
@@ -415,13 +416,13 @@ def test_emit_event_that_has_no_subscribe_operation_raises_runtime_error(faker: 
     )
     server = AsynctionSocketIO(spec)
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(ValidationException):
         server.emit(
             event_name, faker.pydict(value_types=[str, int]), namespace=namespace
         )
 
 
-def test_emit_event_not_defined_under_given_valid_namespace_raises_runtime_error(
+def test_emit_event_not_defined_under_given_valid_namespace_raises_validation_exc(
     faker: Faker,
 ):
     namespace = f"/{faker.pystr()}"
@@ -443,7 +444,7 @@ def test_emit_event_not_defined_under_given_valid_namespace_raises_runtime_error
     )
     server = AsynctionSocketIO(spec)
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(ValidationException):
         # Correct namespace but undefined event:
         server.emit(
             faker.pystr(), faker.pydict(value_types=[str, int]), namespace=namespace
@@ -471,7 +472,7 @@ def test_emit_event_with_invalid_args_fails_validation(faker: Faker):
     )
     server = AsynctionSocketIO(spec)
 
-    with pytest.raises(jsonschema.ValidationError):
+    with pytest.raises(PayloadValidationException):
         # Event args do not adhere to the schema
         server.emit(event_name, faker.pystr(), namespace=namespace)
 

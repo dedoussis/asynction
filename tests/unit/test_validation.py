@@ -1,15 +1,18 @@
 from typing import Mapping
+from typing import Type
 from unittest import mock
 
-import jsonschema
 import pytest
 from faker import Faker
 from flask import Flask
 from werkzeug.datastructures import ImmutableMultiDict
 
+from asynction.exceptions import BindingsValidationException
+from asynction.exceptions import PayloadValidationException
 from asynction.types import ChannelBindings
 from asynction.types import WebSocketsChannelBindings
 from asynction.validation import bindings_validator_factory
+from asynction.validation import jsonschema_validate_with_error_handling
 from asynction.validation import payload_validator_factory
 from asynction.validation import validate_payload
 from asynction.validation import validate_request_bindings
@@ -21,7 +24,7 @@ def test_validate_payload_with_no_schema_and_no_args():
 
 
 def test_validate_payload_with_args_but_no_defined_schema_fails(faker: Faker):
-    with pytest.raises(RuntimeError):
+    with pytest.raises(PayloadValidationException):
         validate_payload(args=faker.pylist(), schema=None)
 
 
@@ -38,7 +41,7 @@ def test_validate_payload_with_single_object_schema_and_single_valid_arg(
 def test_validate_payload_with_single_object_schema_and_single_invalid_arg(
     faker: Faker,
 ):
-    with pytest.raises(jsonschema.ValidationError):
+    with pytest.raises(PayloadValidationException):
         validate_payload(
             args=[{"hello": faker.pyint()}],
             schema={"type": "object", "properties": {"hello": {"type": "string"}}},
@@ -48,7 +51,7 @@ def test_validate_payload_with_single_object_schema_and_single_invalid_arg(
 def test_validate_payload_with_single_object_schema_and_multiple_valid_args(
     faker: Faker,
 ):
-    with pytest.raises(RuntimeError):
+    with pytest.raises(PayloadValidationException):
         validate_payload(
             args=[{"hello": faker.pystr()}] * faker.pyint(min_value=2, max_value=10),
             schema={
@@ -77,7 +80,7 @@ def test_validate_payload_with_multi_object_schema_and_multiple_valid_args(
 def test_validate_payload_with_multi_object_schema_and_multiple_invalid_args(
     faker: Faker,
 ):
-    with pytest.raises(jsonschema.ValidationError):
+    with pytest.raises(PayloadValidationException):
         validate_payload(
             args=[{"hello": faker.pystr()}, faker.pyint()],
             schema={
@@ -120,7 +123,7 @@ def test_payload_validator_factory_invalid_args_fail_validation(faker: Faker):
     def handler(message: Mapping) -> None:
         assert "hello" in message
 
-    with pytest.raises(jsonschema.ValidationError):
+    with pytest.raises(PayloadValidationException):
         handler({"hello": faker.pyint()})
 
 
@@ -150,7 +153,7 @@ def test_validate_request_bindings_with_valid_request(faker: Faker):
     assert True
 
 
-def test_validate_request_bindings_with_invalid_method_raises_runtime_error(
+def test_validate_request_bindings_with_invalid_method_raises_bindings_validation_exc(
     faker: Faker,
 ):
     request = mock.Mock(
@@ -168,7 +171,7 @@ def test_validate_request_bindings_with_invalid_method_raises_runtime_error(
             query={"type": "object", "properties": {"bar": {"type": "number"}}},
         )
     )
-    with pytest.raises(RuntimeError):
+    with pytest.raises(BindingsValidationException):
         validate_request_bindings(request, bindings)
 
 
@@ -193,7 +196,7 @@ def test_validate_request_bindings_with_invalid_args_raises_validation_error(
             },
         )
     )
-    with pytest.raises(jsonschema.ValidationError):
+    with pytest.raises(BindingsValidationException):
         validate_request_bindings(request, bindings)
 
 
@@ -218,7 +221,7 @@ def test_validate_request_bindings_with_invalid_headers_raises_validation_error(
             query={"type": "object", "properties": {"bar": {"type": "number"}}},
         )
     )
-    with pytest.raises(jsonschema.ValidationError):
+    with pytest.raises(BindingsValidationException):
         validate_request_bindings(request, bindings)
 
 
@@ -262,5 +265,23 @@ def test_bindings_validator_factory_invalid_request_fails_validation(faker: Fake
 
     with Flask(__name__).test_client() as c:
         c.get(headers={"foo": "not_baz"})
-        with pytest.raises(jsonschema.ValidationError):
+        with pytest.raises(BindingsValidationException):
             handler({"hello": faker.word()})
+
+
+@pytest.mark.parametrize(
+    argnames=["exc_type"],
+    argvalues=[
+        [PayloadValidationException],
+        [BindingsValidationException],
+        [ZeroDivisionError],
+    ],
+    ids=["payload_validation_exc", "bindings_validation_exc", "random_exc"],
+)
+def test_jsonschema_validate_with_error_handling_uses_given_exc_type(
+    exc_type: Type[Exception], faker: Faker
+):
+    with pytest.raises(exc_type):
+        jsonschema_validate_with_error_handling(
+            faker.pyint(), {"type": "string"}, exc_type
+        )

@@ -11,6 +11,7 @@ import yaml
 from flask import Flask
 from flask_socketio import SocketIO
 
+from asynction.exceptions import ValidationException
 from asynction.types import GLOBAL_NAMESPACE
 from asynction.types import AsyncApiSpec
 from asynction.types import ChannelBindings
@@ -194,20 +195,20 @@ class AsynctionSocketIO(SocketIO):
             channel = self.spec.channels.get(namespace)
 
             if channel is None:
-                raise RuntimeError(
+                raise ValidationException(
                     f"Failed to emit because the {namespace} "
                     "namespace is not defined in the API spec."
                 )
 
             if channel.subscribe is None:
-                raise RuntimeError(
+                raise ValidationException(
                     f"Failed to emit because the {namespace} namespace "
                     "does not have any subscribe operations defined."
                 )
 
             message = channel.subscribe.message.with_name(event)
             if message is None:
-                raise RuntimeError(
+                raise ValidationException(
                     f"Event {event} is not registered under the {namespace} namespace"
                 )
 

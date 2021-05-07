@@ -1,3 +1,4 @@
+from typing import Optional
 from unittest import mock
 
 import pytest
@@ -16,6 +17,7 @@ from asynction.types import AsyncApiSpec
 from asynction.types import Channel
 from asynction.types import ChannelBindings
 from asynction.types import ChannelHandlers
+from asynction.types import ErrorHandler
 from asynction.types import Message
 from asynction.types import OneOfMessages
 from asynction.types import Operation
@@ -86,6 +88,21 @@ def test_asynction_socketio_from_spec_raises_value_error_for_non_existent_server
         AsynctionSocketIO.from_spec(
             spec_path=fixture_paths.simple_with_servers, server_name="not-production"
         )
+
+
+def test_asynction_socketio_from_spec_registers_default_error_handler(
+    fixture_paths: FixturePaths,
+):
+    def my_default_error_handler(_):
+        # dummy handler
+        pass
+
+    asio = AsynctionSocketIO.from_spec(
+        spec_path=fixture_paths.simple,
+        default_error_handler=my_default_error_handler,
+    )
+
+    assert asio.default_exception_handler == my_default_error_handler
 
 
 def test_resolve_references_resolves_successfully():
@@ -312,12 +329,18 @@ def test_register_handlers_omits_validator_if_validation_is_disabled(faker: Fake
     assert True
 
 
-def test_register_namespace_handlers_registers_global_nsp_error_handler_as_default():
-    channel_handlers = ChannelHandlers(error="tests.fixtures.handlers.some_error")
-    server = AsynctionSocketIO(mock.Mock())
+@pytest.mark.parametrize(
+    argnames=["optional_error_handler"],
+    argvalues=[[lambda _: None], [None]],
+    ids=["with_default_error_handler", "without_default_error_handler"],
+)
+def test_register_handlers_registers_default_error_handler(
+    optional_error_handler: Optional[ErrorHandler],
+):
+    server = AsynctionSocketIO(spec=AsyncApiSpec(channels={}))
 
-    server._register_namespace_handlers(GLOBAL_NAMESPACE, channel_handlers, None)
-    assert server.default_exception_handler == some_error
+    server._register_handlers(optional_error_handler)
+    assert server.default_exception_handler == optional_error_handler
 
 
 def test_register_namespace_handlers_wraps_bindings_validator_if_validation_enabled():

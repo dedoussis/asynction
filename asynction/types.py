@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from dataclasses import field
 from dataclasses import replace
 from typing import Any
+from typing import Callable
 from typing import Mapping
 from typing import Optional
 from typing import Sequence
@@ -183,3 +184,6 @@ class AsyncApiSpec:
     @staticmethod
     def from_dict(data: JSONMapping) -> "AsyncApiSpec":
         return forge(AsyncApiSpec, data)
+
+
+ErrorHandler = Callable[[Exception], None]

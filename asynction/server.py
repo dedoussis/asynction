@@ -16,6 +16,7 @@ from asynction.types import GLOBAL_NAMESPACE
 from asynction.types import AsyncApiSpec
 from asynction.types import ChannelBindings
 from asynction.types import ChannelHandlers
+from asynction.types import ErrorHandler
 from asynction.types import JSONMapping
 from asynction.validation import bindings_validator_factory
 from asynction.validation import payload_validator_factory
@@ -96,6 +97,7 @@ class AsynctionSocketIO(SocketIO):
         spec_path: Path,
         validation: bool = True,
         server_name: Optional[str] = None,
+        default_error_handler: Optional[ErrorHandler] = None,
         app: Optional[Flask] = None,
         **kwargs,
     ) -> SocketIO:
@@ -108,6 +110,9 @@ class AsynctionSocketIO(SocketIO):
         :param server_name: The server to pick from the Async API ``servers`` object.
                             The server object is then used to configure
                             the path ``kwarg`` of the SocketIO server.
+        :param default_error_handler: The error handler that handles any namespace
+                                      without an explicit error handler.
+                                      Equivelant of ``@socketio.on_error_default``
         :param app: The flask application instance. Defaults to ``None``.
         :param kwargs: Flask-SocketIO, Socket.IO and Engine.IO server options.
 
@@ -140,7 +145,7 @@ class AsynctionSocketIO(SocketIO):
                 kwargs["path"] = server_path
 
         asio = cls(spec, validation, app, **kwargs)
-        asio._register_handlers()
+        asio._register_handlers(default_error_handler)
         return asio
 
     def _register_namespace_handlers(
@@ -164,12 +169,11 @@ class AsynctionSocketIO(SocketIO):
 
         if channel_handlers.error is not None:
             handler = load_handler(channel_handlers.error)
-            if namespace == GLOBAL_NAMESPACE:
-                self.on_error_default(handler)
-            else:
-                self.on_error(namespace)(handler)
+            self.on_error(namespace)(handler)
 
-    def _register_handlers(self) -> None:
+    def _register_handlers(
+        self, default_error_handler: Optional[ErrorHandler] = None
+    ) -> None:
         for namespace, channel in self.spec.channels.items():
             if channel.publish is not None:
                 for message in channel.publish.message.oneOf:
@@ -188,6 +192,9 @@ class AsynctionSocketIO(SocketIO):
                 self._register_namespace_handlers(
                     namespace, channel.x_handlers, channel.bindings
                 )
+
+        if default_error_handler is not None:
+            self.on_error_default(default_error_handler)
 
     def emit(self, event: str, *args, **kwargs) -> None:
         if self.validation:

@@ -27,6 +27,18 @@ channels:
             token:
               type: string
           required: [token]
+  /echo_with_error_feedback:
+    publish:
+      message:
+        oneOf:
+          - $ref: '#/components/messages/EchoCommand'
+    subscribe:
+      message:
+        oneOf:
+          - $ref: '#/components/messages/EchoResponse'
+          - $ref: '#/components/messages/EchoErrors'
+    x-handlers:
+      error: tests.fixtures.handlers.echo_failed_validation
 components:
   messages:
     EchoCommand:
@@ -36,5 +48,9 @@ components:
         type: string
     EchoResponse:
       name: echo
+      payload:
+        type: string
+    EchoErrors:
+      name: echo errors
       payload:
         type: string

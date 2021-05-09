@@ -3,11 +3,11 @@
 
 # You can set these variables from the command line, and also
 # from the environment for the first two.
-SPHINXOPTS                 ?=
-SPHINXBUILD   			   ?= sphinx-build
-SOURCEDIR     			   = .
-BUILDDIR      			   = _build
-S3_BUCKET_NAME 			   = ${DOCS_WEBSITE_S3_BUCKET}
+SPHINXOPTS ?=
+SPHINXBUILD ?= sphinx-build
+SOURCEDIR = .
+BUILDDIR = _build
+S3_BUCKET_NAME = ${DOCS_WEBSITE_S3_BUCKET}
 CLOUDFRONT_DISTRIBUTION_ID = ${DOCS_WEBSITE_CLOUDFRONT_DISTRIBUTION_ID}
 
 

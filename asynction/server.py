@@ -19,6 +19,7 @@ from asynction.types import ChannelHandlers
 from asynction.types import ErrorHandler
 from asynction.types import JSONMapping
 from asynction.validation import bindings_validator_factory
+from asynction.validation import callback_validator_factory
 from asynction.validation import publish_message_validator_factory
 from asynction.validation import validate_payload
 
@@ -220,5 +221,10 @@ class AsynctionSocketIO(SocketIO):
                 )
 
             validate_payload(args, message.payload)
+
+            callback = kwargs.get("callback")
+            if callback is not None:
+                with_validation = callback_validator_factory(message=message)
+                kwargs["callback"] = with_validation(callback)
 
         return super().emit(event, *args, **kwargs)

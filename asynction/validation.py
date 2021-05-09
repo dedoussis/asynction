@@ -1,6 +1,5 @@
 from functools import partial
 from functools import wraps
-from typing import Any
 from typing import Callable
 from typing import Optional
 from typing import Sequence
@@ -47,9 +46,9 @@ def validate_payload(args: Sequence, schema: Optional[JSONSchema]) -> None:
     if schema is None:
         if args:
             raise PayloadValidationException(
-                "Args provided for operation that has no message payload defined."
+                "Handler args provided for message that has no payload defined."
             )
-        # No validation needed since no message is expected
+        # Validation succeeded since there is no message payload specified
         # and no args have been provided.
         return
 
@@ -62,15 +61,31 @@ def validate_payload(args: Sequence, schema: Optional[JSONSchema]) -> None:
                 "Multiple handler arguments provided, "
                 f"although schema type is: {schema_type}"
             )
+
         jsonschema_validate_payload(args[0], schema)
 
 
-def validate_ack(ack: Any, message_ack_spec: Optional[MessageAck]) -> None:
+def validate_ack_args(args: Sequence, message_ack_spec: Optional[MessageAck]) -> None:
     if message_ack_spec is None:
-        # Validation can be skipped since there is no `MessageAck` spec
+        if args:
+            raise MessageAckValidationException(
+                "Callback args provided for message that has no x-ack schema specified."
+            )
+        # Validation succeeded since there is no message ack specified
+        # and no args have been provided.
         return
 
-    jsonschema_validate_ack(ack, message_ack_spec.schema)
+    schema_type = message_ack_spec.schema["type"]
+    if schema_type == "array":
+        jsonschema_validate_ack(args, message_ack_spec.schema)
+    else:
+        if len(args) > 1:
+            raise MessageAckValidationException(
+                "Multiple callback arguments provided, "
+                f"although x-ack schema type is: {schema_type}"
+            )
+
+        jsonschema_validate_ack(args[0], message_ack_spec.schema)
 
 
 def publish_message_validator_factory(message: Message) -> Callable:
@@ -80,11 +95,28 @@ def publish_message_validator_factory(message: Message) -> Callable:
         @wraps(handler)
         def handler_with_validation(*args):
             validate_payload(args, message.payload)
+
             ack = handler(*args)
-            validate_ack(ack, message.x_ack)
+
+            if ack is not None and message.x_ack is not None:
+                jsonschema_validate_ack(ack, message.x_ack.schema)
+
             return ack
 
         return handler_with_validation
+
+    return decorator
+
+
+def callback_validator_factory(message: Message) -> Callable:
+    def decorator(callback: Callable):
+        @wraps(callback)
+        def callback_with_validation(*args):
+            # the calback should only be called with positional arguments
+            validate_ack_args(args, message.x_ack)
+            return callback(*args)
+
+        return callback_with_validation
 
     return decorator
 

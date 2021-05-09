@@ -590,7 +590,7 @@ def test_emit_valid_event_invokes_super_method(
 
 
 @mock.patch.object(SocketIO, "emit")
-def test_emit_validiation_is_ginored_if_validation_flag_is_false(
+def test_emit_validiation_is_ignored_if_validation_flag_is_false(
     super_method_mock: mock.Mock, faker: Faker
 ):
     namespace = f"/{faker.pystr()}"
@@ -620,3 +620,48 @@ def test_emit_validiation_is_ginored_if_validation_flag_is_false(
     super_method_mock.assert_called_once_with(
         event_name, *event_args, namespace=namespace
     )
+
+
+@mock.patch.object(SocketIO, "emit")
+def test_emit_event_wraps_callback_with_validator(
+    super_method_mock: mock.Mock, faker: Faker
+):
+    namespace = f"/{faker.pystr()}"
+    event_name = faker.pystr()
+    spec = AsyncApiSpec(
+        channels={
+            namespace: Channel(
+                subscribe=Operation(
+                    message=OneOfMessages(
+                        oneOf=[
+                            Message(
+                                name=event_name,
+                                payload={"type": "number"},
+                                x_ack=MessageAck(schema={"type": "boolean"}),
+                            )
+                        ]
+                    ),
+                )
+            )
+        },
+    )
+    server = AsynctionSocketIO(spec)
+
+    def actual_callback(*args):
+        # dummy callback
+
+        pass
+
+    server.emit(
+        event_name, faker.pyint(), namespace=namespace, callback=actual_callback
+    )
+    super_method_mock.assert_called_once()
+    *_, kwargs = super_method_mock.call_args
+    callback_with_validation = kwargs["callback"]
+
+    callback_args = [faker.pystr()]
+
+    actual_callback(*callback_args)  # actial callback has no validation
+
+    with pytest.raises(MessageAckValidationException):
+        callback_with_validation(*callback_args)

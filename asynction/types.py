@@ -34,10 +34,9 @@ class Message:
     * `x-handler`: Allows the coupling of the message specification to
     an event handler (which is a python callable). It SHOULD only be used
     for messages under a `publish` operation. Deserialized to `x_handler`.
-    * `x-ack`: The specification of the acknowledgement object that the server returns
-    in response to the message. The acknowledgement object is passed to the client
-    callback. It SHOULD only be used for messages under a `publish` operation.
-    Deserialized to `x_ack`.
+    * `x-ack`: The specification of the acknowledgement object that the message receiver
+    transmits to the message sender. The acknowledgement object is passed as an input
+    to the callback of the `emit`/`send` function. Deserialized to `x_ack`.
 
     The extentions are implemented as per:
     https://www.asyncapi.com/docs/specifications/2.0.0#specificationExtensions

@@ -8,7 +8,7 @@ SPHINXBUILD   			   ?= sphinx-build
 SOURCEDIR     			   = .
 BUILDDIR      			   = _build
 S3_BUCKET_NAME 			   = ${DOCS_WEBSITE_S3_BUCKET}
-CLOUDFRONT_DISTRIBUTION_ID = ${DOCS_WEBSITE_S3_BUCKET}
+CLOUDFRONT_DISTRIBUTION_ID = ${DOCS_WEBSITE_CLOUDFRONT_DISTRIBUTION_ID}
 
 
 # Put it first so that "make" without argument is like "make help".

@@ -19,7 +19,7 @@ from asynction.types import ChannelHandlers
 from asynction.types import ErrorHandler
 from asynction.types import JSONMapping
 from asynction.validation import bindings_validator_factory
-from asynction.validation import payload_validator_factory
+from asynction.validation import publish_message_validator_factory
 from asynction.validation import validate_payload
 
 
@@ -33,7 +33,7 @@ def _deep_resolve_mapping(
     unresolved: JSONMapping, resolver: jsonschema.RefResolver
 ) -> JSONMapping:
     return {
-        k: resolver.resolve(v["$ref"])[-1] if "$ref" in v else deep_resolve(v, resolver)
+        k: deep_resolve(resolver.resolve(v["$ref"])[-1] if "$ref" in v else v, resolver)
         for k, v in unresolved.items()
     }
 
@@ -46,9 +46,9 @@ def _deep_resolve_sequence(
 ) -> Sequence:
     return unresolved.__class__(  # type: ignore
         [
-            resolver.resolve(item["$ref"])[-1]
-            if "$ref" in item
-            else deep_resolve(item, resolver)
+            deep_resolve(
+                resolver.resolve(item["$ref"])[-1] if "$ref" in item else item, resolver
+            )
             for item in unresolved
         ]
     )
@@ -181,8 +181,8 @@ class AsynctionSocketIO(SocketIO):
                     handler = load_handler(message.x_handler)
 
                     if self.validation:
-                        with_payload_validation = payload_validator_factory(
-                            schema=message.payload
+                        with_payload_validation = publish_message_validator_factory(
+                            message=message
                         )
                         handler = with_payload_validation(handler)
 

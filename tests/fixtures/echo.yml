@@ -4,6 +4,7 @@ channels:
       message:
         oneOf:
           - $ref: '#/components/messages/EchoCommand'
+          - $ref: '#/components/messages/EchoWithInvalidAckCommand'
     subscribe:
       message:
         oneOf:
@@ -46,6 +47,17 @@ components:
       x-handler: tests.fixtures.handlers.echo
       payload:
         type: string
+      x-ack:
+        schema:
+          type: boolean
+    EchoWithInvalidAckCommand:
+      name: echo with invalid ack
+      x-handler: tests.fixtures.handlers.echo_with_invalid_ack
+      payload:
+        type: string
+      x-ack:
+        schema:
+          type: boolean
     EchoResponse:
       name: echo
       payload:

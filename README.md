@@ -161,7 +161,3 @@ The `x-handlers` field MAY be defined as an additional property of the [Channel 
 | connect  | `string` | Dot joint path to the python connect handler callable |
 | disconnect | `string` | Dot joint path to the python disconnect handler callable |
 | error | `string` | Dot joint path to the python error handler callable |
-
-## Limitations / Thoughts
-
-1. How can the spec express event handler return types (that are to be passed as args to the client callbacks)?

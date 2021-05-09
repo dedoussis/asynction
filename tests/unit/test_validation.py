@@ -8,12 +8,16 @@ from flask import Flask
 from werkzeug.datastructures import ImmutableMultiDict
 
 from asynction.exceptions import BindingsValidationException
+from asynction.exceptions import MessageAckValidationException
 from asynction.exceptions import PayloadValidationException
 from asynction.types import ChannelBindings
+from asynction.types import Message
+from asynction.types import MessageAck
 from asynction.types import WebSocketsChannelBindings
 from asynction.validation import bindings_validator_factory
 from asynction.validation import jsonschema_validate_with_error_handling
-from asynction.validation import payload_validator_factory
+from asynction.validation import publish_message_validator_factory
+from asynction.validation import validate_ack
 from asynction.validation import validate_payload
 from asynction.validation import validate_request_bindings
 
@@ -96,27 +100,79 @@ def test_validate_payload_with_multi_object_schema_and_multiple_invalid_args(
         )
 
 
-def test_payload_validator_factory_validates_valid_args_successfully(faker: Faker):
-    with_validation = payload_validator_factory(
-        schema={
-            "type": "object",
-            "properties": {"hello": {"type": "string"}},
-        }
+def test_validate_ack_is_skipped_if_message_ack_spec_is_none(faker: Faker):
+    validate_ack(faker.pydict(value_types=[str, int]), None)
+    assert True
+
+
+def test_validate_ack_succeeds_if_ack_is_valid(faker: Faker):
+    validate_ack(
+        {"acknowledged": faker.pystr()},
+        MessageAck(
+            schema={
+                "type": "object",
+                "properties": {"acknowledged": {"type": "string"}},
+                "required": ["acknowledged"],
+            }
+        ),
+    )
+    assert True
+
+
+def test_validate_ack_fails_if_ack_is_invalid(faker: Faker):
+    with pytest.raises(MessageAckValidationException):
+        validate_ack(
+            {"not-acknowledged": faker.pystr()},
+            MessageAck(
+                schema={
+                    "type": "object",
+                    "properties": {"acknowledged": {"type": "string"}},
+                    "required": ["acknowledged"],
+                }
+            ),
+        )
+
+
+def test_publish_message_validator_factory_validates_valid_args_and_acks_successfully(
+    faker: Faker,
+):
+    with_validation = publish_message_validator_factory(
+        message=Message(
+            name=faker.word(),
+            payload={
+                "type": "object",
+                "properties": {"hello": {"type": "string"}},
+            },
+            x_ack=MessageAck(
+                schema={
+                    "type": "object",
+                    "properties": {"acknowledged": {"type": "string"}},
+                    "required": ["acknowledged"],
+                }
+            ),
+        )
     )
 
     @with_validation
-    def handler(message: Mapping) -> None:
+    def handler(message: Mapping) -> Mapping[str, str]:
         assert "hello" in message
+        return {"acknowledged": faker.pystr()}
 
     handler({"hello": faker.pystr()})
+    assert True
 
 
-def test_payload_validator_factory_invalid_args_fail_validation(faker: Faker):
-    with_validation = payload_validator_factory(
-        schema={
-            "type": "object",
-            "properties": {"hello": {"type": "string"}},
-        },
+def test_publish_message_validator_factory_factory_invalid_args_fail_payload_validation(
+    faker: Faker,
+):
+    with_validation = publish_message_validator_factory(
+        message=Message(
+            name=faker.word(),
+            payload={
+                "type": "object",
+                "properties": {"hello": {"type": "string"}},
+            },
+        ),
     )
 
     @with_validation
@@ -125,6 +181,35 @@ def test_payload_validator_factory_invalid_args_fail_validation(faker: Faker):
 
     with pytest.raises(PayloadValidationException):
         handler({"hello": faker.pyint()})
+
+
+def test_publish_message_validator_factory_invalid_ack_fails_validation(
+    faker: Faker,
+):
+    with_validation = publish_message_validator_factory(
+        message=Message(
+            name=faker.word(),
+            payload={
+                "type": "object",
+                "properties": {"hello": {"type": "string"}},
+            },
+            x_ack=MessageAck(
+                schema={
+                    "type": "object",
+                    "properties": {"acknowledged": {"type": "string"}},
+                    "required": ["acknowledged"],
+                }
+            ),
+        )
+    )
+
+    @with_validation
+    def handler(message: Mapping) -> Mapping[str, str]:
+        assert "hello" in message
+        return {"not-acknowledged": faker.pystr()}
+
+    with pytest.raises(MessageAckValidationException):
+        handler({"hello": faker.pystr()})
 
 
 def test_validate_request_bindings_with_no_channel_bindings():

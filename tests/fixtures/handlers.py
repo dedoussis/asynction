@@ -2,6 +2,7 @@ from typing import Any
 
 from flask import request
 from flask_socketio import emit
+from typing_extensions import TypedDict
 
 from asynction.exceptions import ValidationException
 
@@ -9,6 +10,14 @@ from asynction.exceptions import ValidationException
 def ping(message: Any) -> None:
     # Dummy handler
     pass
+
+
+class PingAck(TypedDict):
+    ack: bool
+
+
+def ping_with_ack(message: Any) -> PingAck:
+    return PingAck(ack=True)
 
 
 def connect() -> None:
@@ -26,8 +35,14 @@ def some_error() -> None:
     pass
 
 
-def echo(message: str) -> None:
+def echo(message: str) -> bool:
     emit("echo", message)
+    return True
+
+
+def echo_with_invalid_ack(message: str) -> int:
+    emit("echo", message)
+    return 23
 
 
 def authenticated_connect() -> None:

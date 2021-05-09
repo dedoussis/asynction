@@ -1,5 +1,6 @@
 from functools import partial
 from functools import wraps
+from typing import Any
 from typing import Callable
 from typing import Optional
 from typing import Sequence
@@ -10,10 +11,13 @@ from flask import Request
 from flask import request as current_flask_request
 
 from asynction.exceptions import BindingsValidationException
+from asynction.exceptions import MessageAckValidationException
 from asynction.exceptions import PayloadValidationException
 from asynction.types import ChannelBindings
 from asynction.types import JSONMapping
 from asynction.types import JSONSchema
+from asynction.types import Message
+from asynction.types import MessageAck
 
 
 def jsonschema_validate_with_error_handling(
@@ -32,6 +36,10 @@ jsonschema_validate_payload = partial(
 
 jsonschema_validate_bindings = partial(
     jsonschema_validate_with_error_handling, exc_type=BindingsValidationException
+)
+
+jsonschema_validate_ack = partial(
+    jsonschema_validate_with_error_handling, exc_type=MessageAckValidationException
 )
 
 
@@ -57,12 +65,24 @@ def validate_payload(args: Sequence, schema: Optional[JSONSchema]) -> None:
         jsonschema_validate_payload(args[0], schema)
 
 
-def payload_validator_factory(schema: Optional[JSONSchema]) -> Callable:
+def validate_ack(ack: Any, message_ack_spec: Optional[MessageAck]) -> None:
+    if message_ack_spec is None:
+        # Validation can be skipped since there is no `MessageAck` spec
+        return
+
+    jsonschema_validate_ack(ack, message_ack_spec.schema)
+
+
+def publish_message_validator_factory(message: Message) -> Callable:
+    """Constructs a validating wrapper for any incoming (`publish`) message handler"""
+
     def decorator(handler: Callable):
         @wraps(handler)
         def handler_with_validation(*args):
-            validate_payload(args, schema)
-            return handler(*args)
+            validate_payload(args, message.payload)
+            ack = handler(*args)
+            validate_ack(ack, message.x_ack)
+            return ack
 
         return handler_with_validation
 

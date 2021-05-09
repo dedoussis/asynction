@@ -10,9 +10,24 @@ Welcome to Asynction's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+Asynction SocketIO Server
+-------------------------
+
+The ``AsynctionSocketIO`` server is essentially a ``flask_socketio.SocketIO`` server with an additional factory classmethod.
+
 .. autoclass:: asynction.AsynctionSocketIO
    :members: from_spec
 
+Exceptions
+----------
+
+Asynction's exceptions to be caught via Flask-SocketIO error handlers.
+
+.. autoclass:: asynction.AsynctionException
+.. autoclass:: asynction.ValidationException
+.. autoclass:: asynction.PayloadValidationException
+.. autoclass:: asynction.BindingsValidationException
+.. autoclass:: asynction.MessageAckValidationException
 
 Indices and tables
 ==================

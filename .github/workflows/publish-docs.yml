@@ -1,0 +1,45 @@
+name: publish-docs
+
+on:
+  push:
+    tags:
+       - '*'
+
+jobs:
+  build-n-publish:
+    name: Update the documentation of www.asynction.dedouss.is
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.7'
+      - uses: actions/cache@v2
+        id: pip-cache
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}-${{ hashFiles('requirements-test.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+            ${{ runner.os }}-
+      - name: Install dependencies
+        run: make requirements-install
+      - name: Install dev dependencies
+        run: make requirements-dev-install
+      - name: Build docs
+        run: make docs/html
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-west-2
+          role-to-assume: ${{ secrets.AWS_IAM_ROLE_ARN }}
+          role-duration-seconds: 900
+          role-session-name: GitHubActionDeployAsynctionDocs
+      - name: Publish docs
+        run: make docs/publish
+        env:
+          DOCS_WEBSITE_S3_BUCKET: ${{ secrets.DOCS_WEBSITE_S3_BUCKET }}
+          DOCS_WEBSITE_CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.DOCS_WEBSITE_CLOUDFRONT_DISTRIBUTION_ID }}

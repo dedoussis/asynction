@@ -20,6 +20,8 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
             ${{ runner.os }}-
+      - name: Install dependencies
+        run: make requirements-install
       - name: Install dev dependencies
         run: make requirements-dev-install
       - name: Build docs

@@ -1,9 +1,6 @@
 name: publish-docs
 
-on:
-  push:
-    tags:
-       - '*'
+on: [push]
 
 jobs:
   build-n-publish:

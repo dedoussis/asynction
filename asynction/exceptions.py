@@ -30,8 +30,8 @@ class BindingsValidationException(ValidationException):
 
 class MessageAckValidationException(ValidationException):
     """
-    Raised when an event handler callable returns a message ack object
-    that does not adhere to the ``MessageAck`` schema.
+    Raised when the input arguments passed to the ack callback 
+    do not adhere to the ``x-ack`` schema.
     """
 
     pass

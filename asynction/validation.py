@@ -112,7 +112,7 @@ def callback_validator_factory(message: Message) -> Callable:
     def decorator(callback: Callable):
         @wraps(callback)
         def callback_with_validation(*args):
-            # the calback should only be called with positional arguments
+            # the callback should only be called with positional arguments
             validate_ack_args(args, message.x_ack)
             return callback(*args)
 

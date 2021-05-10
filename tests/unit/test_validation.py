@@ -66,7 +66,7 @@ def test_validate_payload_with_single_object_schema_and_multiple_valid_args(
         )
 
 
-def test_validate_payload_with_multi_object_schema_and_multiple_valid_args(
+def test_validate_payload_with_array_schema_and_multiple_valid_args(
     faker: Faker,
 ):
     validate_payload(
@@ -82,7 +82,7 @@ def test_validate_payload_with_multi_object_schema_and_multiple_valid_args(
     assert True
 
 
-def test_validate_payload_with_multi_object_schema_and_multiple_invalid_args(
+def test_validate_payload_with_array_schema_and_multiple_invalid_args(
     faker: Faker,
 ):
     with pytest.raises(PayloadValidationException):
@@ -119,7 +119,7 @@ def test_validate_ack_args_with_single_object_schema_and_single_valid_arg(
     validate_ack_args(
         [{"hello": faker.pystr()}],
         MessageAck(
-            schema={"type": "object", "properties": {"hello": {"type": "string"}}}
+            args={"type": "object", "properties": {"hello": {"type": "string"}}}
         ),
     )
     assert True
@@ -132,7 +132,7 @@ def test_validate_ack_args_with_single_object_schema_and_single_invalid_arg(
         validate_ack_args(
             [{"hello": faker.pyint()}],
             MessageAck(
-                schema={"type": "object", "properties": {"hello": {"type": "string"}}}
+                args={"type": "object", "properties": {"hello": {"type": "string"}}}
             ),
         )
 
@@ -144,7 +144,7 @@ def test_validate_ack_args_with_single_object_schema_and_multiple_valid_args(
         validate_ack_args(
             [{"hello": faker.pystr()}] * faker.pyint(min_value=2, max_value=10),
             MessageAck(
-                schema={
+                args={
                     "type": "object",
                     "properties": {"hello": {"type": "string"}},
                 }
@@ -152,13 +152,13 @@ def test_validate_ack_args_with_single_object_schema_and_multiple_valid_args(
         )
 
 
-def test_validate_ack_args_with_multi_object_schema_and_multiple_valid_args(
+def test_validate_ack_args_with_array_schema_and_multiple_valid_args(
     faker: Faker,
 ):
     validate_ack_args(
         [{"hello": faker.pystr()}, faker.pyint()],
         MessageAck(
-            schema={
+            args={
                 "type": "array",
                 "items": [
                     {"type": "object", "properties": {"hello": {"type": "string"}}},
@@ -170,14 +170,14 @@ def test_validate_ack_args_with_multi_object_schema_and_multiple_valid_args(
     assert True
 
 
-def test_validate_ack_args_with_multi_object_schema_and_multiple_invalid_args(
+def test_validate_ack_args_with_array_schema_and_multiple_invalid_args(
     faker: Faker,
 ):
     with pytest.raises(MessageAckValidationException):
         validate_ack_args(
             [{"hello": faker.pystr()}, faker.pyint()],
             MessageAck(
-                schema={
+                args={
                     "type": "array",
                     "items": [
                         {
@@ -202,7 +202,7 @@ def test_publish_message_validator_factory_validates_valid_args_and_acks_success
                 "properties": {"hello": {"type": "string"}},
             },
             x_ack=MessageAck(
-                schema={
+                args={
                     "type": "object",
                     "properties": {"acknowledged": {"type": "string"}},
                     "required": ["acknowledged"],
@@ -252,7 +252,7 @@ def test_publish_message_validator_factory_invalid_ack_fails_validation(
                 "properties": {"hello": {"type": "string"}},
             },
             x_ack=MessageAck(
-                schema={
+                args={
                     "type": "object",
                     "properties": {"acknowledged": {"type": "string"}},
                     "required": ["acknowledged"],
@@ -281,7 +281,7 @@ def test_publish_message_validator_factory_skips_ack_validation_if_handler_retur
                 "properties": {"hello": {"type": "string"}},
             },
             x_ack=MessageAck(
-                schema={
+                args={
                     "type": "object",
                     "properties": {"acknowledged": {"type": "string"}},
                     "required": ["acknowledged"],
@@ -488,7 +488,7 @@ def test_callback_validator_factory_validates_valid_callback_args_successfully(
         message=Message(
             name=faker.word(),
             x_ack=MessageAck(
-                schema={
+                args={
                     "type": "object",
                     "properties": {"acknowledged": {"type": "string"}},
                     "required": ["acknowledged"],
@@ -512,7 +512,7 @@ def test_callback_validator_factory_invalid_callback_args_fail_validation(
         message=Message(
             name=faker.word(),
             x_ack=MessageAck(
-                schema={
+                args={
                     "type": "object",
                     "properties": {"acknowledged": {"type": "string"}},
                     "required": ["acknowledged"],

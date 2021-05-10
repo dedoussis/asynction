@@ -24,14 +24,14 @@ def test_message_deserialisation(faker: Faker):
             "name": name,
             "payload": payload,
             "x-handler": x_handler,
-            "x-ack": {"schema": x_ack_schema},
+            "x-ack": {"args": x_ack_schema},
         },
     )
 
     assert message.name == name
     assert message.payload == payload
     assert message.x_handler == x_handler
-    assert message.x_ack.schema == x_ack_schema
+    assert message.x_ack.args == x_ack_schema
 
 
 def test_message_deserialisation_with_missing_fields(faker: Faker):
@@ -181,7 +181,7 @@ def test_async_api_spec_from_dict_allows_extra_attrs(faker: Faker):
                                 "payload": faker.pydict(value_types=[str, int]),
                                 "x-handler": faker.pydict(value_types=[str, int]),
                                 "x-ack": {
-                                    "schema": faker.pydict(value_types=[str, int]),
+                                    "args": faker.pydict(value_types=[str, int]),
                                 },
                             }
                             for _ in range(faker.pyint(min_value=2, max_value=10))

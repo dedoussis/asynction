@@ -147,7 +147,7 @@ def test_resolve_references_resolves_successfully():
                     }
                 }
             },
-            "x-messageAcks": {"UserMessageAck": {"schema": {"type": "object"}}},
+            "x-messageAcks": {"UserMessageAck": {"args": {"type": "object"}}},
         },
     }
 
@@ -157,7 +157,7 @@ def test_resolve_references_resolves_successfully():
                 "publish": {
                     "message": {
                         "payload": {"type": "string"},
-                        "x-ack": {"schema": {"type": "object"}},
+                        "x-ack": {"args": {"type": "object"}},
                         "x-handler": "my_func",
                     }
                 },
@@ -186,7 +186,7 @@ def test_resolve_references_resolves_successfully():
             "messages": {
                 "UserMessage": {
                     "payload": {"type": "string"},
-                    "x-ack": {"schema": {"type": "object"}},
+                    "x-ack": {"args": {"type": "object"}},
                     "x-handler": "my_func",
                 },
                 "UserResponse": {"payload": {"type": "object"}},
@@ -204,7 +204,7 @@ def test_resolve_references_resolves_successfully():
                     }
                 }
             },
-            "x-messageAcks": {"UserMessageAck": {"schema": {"type": "object"}}},
+            "x-messageAcks": {"UserMessageAck": {"args": {"type": "object"}}},
         },
     }
 
@@ -325,8 +325,8 @@ def test_register_handlers_adds_ack_validator_if_validation_is_enabled(faker: Fa
                                 name=event_name,
                                 payload={"type": "string"},
                                 x_handler="tests.fixtures.handlers.ping_with_ack",
-                                x_ack=MessageAck(  # invalid schema
-                                    schema={
+                                x_ack=MessageAck(
+                                    args={
                                         "type": "object",
                                         "properties": {"ack": {"type": "number"}},
                                         "required": ["ack"],
@@ -345,9 +345,11 @@ def test_register_handlers_adds_ack_validator_if_validation_is_enabled(faker: Fa
     _, registered_handler, _ = server.handlers[0]
     handler_with_validation = deep_unwrap(registered_handler, depth=1)
     actual_handler = deep_unwrap(handler_with_validation)
-    args = (faker.pystr(),)  # valid args
+    args = (faker.pystr(),)  # valid handler args
 
-    actual_handler(*args)  # actual handler does not raise validation errors
+    # actual handler does not raise validation errors, although it returns invalid data
+    actual_handler(*args)
+
     with pytest.raises(MessageAckValidationException):
         handler_with_validation(*args)
 
@@ -637,7 +639,7 @@ def test_emit_event_wraps_callback_with_validator(
                             Message(
                                 name=event_name,
                                 payload={"type": "number"},
-                                x_ack=MessageAck(schema={"type": "boolean"}),
+                                x_ack=MessageAck(args={"type": "boolean"}),
                             )
                         ]
                     ),
@@ -659,9 +661,12 @@ def test_emit_event_wraps_callback_with_validator(
     *_, kwargs = super_method_mock.call_args
     callback_with_validation = kwargs["callback"]
 
-    callback_args = [faker.pystr()]
+    callback_args = [
+        faker.pystr()
+    ]  # invalid callback args (should have been a boolean)
 
-    actual_callback(*callback_args)  # actial callback has no validation
+    # actual callback has no validation -- hence it does not fail
+    actual_callback(*callback_args)
 
     with pytest.raises(MessageAckValidationException):
         callback_with_validation(*callback_args)

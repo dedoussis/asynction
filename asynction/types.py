@@ -22,7 +22,7 @@ GLOBAL_NAMESPACE = "/"
 class MessageAck:
     """The specification of a message acknowledgement"""
 
-    schema: JSONSchema
+    args: JSONSchema
 
 
 @dataclass

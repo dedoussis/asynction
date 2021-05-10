@@ -30,8 +30,8 @@ class BindingsValidationException(ValidationException):
 
 class MessageAckValidationException(ValidationException):
     """
-    Raised when the input arguments passed to the ack callback 
-    do not adhere to the ``x-ack`` schema.
+    Raised when the input arguments passed to the ack callback
+    do not adhere to the ``x-ack`` args schema.
     """
 
     pass

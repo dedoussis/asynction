@@ -75,9 +75,9 @@ def validate_ack_args(args: Sequence, message_ack_spec: Optional[MessageAck]) ->
         # and no args have been provided.
         return
 
-    schema_type = message_ack_spec.schema["type"]
+    schema_type = message_ack_spec.args["type"]
     if schema_type == "array":
-        jsonschema_validate_ack(args, message_ack_spec.schema)
+        jsonschema_validate_ack(args, message_ack_spec.args)
     else:
         if len(args) > 1:
             raise MessageAckValidationException(
@@ -85,7 +85,7 @@ def validate_ack_args(args: Sequence, message_ack_spec: Optional[MessageAck]) ->
                 f"although x-ack schema type is: {schema_type}"
             )
 
-        jsonschema_validate_ack(args[0], message_ack_spec.schema)
+        jsonschema_validate_ack(args[0], message_ack_spec.args)
 
 
 def publish_message_validator_factory(message: Message) -> Callable:
@@ -99,7 +99,7 @@ def publish_message_validator_factory(message: Message) -> Callable:
             ack = handler(*args)
 
             if ack is not None and message.x_ack is not None:
-                jsonschema_validate_ack(ack, message.x_ack.schema)
+                jsonschema_validate_ack(ack, message.x_ack.args)
 
             return ack
 

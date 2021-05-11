@@ -5,6 +5,7 @@ import pytest
 from faker import Faker
 from flask import Flask
 
+from asynction.exceptions import MessageAckValidationException
 from asynction.exceptions import PayloadValidationException
 from asynction.exceptions import ValidationException
 from asynction.server import AsynctionSocketIO
@@ -19,6 +20,7 @@ from asynction.types import ChannelBindings
 from asynction.types import ChannelHandlers
 from asynction.types import ErrorHandler
 from asynction.types import Message
+from asynction.types import MessageAck
 from asynction.types import OneOfMessages
 from asynction.types import Operation
 from asynction.types import WebSocketsChannelBindings
@@ -125,7 +127,11 @@ def test_resolve_references_resolves_successfully():
         },
         "components": {
             "messages": {
-                "UserMessage": {"payload": {"type": "string"}},
+                "UserMessage": {
+                    "payload": {"type": "string"},
+                    "x-handler": "my_func",
+                    "x-ack": {"$ref": "#/components/x-messageAcks/UserMessageAck"},
+                },
                 "UserResponse": {"payload": {"type": "object"}},
             },
             "channelBindings": {
@@ -141,6 +147,7 @@ def test_resolve_references_resolves_successfully():
                     }
                 }
             },
+            "x-messageAcks": {"UserMessageAck": {"args": {"type": "object"}}},
         },
     }
 
@@ -150,6 +157,8 @@ def test_resolve_references_resolves_successfully():
                 "publish": {
                     "message": {
                         "payload": {"type": "string"},
+                        "x-ack": {"args": {"type": "object"}},
+                        "x-handler": "my_func",
                     }
                 },
                 "subscribe": {
@@ -175,7 +184,11 @@ def test_resolve_references_resolves_successfully():
         },
         "components": {
             "messages": {
-                "UserMessage": {"payload": {"type": "string"}},
+                "UserMessage": {
+                    "payload": {"type": "string"},
+                    "x-ack": {"args": {"type": "object"}},
+                    "x-handler": "my_func",
+                },
                 "UserResponse": {"payload": {"type": "object"}},
             },
             "channelBindings": {
@@ -191,6 +204,7 @@ def test_resolve_references_resolves_successfully():
                     }
                 }
             },
+            "x-messageAcks": {"UserMessageAck": {"args": {"type": "object"}}},
         },
     }
 
@@ -263,7 +277,9 @@ def test_register_handlers_registers_channel_handlers(
             assert unwrapped == disconnect
 
 
-def test_register_handlers_adds_validator_if_validation_is_enabled(faker: Faker):
+def test_register_handlers_adds_payload_validator_if_validation_is_enabled(
+    faker: Faker,
+):
     namespace = f"/{faker.pystr()}"
     event_name = faker.word()
     spec = AsyncApiSpec(
@@ -296,7 +312,51 @@ def test_register_handlers_adds_validator_if_validation_is_enabled(faker: Faker)
         handler_with_validation(*args)
 
 
-def test_register_handlers_omits_validator_if_validation_is_disabled(faker: Faker):
+def test_register_handlers_adds_ack_validator_if_validation_is_enabled(faker: Faker):
+    namespace = f"/{faker.pystr()}"
+    event_name = faker.word()
+    spec = AsyncApiSpec(
+        channels={
+            namespace: Channel(
+                publish=Operation(
+                    message=OneOfMessages(
+                        oneOf=[
+                            Message(
+                                name=event_name,
+                                payload={"type": "string"},
+                                x_handler="tests.fixtures.handlers.ping_with_ack",
+                                x_ack=MessageAck(
+                                    args={
+                                        "type": "object",
+                                        "properties": {"ack": {"type": "number"}},
+                                        "required": ["ack"],
+                                    }
+                                ),
+                            )
+                        ]
+                    ),
+                )
+            )
+        }
+    )
+    server = AsynctionSocketIO(spec, True)
+
+    server._register_handlers()
+    _, registered_handler, _ = server.handlers[0]
+    handler_with_validation = deep_unwrap(registered_handler, depth=1)
+    actual_handler = deep_unwrap(handler_with_validation)
+    args = (faker.pystr(),)  # valid handler args
+
+    # actual handler does not raise validation errors, although it returns invalid data
+    actual_handler(*args)
+
+    with pytest.raises(MessageAckValidationException):
+        handler_with_validation(*args)
+
+
+def test_register_handlers_omits_payload_validator_if_validation_is_disabled(
+    faker: Faker,
+):
     namespace = f"/{faker.pystr()}"
     event_name = faker.word()
     spec = AsyncApiSpec(
@@ -532,7 +592,7 @@ def test_emit_valid_event_invokes_super_method(
 
 
 @mock.patch.object(SocketIO, "emit")
-def test_emit_validiation_is_ginored_if_validation_flag_is_false(
+def test_emit_validiation_is_ignored_if_validation_flag_is_false(
     super_method_mock: mock.Mock, faker: Faker
 ):
     namespace = f"/{faker.pystr()}"
@@ -562,3 +622,51 @@ def test_emit_validiation_is_ginored_if_validation_flag_is_false(
     super_method_mock.assert_called_once_with(
         event_name, *event_args, namespace=namespace
     )
+
+
+@mock.patch.object(SocketIO, "emit")
+def test_emit_event_wraps_callback_with_validator(
+    super_method_mock: mock.Mock, faker: Faker
+):
+    namespace = f"/{faker.pystr()}"
+    event_name = faker.pystr()
+    spec = AsyncApiSpec(
+        channels={
+            namespace: Channel(
+                subscribe=Operation(
+                    message=OneOfMessages(
+                        oneOf=[
+                            Message(
+                                name=event_name,
+                                payload={"type": "number"},
+                                x_ack=MessageAck(args={"type": "boolean"}),
+                            )
+                        ]
+                    ),
+                )
+            )
+        },
+    )
+    server = AsynctionSocketIO(spec)
+
+    def actual_callback(*args):
+        # dummy callback
+
+        pass
+
+    server.emit(
+        event_name, faker.pyint(), namespace=namespace, callback=actual_callback
+    )
+    super_method_mock.assert_called_once()
+    *_, kwargs = super_method_mock.call_args
+    callback_with_validation = kwargs["callback"]
+
+    callback_args = [
+        faker.pystr()
+    ]  # invalid callback args (should have been a boolean)
+
+    # actual callback has no validation -- hence it does not fail
+    actual_callback(*callback_args)
+
+    with pytest.raises(MessageAckValidationException):
+        callback_with_validation(*callback_args)

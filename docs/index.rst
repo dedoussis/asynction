@@ -10,9 +10,24 @@ Welcome to Asynction's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+Asynction SocketIO Server
+-------------------------
+
+.. automodule:: asynction.server
+
 .. autoclass:: asynction.AsynctionSocketIO
    :members: from_spec
 
+Exceptions
+----------
+
+.. automodule:: asynction.exceptions
+
+.. autoexception:: asynction.AsynctionException
+.. autoexception:: asynction.ValidationException
+.. autoexception:: asynction.PayloadValidationException
+.. autoexception:: asynction.BindingsValidationException
+.. autoexception:: asynction.MessageAckValidationException
 
 Indices and tables
 ==================

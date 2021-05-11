@@ -1,3 +1,8 @@
+"""
+The ``AsynctionSocketIO`` server is essentially a flask_socketio.SocketIO server
+with an additional factory classmethod.
+"""
+
 from functools import singledispatch
 from importlib import import_module
 from pathlib import Path
@@ -19,7 +24,8 @@ from asynction.types import ChannelHandlers
 from asynction.types import ErrorHandler
 from asynction.types import JSONMapping
 from asynction.validation import bindings_validator_factory
-from asynction.validation import payload_validator_factory
+from asynction.validation import callback_validator_factory
+from asynction.validation import publish_message_validator_factory
 from asynction.validation import validate_payload
 
 
@@ -33,7 +39,7 @@ def _deep_resolve_mapping(
     unresolved: JSONMapping, resolver: jsonschema.RefResolver
 ) -> JSONMapping:
     return {
-        k: resolver.resolve(v["$ref"])[-1] if "$ref" in v else deep_resolve(v, resolver)
+        k: deep_resolve(resolver.resolve(v["$ref"])[-1] if "$ref" in v else v, resolver)
         for k, v in unresolved.items()
     }
 
@@ -46,9 +52,9 @@ def _deep_resolve_sequence(
 ) -> Sequence:
     return unresolved.__class__(  # type: ignore
         [
-            resolver.resolve(item["$ref"])[-1]
-            if "$ref" in item
-            else deep_resolve(item, resolver)
+            deep_resolve(
+                resolver.resolve(item["$ref"])[-1] if "$ref" in item else item, resolver
+            )
             for item in unresolved
         ]
     )
@@ -124,7 +130,7 @@ class AsynctionSocketIO(SocketIO):
             asio = AsynctionSocketIO.from_spec(
                 spec_path="./docs/asyncapi.yaml",
                 app=flask_app,
-                message_queue="redis://",
+                message_queue="redis://localhost:6379",
                 # any other kwarg that the flask_socketio.SocketIO constructor accepts
             )
 
@@ -181,8 +187,8 @@ class AsynctionSocketIO(SocketIO):
                     handler = load_handler(message.x_handler)
 
                     if self.validation:
-                        with_payload_validation = payload_validator_factory(
-                            schema=message.payload
+                        with_payload_validation = publish_message_validator_factory(
+                            message=message
                         )
                         handler = with_payload_validation(handler)
 
@@ -220,5 +226,10 @@ class AsynctionSocketIO(SocketIO):
                 )
 
             validate_payload(args, message.payload)
+
+            callback = kwargs.get("callback")
+            if callback is not None:
+                with_validation = callback_validator_factory(message=message)
+                kwargs["callback"] = with_validation(callback)
 
         return super().emit(event, *args, **kwargs)

@@ -16,11 +16,35 @@ def test_message_deserialisation(faker: Faker):
     name = faker.pystr()
     payload = faker.pydict(value_types=[str, int])
     x_handler = faker.pystr()
-    message = forge(Message, {"name": name, "payload": payload, "x-handler": x_handler})
+    x_ack_args = faker.pydict(value_types=[str, int])
+
+    message = forge(
+        Message,
+        {
+            "name": name,
+            "payload": payload,
+            "x-handler": x_handler,
+            "x-ack": {"args": x_ack_args},
+        },
+    )
 
     assert message.name == name
     assert message.payload == payload
     assert message.x_handler == x_handler
+    assert message.x_ack.args == x_ack_args
+
+
+def test_message_deserialisation_with_missing_fields(faker: Faker):
+    name = faker.pystr()
+    message = forge(
+        Message,
+        {"name": name},
+    )
+
+    assert message.name == name
+    assert message.payload is None
+    assert message.x_handler is None
+    assert message.x_ack is None
 
 
 def test_one_of_messages_deserialisation_of_one_of_structure(faker: Faker):
@@ -156,6 +180,9 @@ def test_async_api_spec_from_dict_allows_extra_attrs(faker: Faker):
                                 "name": faker.pystr(),
                                 "payload": faker.pydict(value_types=[str, int]),
                                 "x-handler": faker.pydict(value_types=[str, int]),
+                                "x-ack": {
+                                    "args": faker.pydict(value_types=[str, int]),
+                                },
                             }
                             for _ in range(faker.pyint(min_value=2, max_value=10))
                         ]

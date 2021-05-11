@@ -6,6 +6,7 @@ from flask.app import Flask
 from flask_socketio import SocketIO
 
 from asynction.exceptions import BindingsValidationException
+from asynction.exceptions import MessageAckValidationException
 from asynction.exceptions import PayloadValidationException
 from tests.fixtures import FixturePaths
 
@@ -158,3 +159,27 @@ def test_client_emits_invalid_msg_and_server_emits_back_via_validation_error_han
     received = socketio_test_client.get_received(namespace_with_error_feedback)
     assert len(received) == 1
     assert received[0]["name"] == "echo errors"
+
+
+def test_client_emits_valid_msg_and_server_returns_invalid_ack(
+    asynction_socketio_server_factory: AsynctionFactory,
+    flask_app: Flask,
+    fixture_paths: FixturePaths,
+    faker: Faker,
+):
+    socketio_server = asynction_socketio_server_factory(
+        spec_path=fixture_paths.echo,
+    )
+
+    flask_test_client = flask_app.test_client()
+
+    socketio_test_client = socketio_server.test_client(
+        flask_app,
+        flask_test_client=flask_test_client,
+    )
+
+    def cb(ack_data: bool):
+        assert isinstance(ack_data, bool)
+
+    with pytest.raises(MessageAckValidationException):
+        socketio_test_client.emit("echo with invalid ack", faker.pystr(), callback=cb)

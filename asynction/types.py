@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from dataclasses import field
-from dataclasses import replace
 from typing import Any
 from typing import Callable
 from typing import Mapping
@@ -20,37 +19,41 @@ GLOBAL_NAMESPACE = "/"
 
 
 @dataclass
+class MessageAck:
+    """The specification of a message acknowledgement"""
+
+    args: JSONSchema
+
+
+@dataclass
 class Message:
     """
     https://www.asyncapi.com/docs/specifications/2.0.0#messageObject
 
-    The above message object is extended to enable the coupling
-    of the message spec to an event handler (with is a python callable).
-    The extention is implemented as per:
-    https://www.asyncapi.com/docs/specifications/2.0.0#specificationExtensions
+    The above message object is extended as follows:
+    * `x-handler`: Allows the coupling of the message specification to
+    an event handler (which is a python callable). It SHOULD only be used
+    for messages under a `publish` operation. Deserialized to `x_handler`.
+    * `x-ack`: The specification of the acknowledgement packet that the message receiver
+    transmits to the message sender. The acknowledgement args are passed as an input
+    to the callback of the `emit`/`send` function. Deserialized to `x_ack`.
 
-    The `x_handler` field is serialized as `x-handler`.
+    The extentions are implemented as per:
+    https://www.asyncapi.com/docs/specifications/2.0.0#specificationExtensions
     """
 
     name: str
     payload: Optional[JSONSchema] = None
     x_handler: Optional[str] = None
+    x_ack: Optional[MessageAck] = None
 
     @staticmethod
     def forge(type_: Type["Message"], data: JSONMapping, forge: Forge) -> "Message":
-        forged = type_(
-            payload=forge(type_.__annotations__["payload"], data["payload"]),
+        return type_(
             name=forge(type_.__annotations__["name"], data["name"]),
-        )
-
-        x_handler_data = data.get("x-handler")
-
-        if x_handler_data is None:
-            return forged
-
-        return replace(
-            forged,
-            x_handler=forge(type_.__annotations__["x_handler"], x_handler_data),
+            payload=forge(type_.__annotations__["payload"], data.get("payload")),
+            x_handler=forge(type_.__annotations__["x_handler"], data.get("x-handler")),
+            x_ack=forge(type_.__annotations__["x_ack"], data.get("x-ack")),
         )
 
 
@@ -147,20 +150,13 @@ class Channel:
 
     @staticmethod
     def forge(type_: Type["Channel"], data: JSONMapping, forge: Forge) -> "Channel":
-        forged = type_(
+        return type_(
             subscribe=forge(type_.__annotations__["subscribe"], data.get("subscribe")),
             publish=forge(type_.__annotations__["publish"], data.get("publish")),
             bindings=forge(type_.__annotations__["bindings"], data.get("bindings")),
-        )
-
-        x_handlers_data = data.get("x-handlers")
-
-        if x_handlers_data is None:
-            return forged
-
-        return replace(
-            forged,
-            x_handlers=forge(type_.__annotations__["x_handlers"], x_handlers_data),
+            x_handlers=forge(
+                type_.__annotations__["x_handlers"], data.get("x-handlers")
+            ),
         )
 
 

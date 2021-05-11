@@ -178,8 +178,8 @@ The basic unit of information in the [Socket.IO protocol](https://github.com/soc
 
 In order to express the above acknowledgement semantics, the A2S specification needs to be extended as follows:
 
-[Message Object](https://www.asyncapi.com/docs/specifications/2.0.0#messageObject)s MAY include the `x-ack` field. The value of this field SHOULD be a [Message Ack Object]((#message-ack-object)).  
-[Components Object](https://www.asyncapi.com/docs/specifications/2.0.0#componentsObject) MAY include the `x-messageAcks` field. The value of this field should be a of type: `Map[string, Message Ack Object | Reference Object]`
+* [Message Object](https://www.asyncapi.com/docs/specifications/2.0.0#messageObject)s MAY include the `x-ack` field. The value of this field SHOULD be a [Message Ack Object]((#message-ack-object)).  
+* [Components Object](https://www.asyncapi.com/docs/specifications/2.0.0#componentsObject) MAY include the `x-messageAcks` field. The value of this field should be a of type: `Map[string, Message Ack Object | Reference Object]`
 
 Although Asynction uses these fields to validate the input args of the callback functions, these extentions are necessary to express semantics of the [Socket.IO protocol](https://github.com/socketio/socket.io-protocol), regardless of any tooling used for automation / code generation.
 

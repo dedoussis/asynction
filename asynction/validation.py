@@ -101,6 +101,7 @@ def publish_message_validator_factory(message: Message) -> Callable:
             if ack is not None and message.x_ack is not None:
                 jsonschema_validate_ack(ack, message.x_ack.args)
 
+            # TODO: Should the ack be transmitted if there is no x-ack definition?
             return ack
 
         return handler_with_validation

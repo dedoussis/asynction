@@ -1,3 +1,8 @@
+"""
+The ``AsynctionSocketIO`` server is essentially a flask_socketio.SocketIO server
+with an additional factory classmethod.
+"""
+
 from functools import singledispatch
 from importlib import import_module
 from pathlib import Path
@@ -125,7 +130,7 @@ class AsynctionSocketIO(SocketIO):
             asio = AsynctionSocketIO.from_spec(
                 spec_path="./docs/asyncapi.yaml",
                 app=flask_app,
-                message_queue="redis://",
+                message_queue="redis://localhost:6379",
                 # any other kwarg that the flask_socketio.SocketIO constructor accepts
             )
 

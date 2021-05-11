@@ -178,5 +178,8 @@ def test_client_emits_valid_msg_and_server_returns_invalid_ack(
         flask_test_client=flask_test_client,
     )
 
+    def cb(ack_data: bool):
+        assert isinstance(ack_data, bool)
+
     with pytest.raises(MessageAckValidationException):
-        socketio_test_client.emit("echo with invalid ack", faker.pystr())
+        socketio_test_client.emit("echo with invalid ack", faker.pystr(), callback=cb)

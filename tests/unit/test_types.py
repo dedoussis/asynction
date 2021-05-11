@@ -16,7 +16,7 @@ def test_message_deserialisation(faker: Faker):
     name = faker.pystr()
     payload = faker.pydict(value_types=[str, int])
     x_handler = faker.pystr()
-    x_ack_schema = faker.pydict(value_types=[str, int])
+    x_ack_args = faker.pydict(value_types=[str, int])
 
     message = forge(
         Message,
@@ -24,14 +24,14 @@ def test_message_deserialisation(faker: Faker):
             "name": name,
             "payload": payload,
             "x-handler": x_handler,
-            "x-ack": {"args": x_ack_schema},
+            "x-ack": {"args": x_ack_args},
         },
     )
 
     assert message.name == name
     assert message.payload == payload
     assert message.x_handler == x_handler
-    assert message.x_ack.args == x_ack_schema
+    assert message.x_ack.args == x_ack_args
 
 
 def test_message_deserialisation_with_missing_fields(faker: Faker):

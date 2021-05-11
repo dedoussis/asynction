@@ -1,3 +1,6 @@
+"""Asynction's exceptions to be caught via Flask-SocketIO error handlers."""
+
+
 class AsynctionException(RuntimeError):
     """The base class for all asynction runtime exceptions."""
 

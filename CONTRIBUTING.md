@@ -23,11 +23,12 @@ The current areas of focus are:
 ## Roadmap
 
 * Documenting examples and tutorials of using Asynction.
-* Improving the generated documentation.
+* Improving the existing generated documentation.
+* Mock server support.
 * Exposing an [AsyncAPI playground](https://playground.asyncapi.io/) via a Flask route, in a similar manner to how Connexion exposes a Swagger UI.
+* E2E testing suite (using a dockerised setup)
 * Type casting: Whenever possible Asynction should try to parse the argument values and do type casting to the related Python native values.
 * Dynamic rendering of the [AsyncAPI](https://www.asyncapi.com/) spec. Could use [Jinja2](https://jinja.palletsprojects.com/en/3.0.x/) to allow the parametrisation of the spec.
-* Mock server support.
 * Authentication à la [Connexion](https://connexion.readthedocs.io/en/latest/security.html).
 
 The OpenAPI counterparts of Asynction are [Connexion](https://github.com/zalando/connexion) for python and [openapi-backend](https://github.com/anttiviljami/openapi-backend) for Node.js. These tools provide a great source of inspiration for the above roadmap.
@@ -49,6 +50,8 @@ root/
 ├───asynction/
 ├───docs/
 ├───tests/
+│   ├───integration/
+│   └───unit/
 ├───Makefile
 ├───requirements-dev.txt
 ├───requirements-test.txt
@@ -58,7 +61,7 @@ root/
 
 * The `asynction` directory is a python package that contains the runtime source of the framework.
 * `docs` is the source directory of the [Sphinx](https://www.sphinx-doc.org/) documentation hosted at <https://asynction.dedouss.is>.
-* `tests` is the source of the entire test suite.
+* `tests` is the source of the entire test suite, consisting of unit and integration tests.
 * The top level `Makefile` is a toolbox of useful commands for installing dependencies as well as testing, linting and packaging the code. It is also used as the entrypoint interface for all CI/CD operations.
 
 ### Environment setup
@@ -96,7 +99,7 @@ Use python3.7 or higher.
 ### Coding style
 
 * All Python code must follow the [PEP 8](https://www.python.org/dev/peps/pep-0008/) guidelines.
-* Type annotations are mandatory (even in tests). Avoid the use of `typing.Any` or `# type: ignore`.
+* Type annotations are mandatory (even in tests). Avoid the use of `typing.Any` and `# type: ignore`.
 * All parts of the public API (exposed via `asynction.__init__.py`) should be documented with docstrings.
 
 __Make sure you run `precommit` before every commit!__
@@ -104,7 +107,7 @@ __Make sure you run `precommit` before every commit!__
 ### Checks & Testing
 
 ```bash
-$ make lint  # Checks for flake8 linting, black formatting, and sorting imports (isort)
+$ make lint  # Checks for flake8 linting, black formatting, and sequence of imports (isort)
 $ make typecheck  # mypy checks
 
 $ make test-unit  # unit testing suite

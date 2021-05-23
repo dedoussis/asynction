@@ -133,7 +133,7 @@ The cut of a git tag will trigger a release workflow. Note that tagging should f
 The release workflow:
 
 1. Builds the source and wheel distributions
-1. Builds the Sphynx documentation
+1. Builds the Sphinx documentation
 1. Publishes the distributions to <https://test.pypi.org/project/asynction/>
 1. Publishes the distributions to <https://pypi.org/project/asynction/>
 1. Publishes the HTML docs to <https://asynction.dedouss.is>

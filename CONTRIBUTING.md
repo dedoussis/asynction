@@ -10,12 +10,12 @@ The current areas of focus are:
 ## Table of Contents 📖
 
 1. [Roadmap](#roadmap)
-1. [Support questions & reporting bugs](#support-questions-&-reporting-bugs)
+1. [Support questions & reporting bugs](#support-questions--reporting-bugs)
 1. [Development](#development)
     1. [Project structure](#project-structure)
     1. [Environment setup](#environment-setup)
     1. [Coding style](#coding-style)
-    1. [Checks & Testing](#checks-&-testing)
+    1. [Checks & Testing](#checks--testing)
     1. [Docs](#docs)
 1. [Release](#release)
 1. [Finally](#finally)
@@ -25,13 +25,12 @@ The current areas of focus are:
 * Documenting examples and tutorials of using Asynction.
 * Improving the generated documentation.
 * Exposing an [AsyncAPI playground](https://playground.asyncapi.io/) via a Flask route, in a similar manner to how Connexion exposes a Swagger UI.
-* Type casting: Whenever possible Asynction should try to parse the argument values and do type casting to the related Python natives values.
+* Type casting: Whenever possible Asynction should try to parse the argument values and do type casting to the related Python native values.
 * Dynamic rendering of the [AsyncAPI](https://www.asyncapi.com/) spec. Could use [Jinja2](https://jinja.palletsprojects.com/en/3.0.x/) to allow the parametrisation of the spec.
 * Mock server support.
 * Authentication à la [Connexion](https://connexion.readthedocs.io/en/latest/security.html).
 
 The OpenAPI counterparts of Asynction are [Connexion](https://github.com/zalando/connexion) for python and [openapi-backend](https://github.com/anttiviljami/openapi-backend) for Node.js. These tools provide a great source of inspiration for the above roadmap.
-
 
 If you have any roadmap ideas or feature requests please submit them via the [issue tracker](https://github.com/dedoussis/asynction/issues).
 
@@ -40,6 +39,8 @@ If you have any roadmap ideas or feature requests please submit them via the [is
 You are welcome to use the [issue tracker](https://github.com/dedoussis/asynction/issues) of this repository for questions about using Asynction. Make sure that the `question` label is applied.
 
 Reporting a bug should also go through the [issue tracker](https://github.com/dedoussis/asynction/issues).
+
+## Development
 
 ### Project structure
 

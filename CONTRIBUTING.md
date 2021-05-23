@@ -113,7 +113,7 @@ $ make test-integration  # integration testing suite
 
 ### Docs
 
-There is a [Sphynx](https://www.sphinx-doc.org/) setup located at `/docs`.
+There is a [Sphinx](https://www.sphinx-doc.org/) setup located at `/docs`.
 
 From the root directory:
 

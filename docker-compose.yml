@@ -7,7 +7,7 @@ services:
       - .:/usr/app
       # use the .git from the container because it
       # has pre-commit setup
-      - /usr/app/.git
+      - /usr/app/.git/hooks
     build: .
     entrypoint: bash
 

@@ -112,9 +112,9 @@ Use python3.7 or higher.
 
 1. Install the pre-commit hooks
 
-
+``` bash
     $ pre-commit install
-
+```
 
 ### Coding style
 

@@ -110,7 +110,7 @@ Use python3.7 or higher.
 1. Install the pre-commit hooks
 
     ```bash
-    $ precommit install
+    $ pre-commit install
     ```
 
 ### Coding style
@@ -119,7 +119,7 @@ Use python3.7 or higher.
 * Type annotations are mandatory (even in tests). Avoid the use of `typing.Any` and `# type: ignore`.
 * All parts of the public API (exposed via `asynction.__init__.py`) should be documented with docstrings.
 
-__Make sure you run `precommit` before every commit!__
+__Make sure you run `pre-commit` before every commit!__
 
 ### Checks & Testing
 

@@ -9,6 +9,7 @@ The current areas of focus are:
 
 ## Table of Contents 📖
 
+
 - [Contributing](#contributing)
   - [Table of Contents 📖](#table-of-contents-)
   - [Roadmap](#roadmap)
@@ -22,6 +23,7 @@ The current areas of focus are:
     - [Docs](#docs)
   - [Release](#release)
   - [Finally](#finally)
+
 
 ## Roadmap
 
@@ -68,6 +70,7 @@ root/
 * The top level `Makefile` is a toolbox of useful commands for installing dependencies as well as testing, linting and packaging the code. It is also used as the entrypoint interface for all CI/CD operations.
 
 
+
 ### Environment setup using docker
 
 For convenience, you can setup the development environment using the Dockerfile and docker-compose files provided in the repo.
@@ -109,9 +112,9 @@ Use python3.7 or higher.
 
 1. Install the pre-commit hooks
 
-    ```bash
+
     $ pre-commit install
-    ```
+
 
 ### Coding style
 
@@ -119,7 +122,9 @@ Use python3.7 or higher.
 * Type annotations are mandatory (even in tests). Avoid the use of `typing.Any` and `# type: ignore`.
 * All parts of the public API (exposed via `asynction.__init__.py`) should be documented with docstrings.
 
+
 __Make sure you run `pre-commit` before every commit!__
+
 
 ### Checks & Testing
 

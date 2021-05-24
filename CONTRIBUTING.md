@@ -9,16 +9,19 @@ The current areas of focus are:
 
 ## Table of Contents 📖
 
-1. [Roadmap](#roadmap)
-1. [Support questions & reporting bugs](#support-questions--reporting-bugs)
-1. [Development](#development)
-    1. [Project structure](#project-structure)
-    1. [Environment setup](#environment-setup)
-    1. [Coding style](#coding-style)
-    1. [Checks & Testing](#checks--testing)
-    1. [Docs](#docs)
-1. [Release](#release)
-1. [Finally](#finally)
+- [Contributing](#contributing)
+  - [Table of Contents 📖](#table-of-contents-)
+  - [Roadmap](#roadmap)
+  - [Support questions & reporting bugs](#support-questions--reporting-bugs)
+  - [Development](#development)
+    - [Project structure](#project-structure)
+    - [Environment setup using docker](#environment-setup-using-docker)
+    - [Environment setup without docker](#environment-setup-without-docker)
+    - [Coding style](#coding-style)
+    - [Checks & Testing](#checks--testing)
+    - [Docs](#docs)
+  - [Release](#release)
+  - [Finally](#finally)
 
 ## Roadmap
 
@@ -64,7 +67,21 @@ root/
 * `tests` is the source of the entire test suite, consisting of unit and integration tests.
 * The top level `Makefile` is a toolbox of useful commands for installing dependencies as well as testing, linting and packaging the code. It is also used as the entrypoint interface for all CI/CD operations.
 
-### Environment setup
+
+### Environment setup using docker
+
+For convenience, you can setup the development environment using the Dockerfile and docker-compose files provided in the repo.
+
+To set it up, run the command:
+
+``` bash
+docker-compose run asynction
+```
+
+It will install everything and start the container with bash attached.
+
+### Environment setup without docker
+
 
 Use python3.7 or higher.
 

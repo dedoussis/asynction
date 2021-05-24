@@ -1,0 +1,13 @@
+version: "3.9"
+
+services:
+  asynction:
+    image: asynction
+    volumes: 
+      - .:/usr/app
+      # use the .git from the container because it
+      # has pre-commit setup
+      - /usr/app/.git
+    build: .
+    entrypoint: bash
+

@@ -1,5 +1,5 @@
 """
-The ``AsynctionSocketIO`` server is essentially a flask_socketio.SocketIO server
+The ``AsynctionSocketIO`` server is essentially a ``flask_socketio.SocketIO`` server
 with an additional factory classmethod.
 """
 
@@ -10,6 +10,7 @@ from typing import Any
 from typing import Callable
 from typing import Optional
 from typing import Sequence
+from urllib.parse import urlparse
 
 import jsonschema
 import yaml
@@ -111,9 +112,10 @@ class AsynctionSocketIO(SocketIO):
         This is the single entrypoint to the Asynction API.
 
         :param spec_path: The path where the AsyncAPI YAML specification is located.
-        :param validation: When set to ``False``, message payloads and channel
-                           bindings are NOT validated. Defaults to ``True``.
-        :param server_name: The server to pick from the Async API ``servers`` object.
+        :param validation: When set to ``False``, message payloads, channel
+                           bindings and ack callbacks are NOT validated.
+                           Defaults to ``True``.
+        :param server_name: The server to pick from the AsyncAPI ``servers`` object.
                             The server object is then used to configure
                             the path ``kwarg`` of the SocketIO server.
         :param default_error_handler: The error handler that handles any namespace
@@ -145,10 +147,13 @@ class AsynctionSocketIO(SocketIO):
             server = spec.servers.get(server_name)
             if server is None:
                 raise ValueError(f"Server {server_name} is not defined in the spec.")
-            host_length = len(server.url.split("/")[0])
-            server_path = server.url[host_length:]
-            if server_path:
-                kwargs["path"] = server_path
+
+            url_parse_result = urlparse(
+                url=f"//{server.url}", scheme=server.protocol.value
+            )
+
+            if url_parse_result.path:
+                kwargs["path"] = url_parse_result.path
 
         asio = cls(spec, validation, app, **kwargs)
         asio._register_handlers(default_error_handler)

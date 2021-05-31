@@ -1,8 +1,10 @@
 servers:
   development:
     url: localhost
+    protocol: ws
   production:
     url: my-company.com/api/socket.io
+    protocol: wss
 channels:
   /:
     publish:

@@ -7,7 +7,7 @@ on:
 
 jobs:
   build-n-publish:
-    name: Update the documentation of www.asynction.dedouss.is
+    name: Update the documentation of https://asynction.dedouss.is
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2

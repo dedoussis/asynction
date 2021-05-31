@@ -14,6 +14,7 @@ The purpose of Asynction is to empower a specification first approach when devel
 * HTTP request validation, upon connection, based on the channel binding schemata within the API specification.
 * Callback validation, upon the ACK of a message, based on the message `x-ack` schemata within the API specification.
 * Automatic registration of all event and error handlers defined within the API specification.
+* Mock server support *(coming soon)*
 * AsyncAPI [playground](https://playground.asyncapi.io/?load=https://raw.githubusercontent.com/asyncapi/asyncapi/master/examples/2.0.0/simple.yml) *(coming soon)*
 * Authentication à la [Connexion](https://connexion.readthedocs.io/en/latest/security.html) *(coming soon)*
 
@@ -147,7 +148,7 @@ The above `asio` server object has all the event and error handlers registered, 
 Validation of the message payloads, the channel bindings and the ack callbacks is also enabled by default.  
 Without Asynction, one would need to add additional boilerplate to register the handlers (as shown [here](https://flask-socketio.readthedocs.io/en/latest/#error-handling)) and implement the respective validators.
 
-__Extensive documentation of the Asynction API can be found in <https://asynction.dedouss.is>.__
+__Extensive documentation of the Asynction API can be found at <https://asynction.dedouss.is>.__
 
 ## Specification Extentions
 

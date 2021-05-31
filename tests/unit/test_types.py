@@ -201,7 +201,7 @@ def test_async_api_spec_from_dict_allows_extra_attrs(faker: Faker):
                 },
             }
         },
-        "servers": {"development": {"url": "localhost"}},
+        "servers": {"development": {"url": "localhost", "protocol": "ws"}},
     }
 
     forged = forge(AsyncApiSpec, data)

@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from dataclasses import field
+from enum import Enum
 from typing import Any
 from typing import Callable
 from typing import Mapping
@@ -163,11 +164,19 @@ class Channel:
 register_forge(Channel, Channel.forge)
 
 
+class ServerProtocol(Enum):
+    HTTP = "http"
+    HTTPS = "https"
+    WS = "ws"
+    WSS = "wss"
+
+
 @dataclass
 class Server:
     """https://www.asyncapi.com/docs/specifications/2.0.0#serverObject"""
 
     url: str
+    protocol: ServerProtocol
 
 
 @dataclass

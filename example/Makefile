@@ -19,6 +19,9 @@ install-server-requirements:
 install-client-requirements:
 	npm install --prefix client
 
+typecheck-server:
+	mypy --module app --ignore-missing-imports
+
 lint-client:
 	npm run --prefix client pretty:check
 

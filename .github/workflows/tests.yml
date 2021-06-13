@@ -25,8 +25,10 @@ jobs:
         run: make requirements-test-install
       - name: Linting
         run: make lint
-      - name: Type Checking
+      - name: Type checking
         run: make typecheck
+      - name: Type checking the example code
+        run: make example/typecheck-server
       - uses: actions/setup-node@v2
         with:
           node-version: "16"

@@ -52,7 +52,7 @@ dist: clean
 	PKG_VERSION=$(PKG_VERSION) python setup.py sdist bdist_wheel
 	ls -l dist
 
-docs/%:
-	$(MAKE) -C docs $(@F:.%=%)
+docs/% example/%:
+	$(MAKE) -C $(@D) $(@F:.%=%)
 
 .PHONY: all-install clean clean-pyc clean-build clean-tests clean-mypy typecheck test-unit test-integration format lint release dist

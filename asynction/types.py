@@ -49,7 +49,7 @@ class Message:
     x_ack: Optional[MessageAck] = None
 
     @staticmethod
-    def forge(type_: Type["Message"], data: JSONMapping, forge: Forge) -> "Message":
+    def forge(type_: Type["Message"], data: JSONMapping) -> "Message":
         return type_(
             name=forge(type_.__annotations__["name"], data["name"]),
             payload=forge(type_.__annotations__["payload"], data.get("payload")),
@@ -69,7 +69,7 @@ class OneOfMessages:
 
     @staticmethod
     def forge(
-        type_: Type["OneOfMessages"], data: JSONMapping, forge: Forge
+        type_: Type["OneOfMessages"], data: JSONMapping,
     ) -> "OneOfMessages":
         if "oneOf" in data:
             return type_(
@@ -150,7 +150,7 @@ class Channel:
                     )
 
     @staticmethod
-    def forge(type_: Type["Channel"], data: JSONMapping, forge: Forge) -> "Channel":
+    def forge(type_: Type["Channel"], data: JSONMapping) -> "Channel":
         return type_(
             subscribe=forge(type_.__annotations__["subscribe"], data.get("subscribe")),
             publish=forge(type_.__annotations__["publish"], data.get("publish")),

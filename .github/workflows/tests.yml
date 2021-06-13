@@ -32,6 +32,16 @@ jobs:
       - uses: actions/setup-node@v2
         with:
           node-version: "16"
+      - uses: actions/cache@v2
+        id: npm-cache
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+      - name: Install node.js dependencies
+        if: steps.npm-cache.outputs.cache-hit != 'true'
+        run: make example/install-client-requirements
       - name: Linting the example code
         run: make example/lint-client
   unit:

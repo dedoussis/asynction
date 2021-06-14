@@ -114,6 +114,10 @@ __Make sure you run `pre-commit` before every commit!__
 $ make lint  # Checks for flake8 linting, black formatting, and sequence of imports (isort)
 $ make typecheck  # mypy checks
 
+# Static checks on the example/ code:
+$ make example/typecheck-server
+$ make example/lint-client
+
 $ make test-unit  # unit testing suite
 $ make test-integration  # integration testing suite
 ```

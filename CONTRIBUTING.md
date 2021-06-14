@@ -49,6 +49,9 @@ Reporting a bug should also go through the [issue tracker](https://github.com/de
 root/
 ├───asynction/
 ├───docs/
+├───example/
+│   ├───client/
+│   └───app.py
 ├───tests/
 │   ├───integration/
 │   └───unit/
@@ -61,6 +64,7 @@ root/
 
 * The `asynction` directory is a python package that contains the runtime source of the framework.
 * `docs` is the source directory of the [Sphinx](https://www.sphinx-doc.org/) documentation hosted at <https://asynction.dedouss.is>.
+* `example` includes the implementation of <https://socket.io/demos/chat> using Asynction.
 * `tests` is the source of the entire test suite, consisting of unit and integration tests.
 * The top level `Makefile` is a toolbox of useful commands for installing dependencies as well as testing, linting and packaging the code. It is also used as the entrypoint interface for all CI/CD operations.
 
@@ -109,6 +113,10 @@ __Make sure you run `pre-commit` before every commit!__
 ```bash
 $ make lint  # Checks for flake8 linting, black formatting, and sequence of imports (isort)
 $ make typecheck  # mypy checks
+
+# Static checks on the example/ code:
+$ make example/typecheck-server
+$ make example/lint-client
 
 $ make test-unit  # unit testing suite
 $ make test-integration  # integration testing suite

@@ -37,11 +37,11 @@ Example event and error handler callables located at `./my_api/handlers.py`:
 
 def user_sign_up(data):
     logger.info("Signing up user...")
-    emit("metrics", "signup", namespace="/admin", callback=cb)
+    emit("metrics", "signup", namespace="/admin", broadcast=True, callback=cb)
 
 def user_log_in(data):
     logger.info("Logging in user...")
-    emit("metrics", "login", namespace="/admin", callback=cb)
+    emit("metrics", "login", namespace="/admin", broadcast=True, callback=cb)
     return True  # Ack
 
 def user_error(e):
@@ -80,14 +80,14 @@ channels:
           - $ref: '#/components/messages/UserSignUp'
           - $ref: '#/components/messages/UserLogIn'
     x-handlers:  # Default namespace handlers (such as connect, disconnect and error)
-      error: my_api.handlers.user_error  # Equivelant of: `@socketio.on_error("/user")
+      error: my_api.handlers.user_error  # Equivelant of: `@socketio.on_error("/user")`
   /admin:
     subscribe:
       message:
         oneOf:
           - '#/components/messages/Metrics'
     x-handlers:
-      connect: my_api.handlers.authenticated_connect  # Equivelant of: `@socketio.on("connect", namespace="/admin")
+      connect: my_api.handlers.authenticated_connect  # Equivelant of: `@socketio.on("connect", namespace="/admin")`
       error: my_api.handlers.admin_error
     bindings:  # Bindings are used to validate the HTTP request upon connection
       $ref: '#/components/channelBindings/AuthenticatedWsBindings'
@@ -98,7 +98,7 @@ components:
       name: sign up  # The SocketIO event name. Use `message` or `json` for unnamed events.
       payload:  # Asynction uses payload JSON Schemata for message validation
         type: object
-      x-handler: my_api.handlers.user_sign_up  # The handler that is to be registered. Equivelant of: `@socketio.on("sign up", namespace="/user")
+      x-handler: my_api.handlers.user_sign_up  # The handler that is to be registered. Equivelant of: `@socketio.on("sign up", namespace="/user")`
     UserLogIn:
       name: log in
       payload:
@@ -148,7 +148,10 @@ The above `asio` server object has all the event and error handlers registered, 
 Validation of the message payloads, the channel bindings and the ack callbacks is also enabled by default.  
 Without Asynction, one would need to add additional boilerplate to register the handlers (as shown [here](https://flask-socketio.readthedocs.io/en/latest/#error-handling)) and implement the respective validators.
 
-__Extensive documentation of the Asynction API can be found at <https://asynction.dedouss.is>.__
+## Further resources
+
+* [API reference](https://asynction.dedouss.is)
+* [Complete example](example/)
 
 ## Specification Extentions
 

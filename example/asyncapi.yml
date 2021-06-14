@@ -1,0 +1,133 @@
+asyncapi: 2.0.0
+
+info:
+  title: Socket.IO chat demo service
+  version: 1.0.0
+  description: |
+    This is one of the get-started demos presented in the socket.io website: https://socket.io/demos/chat/
+
+servers:
+  demo:
+    url: socketio-chat-h9jt.herokuapp.com/socket.io
+    protocol: wss
+
+channels:
+  /:
+    publish:
+      message:
+        oneOf:
+          - $ref: "#/components/messages/NewMessage"
+          - $ref: "#/components/messages/Typing"
+          - $ref: "#/components/messages/StopTyping"
+          - $ref: "#/components/messages/AddUser"
+    subscribe:
+      message:
+        oneOf:
+          - $ref: "#/components/messages/NewMessageReceived"
+          - $ref: "#/components/messages/UserTyping"
+          - $ref: "#/components/messages/UserStopTyping"
+          - $ref: "#/components/messages/UserJoined"
+          - $ref: "#/components/messages/UserLeft"
+          - $ref: "#/components/messages/LogIn"
+    x-handlers:
+      disconnect: app.disconnect
+  /admin:
+    subscribe:
+      message: # No need to use `oneOf` since there is only a single event
+        $ref: "#/components/messages/ServerMetric"
+    bindings:
+      $ref: "#/components/channelBindings/AuthenticatedWsBindings"
+    x-handlers:
+      connect: app.admin_connect
+
+components:
+  messages:
+    NewMessage:
+      name: new message
+      x-handler: app.new_message
+      payload:
+        type: string
+    Typing:
+      name: typing
+      x-handler: app.message_typing
+    StopTyping:
+      name: stop typing
+      x-handler: app.stop_typing
+    AddUser:
+      name: add user
+      payload:
+        type: string
+      x-handler: app.add_user
+      x-ack: # Documents that this event is always acknowledged by the receiver
+        args:
+          type: object
+          properties:
+            error:
+              type: [string, "null"]
+    NewMessageReceived:
+      name: new message
+      payload:
+        type: object
+        properties:
+          username:
+            type: string
+          message:
+            type: string
+    UserTyping:
+      name: typing
+      payload:
+        type: object
+        properties:
+          username:
+            type: string
+    UserStopTyping:
+      name: stop typing
+      payload:
+        type: object
+        properties:
+          username:
+            type: string
+    UserJoined:
+      name: user joined
+      payload:
+        type: object
+        properties:
+          username:
+            type: string
+          numUsers:
+            type: integer
+    UserLeft:
+      name: user left
+      payload:
+        type: object
+        properties:
+          username:
+            type: string
+          numUsers:
+            type: integer
+    LogIn:
+      name: login
+      payload:
+        type: object
+        properties:
+          numUsers:
+            type: integer
+    ServerMetric:
+      name: server metric
+      payload:
+        type: object
+        properties:
+          name:
+            type: string
+          value:
+            type: number
+
+  channelBindings:
+    AuthenticatedWsBindings:
+      ws:
+        query:
+          type: object
+          properties:
+            token:
+              type: string
+          required: [token]

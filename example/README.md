@@ -6,10 +6,10 @@ The [original source](https://github.com/socketio/socket.io/tree/master/examples
 
 ## Layout
 
-* `asyncapi.yml`: The specification that drives the Socket.IO server.
-* `app.py`: The server implementation. Includes the event handlers as well as construction of the `flask.Flask` and `flask_socketio.SocketIO` instances.
-* `client/`: The client implementation, using [express](https://expressjs.com/) and vanilla JavaScript.
-* `Makefile`: Includes commands for launching the client and server instances.
+- `asyncapi.yml`: The specification that drives the Socket.IO server.
+- `app.py`: The server implementation. Includes the event handlers as well as construction of the `flask.Flask` and `flask_socketio.SocketIO` instances.
+- `client/`: The client implementation, using [express](https://expressjs.com/) and vanilla JavaScript.
+- `Makefile`: Includes commands for launching the client and server instances.
 
 ## How to run it
 
@@ -18,12 +18,12 @@ Both of the server and client applications are dockerised and bundled together i
 ### Using docker
 
 ```bash
-$ make docker-run  # Launches both client and server 
+$ make docker-run  # Launches both client and server
 ```
 
 ### Without docker
 
-First make sure that you have working python 3.7+ and node 12+ environments.
+First make sure that you have python 3.7+ and node 12+ installed in your local environment.
 
 ```bash
 $ make run-server  # Installs python deps and launches the server

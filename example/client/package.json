@@ -11,7 +11,7 @@
   },
   "scripts": {
     "start": "node index.js",
-    "pretty:check": "prettier --check \"**/*.js\" --check \"**/*.html\" --check \"**/*.css\""
+    "pretty:check": "prettier --check ."
   },
   "devDependencies": {
     "prettier": "^2.3.1"

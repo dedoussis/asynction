@@ -1,26 +1,26 @@
 # Asynction
 
-[![Tests Status](https://github.com/dedoussis/asynction/workflows/tests/badge.svg)](https://github.com/dedoussis/asynction/actions?query=workflow%3Atests) [![codecov](https://codecov.io/gh/dedoussis/asynction/branch/main/graph/badge.svg?token=3720QP2994)](https://codecov.io/gh/dedoussis/asynction)
+[![Tests Status](https://github.com/dedoussis/asynction/workflows/tests/badge.svg)](https://github.com/dedoussis/asynction/actions/workflows/tests.yml) [![codecov](https://codecov.io/gh/dedoussis/asynction/branch/main/graph/badge.svg?token=3720QP2994)](https://codecov.io/gh/dedoussis/asynction)
 
 SocketIO python framework driven by the [AsyncAPI](https://www.asyncapi.com/) specification. Built on top of [Flask-SocketIO](https://github.com/miguelgrinberg/Flask-SocketIO). Inspired by [Connexion](https://github.com/zalando/connexion).
 
 The purpose of Asynction is to empower a specification first approach when developing [SocketIO](https://socket.io/) APIs in Python.
 
-*Disclaimer: Asynction is still at a very early stage and should not be used in production codebases.*
+_Disclaimer: Asynction is still at a very early stage and should not be used in production codebases._
 
 ## Features
 
-* Payload validation (for both incoming and outgoing events), based on the message schemata within the API specification.
-* HTTP request validation, upon connection, based on the channel binding schemata within the API specification.
-* Callback validation, upon the ACK of a message, based on the message `x-ack` schemata within the API specification.
-* Automatic registration of all event and error handlers defined within the API specification.
-* Mock server support *(coming soon)*
-* AsyncAPI [playground](https://playground.asyncapi.io/?load=https://raw.githubusercontent.com/asyncapi/asyncapi/master/examples/2.0.0/simple.yml) *(coming soon)*
-* Authentication à la [Connexion](https://connexion.readthedocs.io/en/latest/security.html) *(coming soon)*
+- Payload validation (for both incoming and outgoing events), based on the message schemata within the API specification.
+- HTTP request validation, upon connection, based on the channel binding schemata within the API specification.
+- Callback validation, upon the ACK of a message, based on the message `x-ack` schemata within the API specification.
+- Automatic registration of all event and error handlers defined within the API specification.
+- Mock server support _(coming soon)_
+- AsyncAPI [playground](https://playground.asyncapi.io/?load=https://raw.githubusercontent.com/asyncapi/asyncapi/master/examples/2.0.0/simple.yml) _(coming soon)_
+- Authentication à la [Connexion](https://connexion.readthedocs.io/en/latest/security.html) _(coming soon)_
 
 ## Prerequisites
 
-* Python 3.7 (or higher)
+- Python 3.7 (or higher)
 
 ## Install
 
@@ -69,42 +69,42 @@ info:
 
 servers:
   production:
-    url: my-company.com/api/socket.io  # Customizes the `path` kwarg that is fed into the `SocketIO` constructor
+    url: my-company.com/api/socket.io # Customizes the `path` kwarg that is fed into the `SocketIO` constructor
     protocol: wss
 
 channels:
-  /user:  # A channel is essentially a SocketIO namespace
+  /user: # A channel is essentially a SocketIO namespace
     publish:
       message:
-        oneOf:  # The oneOf Messages relationship expresses the supported events that a client may emit under the `/user` namespace
-          - $ref: '#/components/messages/UserSignUp'
-          - $ref: '#/components/messages/UserLogIn'
-    x-handlers:  # Default namespace handlers (such as connect, disconnect and error)
-      error: my_api.handlers.user_error  # Equivelant of: `@socketio.on_error("/user")`
+        oneOf: # The oneOf Messages relationship expresses the supported events that a client may emit under the `/user` namespace
+          - $ref: "#/components/messages/UserSignUp"
+          - $ref: "#/components/messages/UserLogIn"
+    x-handlers: # Default namespace handlers (such as connect, disconnect and error)
+      error: my_api.handlers.user_error # Equivelant of: `@socketio.on_error("/user")`
   /admin:
     subscribe:
       message:
         oneOf:
-          - '#/components/messages/Metrics'
+          - "#/components/messages/Metrics"
     x-handlers:
-      connect: my_api.handlers.authenticated_connect  # Equivelant of: `@socketio.on("connect", namespace="/admin")`
+      connect: my_api.handlers.authenticated_connect # Equivelant of: `@socketio.on("connect", namespace="/admin")`
       error: my_api.handlers.admin_error
-    bindings:  # Bindings are used to validate the HTTP request upon connection
-      $ref: '#/components/channelBindings/AuthenticatedWsBindings'
+    bindings: # Bindings are used to validate the HTTP request upon connection
+      $ref: "#/components/channelBindings/AuthenticatedWsBindings"
 
 components:
   messages:
     UserSignUp:
-      name: sign up  # The SocketIO event name. Use `message` or `json` for unnamed events.
-      payload:  # Asynction uses payload JSON Schemata for message validation
+      name: sign up # The SocketIO event name. Use `message` or `json` for unnamed events.
+      payload: # Asynction uses payload JSON Schemata for message validation
         type: object
-      x-handler: my_api.handlers.user_sign_up  # The handler that is to be registered. Equivelant of: `@socketio.on("sign up", namespace="/user")`
+      x-handler: my_api.handlers.user_sign_up # The handler that is to be registered. Equivelant of: `@socketio.on("sign up", namespace="/user")`
     UserLogIn:
       name: log in
       payload:
         type: object
       x-handler: my_api.handlers.user_log_in
-      x-ack:  # Specifies the structure of the ACK data that the client should expect
+      x-ack: # Specifies the structure of the ACK data that the client should expect
         args:
           type: boolean
     Metrics:
@@ -112,13 +112,13 @@ components:
       payload:
         type: string
         enum: [signup, login]
-      x-ack:  # Specifies the structure of the ACK data that the server expects
+      x-ack: # Specifies the structure of the ACK data that the server expects
         args:
-          type: string 
+          type: string
 
   channelBindings:
     AuthenticatedWsBindings:
-      ws:  
+      ws:
         query:
           type: object
           properties:
@@ -150,8 +150,8 @@ Without Asynction, one would need to add additional boilerplate to register the 
 
 ## Further resources
 
-* [API reference](https://asynction.dedouss.is)
-* [Complete example](example/)
+- [API reference](https://asynction.dedouss.is)
+- [Complete example](example/)
 
 ## Specification Extentions
 
@@ -170,11 +170,11 @@ The `x-handlers` field MAY be defined as an additional property of the [Channel 
 
 #### Channel Handlers Object
 
-| Field Name | Type | Description |
-|-|-|-|
-| connect  | `string` | Dot joint path to the python connect handler callable |
+| Field Name | Type     | Description                                              |
+| ---------- | -------- | -------------------------------------------------------- |
+| connect    | `string` | Dot joint path to the python connect handler callable    |
 | disconnect | `string` | Dot joint path to the python disconnect handler callable |
-| error | `string` | Dot joint path to the python error handler callable |
+| error      | `string` | Dot joint path to the python error handler callable      |
 
 ### ACK packet
 
@@ -182,15 +182,15 @@ The basic unit of information in the [Socket.IO protocol](https://github.com/soc
 
 In order to express the above acknowledgement semantics, the A2S specification needs to be extended as follows:
 
-* [Message Object](https://www.asyncapi.com/docs/specifications/2.0.0#messageObject)s MAY include the `x-ack` field. The value of this field SHOULD be a [Message Ack Object](#message-ack-object).  
-* [Components Object](https://www.asyncapi.com/docs/specifications/2.0.0#componentsObject) MAY include the `x-messageAcks` field. The value of this field should be a of type: `Map[string, Message Ack Object | Reference Object]`
+- [Message Object](https://www.asyncapi.com/docs/specifications/2.0.0#messageObject)s MAY include the `x-ack` field. The value of this field SHOULD be a [Message Ack Object](#message-ack-object).
+- [Components Object](https://www.asyncapi.com/docs/specifications/2.0.0#componentsObject) MAY include the `x-messageAcks` field. The value of this field should be of type: `Map[string, Message Ack Object | Reference Object]`
 
 Although Asynction uses these fields to validate the input args of the callback functions, these ACK extentions are necessary to express semantics of the [Socket.IO protocol](https://github.com/socketio/socket.io-protocol), regardless of any tooling used for automation / code generation.
 
 #### Message Ack Object
 
-| Field Name | Type | Description |
-|-|-|-|
-| args  | [Schema Object](https://www.asyncapi.com/docs/specifications/2.0.0#schemaObject) | Schema of the arguments that are passed as input to the acknowledgement callback function. In the case of multiple arguments, use the `array` type to express the tuple. |
+| Field Name | Type                                                                             | Description                                                                                                                                                              |
+| ---------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| args       | [Schema Object](https://www.asyncapi.com/docs/specifications/2.0.0#schemaObject) | Schema of the arguments that are passed as input to the acknowledgement callback function. In the case of multiple arguments, use the `array` type to express the tuple. |
 
 In the future, the Message Ack Object may be extended with extra fields to enable additional documentation of the callback.

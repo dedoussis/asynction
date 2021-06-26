@@ -23,7 +23,6 @@ updates:
       prefix: "deps:"
   - package-ecosystem: docker
     directory: /example
-    registries:
     schedule:
       interval: weekly
     default_reviewers:
@@ -34,7 +33,6 @@ updates:
       prefix: "deps:"
   - package-ecosystem: npm
     directory: /example/client
-    registries:
     schedule:
       interval: weekly
     default_reviewers:

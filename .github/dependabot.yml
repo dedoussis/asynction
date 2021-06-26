@@ -5,39 +5,39 @@ updates:
     directory: /
     schedule:
       interval: daily
-    default_reviewers:
+    reviewers:
       - dedoussis
-    default_labels:
+    labels:
       - dependencies
-    commit_message:
-      prefix: "deps:"
+    commit-message:
+      prefix: "deps: "
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: daily
-    default_reviewers:
+    reviewers:
       - dedoussis
-    default_labels:
+    labels:
       - dependencies
-    commit_message:
-      prefix: "deps:"
+    commit-message:
+      prefix: "deps: "
   - package-ecosystem: docker
     directory: /example
     schedule:
       interval: weekly
-    default_reviewers:
+    reviewers:
       - dedoussis
-    default_labels:
+    labels:
       - dependencies
-    commit_message:
-      prefix: "deps:"
+    commit-message:
+      prefix: "deps: "
   - package-ecosystem: npm
     directory: /example/client
     schedule:
       interval: weekly
-    default_reviewers:
+    reviewers:
       - dedoussis
-    default_labels:
+    labels:
       - dependencies
-    commit_message:
-      prefix: "deps:"
+    commit-message:
+      prefix: "deps: "

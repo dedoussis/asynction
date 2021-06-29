@@ -31,6 +31,7 @@ def test_message_deserialisation(faker: Faker):
     assert message.name == name
     assert message.payload == payload
     assert message.x_handler == x_handler
+    assert message.x_ack
     assert message.x_ack.args == x_ack_args
 
 

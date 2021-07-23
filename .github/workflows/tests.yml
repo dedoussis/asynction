@@ -73,7 +73,7 @@ jobs:
       - name: Test
         run: make test-unit
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v2.0.1
+        uses: codecov/codecov-action@v2.0.2
         with:
           files: ./coverage.xml
           flags: unittests

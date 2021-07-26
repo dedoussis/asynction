@@ -28,7 +28,7 @@ clean-mypy:
 	rm -rf .mypy_cache
 
 clean-docker:
-	docker compose down
+	docker-compose down
 
 typecheck:
 	mypy --package asynction --config-file setup.cfg
@@ -40,8 +40,8 @@ test-integration:
 	pytest -vvv --mypy tests/integration
 
 test-e2e: clean
-	docker compose up --build --detach asynction_server
-	docker compose run test_runner
+	docker-compose up --build --detach asynction_server
+	docker-compose run test_runner
 
 format:
 	black .

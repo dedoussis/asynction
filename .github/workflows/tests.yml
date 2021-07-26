@@ -46,6 +46,7 @@ jobs:
         run: make example/install-client-requirements
       - name: Linting the example code
         run: make example/lint-client
+
   unit:
     runs-on: ubuntu-latest
     strategy:
@@ -81,6 +82,7 @@ jobs:
           fail_ci_if_error: true
           path_to_write_report: ./coverage/codecov_report.txt
           verbose: true
+
   integration:
     runs-on: ubuntu-latest
     strategy:
@@ -107,3 +109,10 @@ jobs:
         run: make requirements-test-install
       - name: Test
         run: make test-integration
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Test
+        run: make test-e2e

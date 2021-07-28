@@ -8,7 +8,7 @@ all-install: $(wildcard requirements*.txt)
 %-install: %.txt
 	pip install -r $<
 
-clean: clean-pyc clean-build clean-tests clean-mypy clean-docker
+clean: clean-pyc clean-build clean-tests clean-mypy
 
 clean-pyc:
 	find . -name '*.pyc' -exec rm -rf {} +
@@ -27,9 +27,6 @@ clean-tests:
 clean-mypy:
 	rm -rf .mypy_cache
 
-clean-docker:
-	docker-compose down
-
 typecheck:
 	mypy --package asynction --config-file setup.cfg
 
@@ -40,8 +37,7 @@ test-integration:
 	pytest -vvv --mypy tests/integration
 
 test-e2e: clean
-	docker-compose up --build --detach asynction_server
-	docker-compose run test_runner
+	docker-compose -f tests/e2e/docker-compose.yml  up --build --abort-on-container-exit --exit-code-from test_runner
 
 format:
 	black .
@@ -62,4 +58,4 @@ dist: clean
 docs/% example/%:
 	$(MAKE) -C $(@D) $(@F:.%=%)
 
-.PHONY: all-install clean clean-pyc clean-build clean-tests clean-mypy clean-docker typecheck test-unit test-integration test-e2e format lint release dist
+.PHONY: all-install clean clean-pyc clean-build clean-tests clean-mypy typecheck test-unit test-integration test-e2e format lint release dist

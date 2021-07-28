@@ -4,7 +4,7 @@ ADD . /opt/asynction/example
 
 WORKDIR /opt/asynction/example
 
-RUN npm install
+RUN npm ci
 
 EXPOSE 3000
 

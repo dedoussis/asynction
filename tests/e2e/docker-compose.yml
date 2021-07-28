@@ -1,0 +1,17 @@
+version: "3.9"
+
+services:
+  asynction_server:
+    build:
+      context: ${PWD}
+      dockerfile: tests/e2e/Dockerfile
+    ports:
+      - "5000:5000"
+  test_runner:
+    build:
+      context: ${PWD}
+      dockerfile: tests/e2e/Dockerfile-tests
+    environment:
+      SERVER_URL: ws://asynction_server:5000
+    command: [-vvv, --mypy, tests/e2e]
+    depends_on: [asynction_server]

@@ -36,6 +36,9 @@ test-unit:
 test-integration:
 	pytest -vvv --mypy tests/integration
 
+test-e2e: clean
+	docker-compose -f tests/e2e/docker-compose.yml  up --build --abort-on-container-exit --exit-code-from test_runner
+
 format:
 	black .
 	isort .
@@ -55,4 +58,4 @@ dist: clean
 docs/% example/%:
 	$(MAKE) -C $(@D) $(@F:.%=%)
 
-.PHONY: all-install clean clean-pyc clean-build clean-tests clean-mypy typecheck test-unit test-integration format lint release dist
+.PHONY: all-install clean clean-pyc clean-build clean-tests clean-mypy typecheck test-unit test-integration test-e2e format lint release dist

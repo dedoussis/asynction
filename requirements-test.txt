@@ -1,7 +1,7 @@
 black==21.7b0
 Faker==8.10.3
 flake8==3.9.2
-isort==5.9.2
+isort==5.9.3
 mypy==0.812
 pytest==6.2.4
 pytest-cov==2.12.1

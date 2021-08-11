@@ -4,32 +4,30 @@ Asynction is still at an early beta stage and any contribution towards improving
 
 The current areas of focus are:
 
-* Productionizing the library
-* Documentation
+- Productionizing the library
+- Documentation
 
 ## Table of Contents 📖
 
 1. [Roadmap](#roadmap)
 1. [Support questions & reporting bugs](#support-questions--reporting-bugs)
 1. [Development](#development)
-    1. [Project structure](#project-structure)
-    1. [Environment setup](#environment-setup)
-    1. [Coding style](#coding-style)
-    1. [Checks & Testing](#checks--testing)
-    1. [Docs](#docs)
+   1. [Project structure](#project-structure)
+   1. [Environment setup](#environment-setup)
+   1. [Coding style](#coding-style)
+   1. [Checks & Testing](#checks--testing)
+   1. [Docs](#docs)
 1. [Release](#release)
 1. [Finally](#finally)
 
 ## Roadmap
 
-* Documenting examples and tutorials of using Asynction.
-* Improving the existing generated documentation.
-* Mock server support.
-* Exposing an [AsyncAPI playground](https://playground.asyncapi.io/) via a Flask route, in a similar manner to how Connexion exposes a Swagger UI.
-* E2E testing suite (using a dockerised setup)
-* Type casting: Whenever possible Asynction should try to parse the argument values and do type casting to the related Python native values.
-* Dynamic rendering of the [AsyncAPI](https://www.asyncapi.com/) spec. Could use [Jinja2](https://jinja.palletsprojects.com/en/3.0.x/) to allow the parametrisation of the spec.
-* Authentication à la [Connexion](https://connexion.readthedocs.io/en/latest/security.html).
+- [] Improving the existing generated documentation.
+- [] Mock server support.
+- [] Exposing an [AsyncAPI playground](https://playground.asyncapi.io/) via a Flask route, in a similar manner to how Connexion exposes a Swagger UI.
+- [] Type casting: Whenever possible Asynction should try to parse the argument values and do type casting to the related Python native values.
+- [] Dynamic rendering of the [AsyncAPI](https://www.asyncapi.com/) spec. Could use [Jinja2](https://jinja.palletsprojects.com/en/3.0.x/) to allow the parametrisation of the spec.
+- [] Authentication à la [Connexion](https://connexion.readthedocs.io/en/latest/security.html).
 
 The OpenAPI counterparts of Asynction are [Connexion](https://github.com/zalando/connexion) for python and [openapi-backend](https://github.com/anttiviljami/openapi-backend) for Node.js. These tools provide a great source of inspiration for the above roadmap.
 
@@ -53,20 +51,22 @@ root/
 │   ├───client/
 │   └───app.py
 ├───tests/
+│   ├───e2e/
 │   ├───integration/
 │   └───unit/
 ├───Makefile
 ├───requirements-dev.txt
 ├───requirements-test.txt
 ├───requirements.txt
+├───setup.py
 └───...
 ```
 
-* The `asynction` directory is a python package that contains the runtime source of the framework.
-* `docs` is the source directory of the [Sphinx](https://www.sphinx-doc.org/) documentation hosted at <https://asynction.dedouss.is>.
-* `example` includes the implementation of <https://socket.io/demos/chat> using Asynction.
-* `tests` is the source of the entire test suite, consisting of unit and integration tests.
-* The top level `Makefile` is a toolbox of useful commands for installing dependencies as well as testing, linting and packaging the code. It is also used as the entrypoint interface for all CI/CD operations.
+- The `asynction` directory is a python package that contains the runtime source of the framework.
+- `docs` is the source directory of the [Sphinx](https://www.sphinx-doc.org/) documentation hosted at <https://asynction.dedouss.is>.
+- `example` includes the implementation of <https://socket.io/demos/chat> using Asynction.
+- `tests` is the source of the entire test suite, consisting of unit, integration and e2e tests.
+- The top level `Makefile` is a toolbox of useful commands for installing dependencies as well as testing, linting and packaging the code. It is also used as the entrypoint interface for all CI/CD operations.
 
 ### Environment setup
 
@@ -76,37 +76,37 @@ Use python3.7 or higher.
 
 1. Upgrade pip and setuptools
 
-    ```bash
-    $ python -m pip install --upgrade pip setuptools
-    ```
+   ```bash
+   $ python -m pip install --upgrade pip setuptools
+   ```
 
 1. Install all the requirements
 
-    ```bash
-    $ make all-install
-    ```
+   ```bash
+   $ make all-install
+   ```
 
-    or install a subset of the requirements depending on the task
+   or install a subset of the requirements depending on the task
 
-    ```bash
-    $ make requirements-dev-install  # Dependecies useful for local development
-    $ make requirements-test-install  # Testing dependencies
-    $ make requirements-install  # Runtime dependencies
-    ```
+   ```bash
+   $ make requirements-dev-install  # Dependecies useful for local development
+   $ make requirements-test-install  # Testing dependencies
+   $ make requirements-install  # Runtime dependencies
+   ```
 
 1. Install the pre-commit hooks
 
-    ```bash
-    $ pre-commit install
-    ```
+   ```bash
+   $ pre-commit install
+   ```
 
 ### Coding style
 
-* All Python code must follow the [PEP 8](https://www.python.org/dev/peps/pep-0008/) guidelines.
-* Type annotations are mandatory (even in tests). Avoid the use of `typing.Any` and `# type: ignore`.
-* All parts of the public API (exposed via `asynction.__init__.py`) should be documented with docstrings.
+- All Python code must follow the [PEP 8](https://www.python.org/dev/peps/pep-0008/) guidelines.
+- Type annotations are mandatory (even in tests). Avoid the use of `typing.Any` and `# type: ignore`.
+- All parts of the public API (exposed via `asynction.__init__.py`) should be documented with docstrings.
 
-__Make sure you run `pre-commit` before every commit!__
+**Make sure you run `pre-commit` before every commit!**
 
 ### Checks & Testing
 
@@ -120,6 +120,7 @@ $ make example/lint-client
 
 $ make test-unit  # unit testing suite
 $ make test-integration  # integration testing suite
+$ make test-e2e  # end-to-end testing suite -- testing against the example chat application in a dockerised environment
 ```
 
 ### Docs

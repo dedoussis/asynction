@@ -1,4 +1,10 @@
 # flake8: noqa: F401
 from asynction.exceptions import *
-from asynction.mock_server import MockAsynctionSocketIO
 from asynction.server import AsynctionSocketIO
+
+try:
+    from asynction.mock_server import MockAsynctionSocketIO
+except ModuleNotFoundError:
+    # Mock support may not be available if the mock
+    # extra requirements have not been installed
+    pass

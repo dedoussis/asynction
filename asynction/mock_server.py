@@ -57,7 +57,7 @@ def generate_fake_data_from_schema(schema: JSONSchema) -> JSONMapping:
 SubscriptionTask = Callable[[], None]
 
 
-def task_runner(queue: Queue[SubscriptionTask]) -> None:
+def task_runner(queue: "Queue[SubscriptionTask]") -> None:
     while True:
         task = queue.get()
         task()
@@ -67,7 +67,7 @@ def task_runner(queue: Queue[SubscriptionTask]) -> None:
 def task_scheduler(
     server: "MockAsynctionSocketIO",
     tasks: Sequence[SubscriptionTask],
-    queue: Queue[SubscriptionTask],
+    queue: "Queue[SubscriptionTask]",
     event: threading.Event,
 ) -> None:
     while True:
@@ -170,7 +170,7 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
     def _register_connection_handler(
         self, namespace: str, subscription_tasks: Sequence[SubscriptionTask]
     ) -> None:
-        queue: Queue[SubscriptionTask] = self.server.eio.create_queue()
+        queue: "Queue[SubscriptionTask]" = self.server.eio.create_queue()
         event: threading.Event = self.server.eio.create_event()
 
         def connect_handler() -> None:

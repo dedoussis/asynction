@@ -73,6 +73,7 @@ components:
             type: string
           message:
             type: string
+        required: [username, message]
     UserTyping:
       name: typing
       payload:
@@ -80,6 +81,7 @@ components:
         properties:
           username:
             type: string
+        required: [username]
     UserStopTyping:
       name: stop typing
       payload:
@@ -87,6 +89,7 @@ components:
         properties:
           username:
             type: string
+        required: [username]
     UserJoined:
       name: user joined
       payload:
@@ -96,6 +99,7 @@ components:
             type: string
           numUsers:
             type: integer
+        required: [username, numUsers]
     UserLeft:
       name: user left
       payload:
@@ -105,6 +109,7 @@ components:
             type: string
           numUsers:
             type: integer
+        required: [username, numUsers]
     LogIn:
       name: login
       payload:
@@ -112,6 +117,7 @@ components:
         properties:
           numUsers:
             type: integer
+        required: [numUsers]
     ServerMetric:
       name: server metric
       payload:
@@ -121,6 +127,7 @@ components:
             type: string
           value:
             type: number
+        required: [name, value]
 
   channelBindings:
     AuthenticatedWsBindings:

@@ -1,6 +1,6 @@
 """
-The ``AsynctionSocketIO`` server is essentially a ``flask_socketio.SocketIO`` server
-with an additional factory classmethod.
+The :class:`AsynctionSocketIO` server is essentially a ``flask_socketio.SocketIO``
+server with an additional factory classmethod.
 """
 
 from functools import singledispatch
@@ -92,7 +92,7 @@ class AsynctionSocketIO(SocketIO):
         **kwargs,
     ):
         """This is a private constructor.
-        Use the ``AsynctionSocketIO.from_spec`` factory instead.
+        Use the :meth:`AsynctionSocketIO.from_spec` factory instead.
         """
         super().__init__(app=app, **kwargs)
         self.spec = spec

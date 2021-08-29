@@ -7,7 +7,8 @@ The [original source](https://github.com/socketio/socket.io/tree/master/examples
 ## Layout
 
 - `asyncapi.yml`: The specification that drives the Socket.IO server.
-- `app.py`: The server implementation. Includes the event handlers as well as construction of the `flask.Flask` and `flask_socketio.SocketIO` instances.
+- `app.py`: The server implementation. Includes the event handlers as well as the construction of the `flask.Flask` and `flask_socketio.SocketIO` instances.
+- `mock_app.py`: The mock server implementation.
 - `client/`: The client implementation, using [express](https://expressjs.com/) and vanilla JavaScript.
 - `Makefile`: Includes commands for launching the client and server instances.
 

@@ -13,6 +13,7 @@ from queue import Queue
 from random import choice
 from typing import Callable
 from typing import List
+from typing import Mapping
 from typing import Optional
 from typing import Sequence
 
@@ -23,6 +24,7 @@ from hypothesis import Phase
 from hypothesis import Verbosity
 from hypothesis import given
 from hypothesis import settings
+from hypothesis.strategies import SearchStrategy
 from hypothesis_jsonschema import from_schema
 
 from asynction.server import AsynctionSocketIO
@@ -33,9 +35,13 @@ from asynction.types import JSONSchema
 from asynction.types import Message
 from asynction.validation import publish_message_validator_factory
 
+CustomFormats = Mapping[str, SearchStrategy[str]]
 
-def generate_fake_data_from_schema(schema: JSONSchema) -> JSONMapping:
-    strategy = from_schema(schema)  # type: ignore
+
+def generate_fake_data_from_schema(
+    schema: JSONSchema, custom_formats: CustomFormats
+) -> JSONMapping:
+    strategy = from_schema(schema, custom_formats=custom_formats)  # type: ignore
 
     @given(strategy)
     @settings(
@@ -88,6 +94,7 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
         app: Optional[Flask],
         subscription_task_interval: int,
         max_worker_number: int,
+        custom_format_samples: CustomFormats,
         **kwargs
     ):
         """This is a private constructor.
@@ -96,6 +103,7 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
         super().__init__(spec, validation=validation, app=app, **kwargs)
         self.subscription_task_interval = subscription_task_interval
         self.max_worker_number = max_worker_number
+        self.custom_format_samples = custom_format_samples
 
     @classmethod
     def from_spec(
@@ -107,6 +115,7 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
         app: Optional[Flask] = None,
         subscription_task_interval: int = 1,
         max_worker_number: int = 8,
+        custom_format_samples: CustomFormats = {},
         **kwargs
     ) -> SocketIO:
         """Create a Flask-SocketIO mock server given an AsyncAPI spec.
@@ -122,6 +131,7 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
 
         * ``subscription_task_interval``
         * ``max_worker_number``
+        * ``custom_format_samples``
 
         :param spec_path: The path where the AsyncAPI YAML specification is located.
         :param validation: When set to ``False``, message payloads, channel
@@ -141,6 +151,9 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
         :param max_worker_number: The maximum number of workers to be started for the
                                   purposes of executing background subscription tasks.
                                   Defaults to ``8``.
+        :param custom_format_samples: Dictionary holding the hypothesis strategies for
+                                      custom string formats present in the spec.
+                                      Defaults to an empty dictionary.
         :param kwargs: Flask-SocketIO, Socket.IO and Engine.IO server options.
 
         :returns: A Flask-SocketIO mock server, emitting events with fake data in
@@ -164,6 +177,7 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
             app=app,
             subscription_task_interval=subscription_task_interval,
             max_worker_number=max_worker_number,
+            custom_format_samples=custom_format_samples,
             **kwargs
         )
 
@@ -229,19 +243,22 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
         def task() -> None:
             self.emit(
                 message.name,
-                generate_fake_data_from_schema(message.payload or {"type": "null"}),
+                generate_fake_data_from_schema(
+                    message.payload or {"type": "null"}, self.custom_format_samples
+                ),
                 namespace=namespace,
                 callback=message.x_ack and (lambda *args, **kwargs: None),
             )
 
         return task
 
-    @staticmethod
-    def make_publish_handler(message: Message) -> Callable:
+    def make_publish_handler(self, message: Message) -> Callable:
         if message.x_ack is not None:
 
             def handler(*args, **kwargs):
-                return generate_fake_data_from_schema(message.x_ack.args)
+                return generate_fake_data_from_schema(
+                    message.x_ack.args, self.custom_format_samples
+                )
 
             return handler
 

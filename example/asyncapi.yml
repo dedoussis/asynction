@@ -71,8 +71,10 @@ components:
         properties:
           username:
             type: string
+            format: first_name
           message:
             type: string
+            format: message
         required: [username, message]
     UserTyping:
       name: typing
@@ -81,6 +83,7 @@ components:
         properties:
           username:
             type: string
+            format: first_name
         required: [username]
     UserStopTyping:
       name: stop typing
@@ -89,6 +92,7 @@ components:
         properties:
           username:
             type: string
+            format: first_name
         required: [username]
     UserJoined:
       name: user joined
@@ -97,6 +101,7 @@ components:
         properties:
           username:
             type: string
+            format: first_name
           numUsers:
             type: integer
         required: [username, numUsers]
@@ -107,6 +112,7 @@ components:
         properties:
           username:
             type: string
+            format: first_name
           numUsers:
             type: integer
         required: [username, numUsers]

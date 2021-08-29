@@ -14,7 +14,7 @@ _Disclaimer: Asynction is still at an early stage and should not be used in prod
 - HTTP request validation, upon connection, based on the channel binding schemata within the API specification.
 - Callback validation, upon the ACK of a message, based on the message `x-ack` schemata within the API specification.
 - Automatic registration of all event and error handlers defined within the API specification.
-- Mock server support _(coming soon)_
+- Mock server support
 - AsyncAPI [playground](https://playground.asyncapi.io/?load=https://raw.githubusercontent.com/asyncapi/asyncapi/master/examples/2.0.0/simple.yml) _(coming soon)_
 - Authentication à la [Connexion](https://connexion.readthedocs.io/en/latest/security.html) _(coming soon)_
 
@@ -26,6 +26,12 @@ _Disclaimer: Asynction is still at an early stage and should not be used in prod
 
 ```bash
 $ pip install asynction
+```
+
+With mock server support:
+
+```bash
+$ pip install asynction[mock]
 ```
 
 ## Usage

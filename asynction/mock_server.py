@@ -17,6 +17,7 @@ from typing import Optional
 from typing import Sequence
 
 from flask.app import Flask
+from flask_socketio import SocketIO
 from hypothesis import HealthCheck
 from hypothesis import Phase
 from hypothesis import Verbosity
@@ -107,7 +108,7 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
         subscription_task_interval: int = 1,
         max_worker_number: int = 8,
         **kwargs
-    ) -> "MockAsynctionSocketIO":
+    ) -> SocketIO:
         """Create a Flask-SocketIO mock server given an AsyncAPI spec.
         The server emits events containing payloads of fake data in regular intervals,
         through background subscription tasks.

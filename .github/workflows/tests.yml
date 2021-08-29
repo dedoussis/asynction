@@ -21,6 +21,8 @@ jobs:
             ${{ runner.os }}-
       - name: Install dependencies
         run: make requirements-install
+      - name: Install mock dependencies
+        run: make requirements-mock-install
       - name: Install test dependencies
         run: make requirements-test-install
       - name: Linting
@@ -69,6 +71,8 @@ jobs:
             ${{ runner.os }}-
       - name: Install dependencies
         run: make requirements-install
+      - name: Install mock dependencies
+        run: make requirements-mock-install
       - name: Install test dependencies
         run: make requirements-test-install
       - name: Test
@@ -105,6 +109,8 @@ jobs:
             ${{ runner.os }}-
       - name: Install dependencies
         run: make requirements-install
+      - name: Install mock dependencies
+        run: make requirements-mock-install
       - name: Install test dependencies
         run: make requirements-test-install
       - name: Test

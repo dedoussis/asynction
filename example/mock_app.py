@@ -2,22 +2,15 @@
 import os
 from logging import getLogger
 from pathlib import Path
-from random import sample
 
 from faker import Faker
 from flask import Flask
-from hypothesis.strategies import sampled_from
 
 from asynction import MockAsynctionSocketIO
 
 logger = getLogger(__name__)
 flask_app = Flask(__name__)
 faker = Faker()
-
-CUSTOM_FORMATS = {
-    "first_name": sampled_from([faker.first_name() for _ in range(30)]),
-    "message": sampled_from([faker.sentence() for _ in range(200)]),
-}
 
 mock_asio = MockAsynctionSocketIO.from_spec(
     spec_path=Path(__file__).parent.joinpath("asyncapi.yml"),
@@ -26,7 +19,6 @@ mock_asio = MockAsynctionSocketIO.from_spec(
     async_mode="gevent",
     app=flask_app,
     cors_allowed_origins="*",
-    custom_format_samples=CUSTOM_FORMATS,
 )
 
 if __name__ == "__main__":

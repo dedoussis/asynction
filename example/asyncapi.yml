@@ -74,7 +74,7 @@ components:
             format: first_name
           message:
             type: string
-            format: message
+            format: sentence
         required: [username, message]
     UserTyping:
       name: typing

@@ -17,6 +17,8 @@ from typing import Mapping
 from typing import Optional
 from typing import Sequence
 
+from faker import Faker
+from faker.exceptions import UnsupportedFeature
 from flask.app import Flask
 from flask_socketio import SocketIO
 from hypothesis import HealthCheck
@@ -25,7 +27,9 @@ from hypothesis import Verbosity
 from hypothesis import given
 from hypothesis import settings
 from hypothesis.strategies import SearchStrategy
+from hypothesis.strategies import sampled_from
 from hypothesis_jsonschema import from_schema
+from hypothesis_jsonschema._from_schema import STRING_FORMATS
 
 from asynction.server import AsynctionSocketIO
 from asynction.types import AsyncApiSpec
@@ -38,8 +42,34 @@ from asynction.validation import publish_message_validator_factory
 CustomFormats = Mapping[str, SearchStrategy[str]]
 
 
+def make_faker_formats(faker: Faker, sample_size: int) -> CustomFormats:
+    custom_formats: CustomFormats = {}
+    if sample_size < 1:
+        return custom_formats
+
+    for attr in dir(faker):
+        if (
+            not attr.startswith("_")
+            and attr not in Faker.generator_attrs
+            and attr not in STRING_FORMATS
+        ):
+            try:
+                provider = getattr(faker, attr)
+                if isinstance(provider(), str):
+                    custom_formats = {
+                        **custom_formats,
+                        attr: sampled_from([provider() for _ in range(sample_size)]),
+                    }
+            except (TypeError, UnsupportedFeature):
+                # Skip legacy providers or providers that require extra dependencies
+                continue
+
+    return custom_formats
+
+
 def generate_fake_data_from_schema(
-    schema: JSONSchema, custom_formats: CustomFormats
+    schema: JSONSchema,
+    custom_formats: CustomFormats,
 ) -> JSONMapping:
     strategy = from_schema(schema, custom_formats=custom_formats)  # type: ignore
 
@@ -94,7 +124,7 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
         app: Optional[Flask],
         subscription_task_interval: int,
         max_worker_number: int,
-        custom_format_samples: CustomFormats,
+        custom_formats_sample_size: int,
         **kwargs
     ):
         """This is a private constructor.
@@ -103,7 +133,8 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
         super().__init__(spec, validation=validation, app=app, **kwargs)
         self.subscription_task_interval = subscription_task_interval
         self.max_worker_number = max_worker_number
-        self.custom_format_samples = custom_format_samples
+        self.faker = Faker()
+        self.custom_formats = make_faker_formats(self.faker, custom_formats_sample_size)
 
     @classmethod
     def from_spec(
@@ -115,7 +146,7 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
         app: Optional[Flask] = None,
         subscription_task_interval: int = 1,
         max_worker_number: int = 8,
-        custom_format_samples: CustomFormats = {},
+        custom_formats_sample_size: int = 20,
         **kwargs
     ) -> SocketIO:
         """Create a Flask-SocketIO mock server given an AsyncAPI spec.
@@ -131,7 +162,7 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
 
         * ``subscription_task_interval``
         * ``max_worker_number``
-        * ``custom_format_samples``
+        * ``custom_formats_sample_size``
 
         :param spec_path: The path where the AsyncAPI YAML specification is located.
         :param validation: When set to ``False``, message payloads, channel
@@ -151,9 +182,12 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
         :param max_worker_number: The maximum number of workers to be started for the
                                   purposes of executing background subscription tasks.
                                   Defaults to ``8``.
-        :param custom_format_samples: Dictionary holding the hypothesis strategies for
-                                      custom string formats present in the spec.
-                                      Defaults to an empty dictionary.
+        :param custom_formats_sample_size: The ammout of the Faker provider samples
+                                           to be used for each custom string format.
+                                           Hypotheses uses these samples to generate
+                                           fake data. Set to ``0`` if custom formats
+                                           are not needed.
+                                           Defaults to ``20``.
         :param kwargs: Flask-SocketIO, Socket.IO and Engine.IO server options.
 
         :returns: A Flask-SocketIO mock server, emitting events with fake data in
@@ -177,7 +211,7 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
             app=app,
             subscription_task_interval=subscription_task_interval,
             max_worker_number=max_worker_number,
-            custom_format_samples=custom_format_samples,
+            custom_formats_sample_size=custom_formats_sample_size,
             **kwargs
         )
 
@@ -244,7 +278,7 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
             self.emit(
                 message.name,
                 generate_fake_data_from_schema(
-                    message.payload or {"type": "null"}, self.custom_format_samples
+                    message.payload or {"type": "null"}, self.custom_formats
                 ),
                 namespace=namespace,
                 callback=message.x_ack and (lambda *args, **kwargs: None),
@@ -257,7 +291,7 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
 
             def handler(*args, **kwargs):
                 return generate_fake_data_from_schema(
-                    message.x_ack.args, self.custom_format_samples
+                    message.x_ack.args, self.custom_formats
                 )
 
             return handler

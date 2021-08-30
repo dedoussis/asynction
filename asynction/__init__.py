@@ -4,7 +4,7 @@ from asynction.server import AsynctionSocketIO
 
 try:
     from asynction.mock_server import MockAsynctionSocketIO
-except ModuleNotFoundError:
+except ImportError:
     # Mock support may not be available if the mock
     # extra requirements have not been installed
     pass

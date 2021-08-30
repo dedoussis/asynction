@@ -11,6 +11,16 @@ updates:
       - dependencies
     commit-message:
       prefix: "deps: "
+  - package-ecosystem: pip
+    directory: /example
+    schedule:
+      interval: daily
+    reviewers:
+      - dedoussis
+    labels:
+      - dependencies
+    commit-message:
+      prefix: "deps: "
   - package-ecosystem: github-actions
     directory: /
     schedule:

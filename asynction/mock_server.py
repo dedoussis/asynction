@@ -33,10 +33,12 @@ from hypothesis_jsonschema._from_schema import STRING_FORMATS
 
 from asynction.server import AsynctionSocketIO
 from asynction.types import AsyncApiSpec
+from asynction.types import ChannelBindings
 from asynction.types import ErrorHandler
 from asynction.types import JSONMapping
 from asynction.types import JSONSchema
 from asynction.types import Message
+from asynction.validation import bindings_validator_factory
 from asynction.validation import publish_message_validator_factory
 
 CustomFormats = Mapping[str, SearchStrategy[str]]
@@ -112,6 +114,10 @@ def task_scheduler(
                 return
             queue.put(task)
             server.sleep(server.subscription_task_interval)
+
+
+def _noop_handler(*args, **kwargs) -> None:
+    return None
 
 
 class MockAsynctionSocketIO(AsynctionSocketIO):
@@ -215,9 +221,13 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
             **kwargs
         )
 
-    def _register_connection_handler(
-        self, namespace: str, subscription_tasks: Sequence[SubscriptionTask]
+    def _register_connection_handlers(
+        self,
+        namespace: str,
+        subscription_tasks: Sequence[SubscriptionTask],
+        channel_bindings: Optional[ChannelBindings],
     ) -> None:
+        # TODO: lazy evaluate queue and event
         queue: "Queue[SubscriptionTask]" = self.server.eio.create_queue()
         event: threading.Event = self.server.eio.create_event()
 
@@ -240,6 +250,10 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
 
         def disconnect_handler() -> None:
             event.clear()
+
+        if self.validation:
+            with_bindings_validation = bindings_validator_factory(channel_bindings)
+            connect_handler = with_bindings_validation(connect_handler)
 
         self.on_event("connect", connect_handler, namespace)
         self.on_event("disconnect", disconnect_handler, namespace)
@@ -266,7 +280,9 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
                     for message in channel.subscribe.message.oneOf
                 ]
 
-                self._register_connection_handler(namespace, subscription_tasks)
+                self._register_connection_handlers(
+                    namespace, subscription_tasks, channel.bindings
+                )
 
         if default_error_handler is not None:
             self.on_error_default(default_error_handler)
@@ -281,7 +297,7 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
                     message.payload or {"type": "null"}, self.custom_formats
                 ),
                 namespace=namespace,
-                callback=message.x_ack and (lambda *args, **kwargs: None),
+                callback=message.x_ack and _noop_handler,
             )
 
         return task
@@ -296,4 +312,4 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
 
             return handler
 
-        return lambda *args, **kwargs: None
+        return _noop_handler

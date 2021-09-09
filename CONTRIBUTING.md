@@ -23,7 +23,6 @@ The current areas of focus are:
 ## Roadmap
 
 - [ ] Improving the existing generated documentation.
-- [ ] Mock server support.
 - [ ] Exposing an [AsyncAPI playground](https://playground.asyncapi.io/) via a Flask route, in a similar manner to how Connexion exposes a Swagger UI.
 - [ ] Type casting: Whenever possible Asynction should try to parse the argument values and do type casting to the related Python native values.
 - [ ] Dynamic rendering of the [AsyncAPI](https://www.asyncapi.com/) spec. Could use [Jinja2](https://jinja.palletsprojects.com/en/3.0.x/) to allow the parametrisation of the spec.
@@ -92,6 +91,7 @@ Use python3.7 or higher.
    $ make requirements-dev-install  # Dependecies useful for local development
    $ make requirements-test-install  # Testing dependencies
    $ make requirements-install  # Runtime dependencies
+   $ make requirements-mock-install  # Runtime dependencies needed for the mock server support funcitonality
    ```
 
 1. Install the pre-commit hooks

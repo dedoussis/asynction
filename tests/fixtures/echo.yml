@@ -3,21 +3,21 @@ channels:
     publish:
       message:
         oneOf:
-          - $ref: '#/components/messages/EchoCommand'
-          - $ref: '#/components/messages/EchoWithInvalidAckCommand'
+          - $ref: "#/components/messages/EchoCommand"
+          - $ref: "#/components/messages/EchoWithInvalidAckCommand"
     subscribe:
       message:
         oneOf:
-          - $ref: '#/components/messages/EchoResponse'
+          - $ref: "#/components/messages/EchoResponse"
   /admin:
     publish:
       message:
         oneOf:
-          - $ref: '#/components/messages/EchoCommand'
+          - $ref: "#/components/messages/EchoCommand"
     subscribe:
       message:
         oneOf:
-          - $ref: '#/components/messages/EchoResponse'
+          - $ref: "#/components/messages/EchoResponse"
     x-handlers:
       connect: tests.fixtures.handlers.authenticated_connect
     bindings:
@@ -32,12 +32,12 @@ channels:
     publish:
       message:
         oneOf:
-          - $ref: '#/components/messages/EchoCommand'
+          - $ref: "#/components/messages/EchoCommand"
     subscribe:
       message:
         oneOf:
-          - $ref: '#/components/messages/EchoResponse'
-          - $ref: '#/components/messages/EchoErrors'
+          - $ref: "#/components/messages/EchoResponse"
+          - $ref: "#/components/messages/EchoErrors"
     x-handlers:
       error: tests.fixtures.handlers.echo_failed_validation
 components:
@@ -47,6 +47,7 @@ components:
       x-handler: tests.fixtures.handlers.echo
       payload:
         type: string
+        format: sentence
       x-ack:
         args:
           type: boolean
@@ -55,6 +56,7 @@ components:
       x-handler: tests.fixtures.handlers.echo_with_invalid_ack
       payload:
         type: string
+        format: sentence
       x-ack:
         args:
           type: boolean
@@ -66,3 +68,4 @@ components:
       name: echo errors
       payload:
         type: string
+        format: sentence

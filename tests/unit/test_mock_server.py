@@ -4,10 +4,9 @@ from typing import Any
 from typing import Callable
 from typing import Mapping
 from typing import MutableSequence
+from typing import Optional
 from typing import Sequence
 from unittest.mock import ANY
-from unittest.mock import Mock
-from unittest.mock import call
 from unittest.mock import patch
 from uuid import uuid4
 
@@ -15,6 +14,7 @@ import jsonschema
 import pytest
 from faker import Faker
 from flask.app import Flask
+from flask_socketio import SocketIO
 from hypothesis.strategies import sampled_from
 from hypothesis.strategies._internal.strategies import SearchStrategy
 from hypothesis_jsonschema._from_schema import STRING_FORMATS
@@ -27,7 +27,7 @@ from asynction.mock_server import generate_fake_data_from_schema
 from asynction.mock_server import make_faker_formats
 from asynction.mock_server import task_runner
 from asynction.mock_server import task_scheduler
-from asynction.types import AsyncApiSpec
+from asynction.types import AsyncApiSpec, ErrorHandler
 from asynction.types import Channel
 from asynction.types import ChannelBindings
 from asynction.types import Message
@@ -129,12 +129,12 @@ def test_mock_asynction_socketio_from_spec(fixture_paths: FixturePaths):
 
 
 def new_mock_asynction_socket_io(
-    spec: AsyncApiSpec, max_worker_number: int = 8
+    spec: AsyncApiSpec, app: Optional[Flask] = None, max_worker_number: int = 8
 ) -> MockAsynctionSocketIO:
     return MockAsynctionSocketIO(
         spec=spec,
         validation=True,
-        app=None,
+        app=app,
         subscription_task_interval=1,
         max_worker_number=max_worker_number,
         custom_formats_sample_size=20,
@@ -166,7 +166,7 @@ def test_register_handlers_registers_noop_handler_for_message_with_no_ack(
     server = new_mock_asynction_socket_io(spec)
 
     server._register_handlers()
-    assert len(server.handlers) == 1
+    assert len(server.handlers) == 2  # connect handler included as well
     registered_event, registered_handler, registered_namespace = server.handlers[0]
     assert registered_event == event_name
     assert registered_namespace == namespace
@@ -174,7 +174,7 @@ def test_register_handlers_registers_noop_handler_for_message_with_no_ack(
     assert handler == _noop_handler
 
 
-def test_register_handler_registers_valid_handler_for_message_with_ack(faker: Faker):
+def test_register_handlers_registers_valid_handler_for_message_with_ack(faker: Faker):
     namespace = f"/{faker.pystr()}"
     event_name = faker.word()
     ack_schema = {
@@ -213,7 +213,7 @@ def test_register_handler_registers_valid_handler_for_message_with_ack(faker: Fa
     server = new_mock_asynction_socket_io(spec)
 
     server._register_handlers()
-    assert len(server.handlers) == 1
+    assert len(server.handlers) == 2  # connect handler included as well
     registered_event, registered_handler, registered_namespace = server.handlers[0]
     assert registered_event == event_name
     assert registered_namespace == namespace
@@ -258,51 +258,27 @@ def test_register_handlers_adds_payload_validator_if_validation_is_enabled(
         handler_with_validation(*args)
 
 
-def test_register_handler_registers_connection_handlers(faker: Faker):
+def test_register_handlers_registers_connection_handler(faker: Faker):
     namespace = f"/{faker.pystr()}"
-    spec = AsyncApiSpec(
-        channels={
-            namespace: Channel(
-                subscribe=Operation(
-                    message=OneOfMessages(
-                        oneOf=[
-                            Message(
-                                name=faker.word(),
-                                payload={"type": "string"},
-                            )
-                        ]
-                    ),
-                )
-            )
-        }
-    )
+    spec = AsyncApiSpec(channels={namespace: Channel()})
     server = new_mock_asynction_socket_io(spec)
-    server.init_app(app=Flask(__name__))
 
     server._register_handlers()
 
-    assert len(server.server.handlers[namespace]) == 2
-    assert "connect" in server.server.handlers[namespace]
-    assert "disconnect" in server.server.handlers[namespace]
+    assert len(server.handlers) == 1
+    registered_event, registered_handler, registered_namespace = server.handlers[0]
+    assert registered_event == "connect"
+    assert deep_unwrap(registered_handler) == _noop_handler
+    assert registered_namespace == namespace
 
 
-def test_register_handler_registers_connection_handlers_with_bindings_validation(
+def test_register_handlers_registers_connection_handler_with_bindings_validation(
     faker: Faker,
 ):
     namespace = f"/{faker.pystr()}"
     spec = AsyncApiSpec(
         channels={
             namespace: Channel(
-                subscribe=Operation(
-                    message=OneOfMessages(
-                        oneOf=[
-                            Message(
-                                name=faker.word(),
-                                payload={"type": "string"},
-                            )
-                        ]
-                    ),
-                ),
                 bindings=ChannelBindings(
                     ws=WebSocketsChannelBindings(
                         method="GET",
@@ -313,13 +289,12 @@ def test_register_handler_registers_connection_handlers_with_bindings_validation
     )
     server = new_mock_asynction_socket_io(spec)
     flask_app = Flask(__name__)
-    server.init_app(app=flask_app)
 
     server._register_handlers()
-    handler_with_validation = deep_unwrap(
-        server.server.handlers[namespace]["connect"], depth=1
-    )
-    actual_handler = deep_unwrap(server.server.handlers[namespace]["connect"])
+    _, registered_handler, _ = server.handlers[0]
+
+    handler_with_validation = deep_unwrap(registered_handler, depth=1)
+    actual_handler = deep_unwrap(registered_handler)
 
     with flask_app.test_client() as c:
         with patch.object(server, "start_background_task"):
@@ -327,6 +302,20 @@ def test_register_handler_registers_connection_handlers_with_bindings_validation
             actual_handler()  # actual handler does not raise validation errors
             with pytest.raises(BindingsValidationException):
                 handler_with_validation()
+
+
+@pytest.mark.parametrize(
+    argnames=["optional_error_handler"],
+    argvalues=[[lambda _: None], [None]],
+    ids=["with_default_error_handler", "without_default_error_handler"],
+)
+def test_register_handlers_registers_default_error_handler(
+    optional_error_handler: Optional[ErrorHandler],
+):
+    server = new_mock_asynction_socket_io(AsyncApiSpec(channels={}))
+
+    server._register_handlers(optional_error_handler)
+    assert server.default_exception_handler == optional_error_handler
 
 
 class MockThread:
@@ -339,7 +328,7 @@ class MockThread:
         self.daemon = daemon
 
 
-def test_registered_connection_and_disconnection_handlers(faker: Faker):
+def test_run_spanws_daemon_background_tasks_and_calls_super_run(faker: Faker):
     namespace = f"/{faker.pystr()}"
     spec = AsyncApiSpec(
         channels={
@@ -357,12 +346,9 @@ def test_registered_connection_and_disconnection_handlers(faker: Faker):
             )
         }
     )
-    server = new_mock_asynction_socket_io(spec)
-    server.init_app(app=Flask(__name__))
-
+    flask_app = Flask(__name__)
+    server = new_mock_asynction_socket_io(spec, flask_app)
     server._register_handlers()
-    connect_handler = deep_unwrap(server.server.handlers[namespace]["connect"])
-    disconnect_handler = deep_unwrap(server.server.handlers[namespace]["disconnect"])
 
     background_tasks: MutableSequence[MockThread] = []
 
@@ -371,23 +357,20 @@ def test_registered_connection_and_disconnection_handlers(faker: Faker):
         background_tasks.append(mt)
         return mt
 
-    with patch.object(server, "start_background_task", start_background_task_mock):
-        # Testing connect handler:
-        connect_handler()
-        assert len(background_tasks) == 2
-        assert background_tasks[0].target == task_runner
-        assert background_tasks[0].daemon
-        assert background_tasks[-1].target == task_scheduler
-        assert background_tasks[0].daemon
+    with patch.object(SocketIO, "run") as super_run_mock:
+        with patch.object(server, "start_background_task", start_background_task_mock):
+            server.run(flask_app)
 
-        # Testing disconnect handler:
-        event: threading.Event = background_tasks[-1].kwargs["event"]
-        assert event.is_set()
-        disconnect_handler()
-        assert not event.is_set()
+            assert len(background_tasks) == 2
+            assert background_tasks[0].target == task_runner
+            assert background_tasks[0].daemon
+            assert background_tasks[-1].target == task_scheduler
+            assert background_tasks[0].daemon
+
+            super_run_mock.assert_called_once_with(flask_app, host=None, port=None)
 
 
-def test_registered_connection_handler_respects_maximum_number_of_workers(faker: Faker):
+def test_run_respects_maximum_number_of_workers(faker: Faker):
     max_worker_number = faker.pyint(min_value=2, max_value=5)
     sub_messages_number = max_worker_number + faker.pyint(min_value=3, max_value=6)
 
@@ -409,11 +392,6 @@ def test_registered_connection_handler_respects_maximum_number_of_workers(faker:
             )
         }
     )
-    server = new_mock_asynction_socket_io(spec, max_worker_number)
-    server.init_app(app=Flask(__name__))
-    server._register_handlers()
-    connect_handler = deep_unwrap(server.server.handlers[namespace]["connect"])
-
     background_tasks: MutableSequence[MockThread] = []
 
     def start_background_task_mock(target, *args, **kwargs):
@@ -421,12 +399,18 @@ def test_registered_connection_handler_respects_maximum_number_of_workers(faker:
         background_tasks.append(mt)
         return mt
 
-    with patch.object(server, "start_background_task", start_background_task_mock):
-        connect_handler()
-        assert len(background_tasks) == max_worker_number + 1
+    flask_app = Flask(__name__)
+    server = new_mock_asynction_socket_io(spec, flask_app, max_worker_number)
+    server._register_handlers()
+
+    with patch.object(SocketIO, "run"):
+        with patch.object(server, "start_background_task", start_background_task_mock):
+            server.run(flask_app)
+
+            assert len(background_tasks) == max_worker_number + 1
 
 
-def test_registered_connection_handler_spawns_minimum_worker_number(faker: Faker):
+def test_run_spawns_minimum_number_of_workers(faker: Faker):
     max_worker_number = faker.pyint(min_value=8, max_value=15)
     sub_messages_number = max_worker_number - faker.pyint(min_value=3, max_value=5)
 
@@ -448,10 +432,6 @@ def test_registered_connection_handler_spawns_minimum_worker_number(faker: Faker
             )
         }
     )
-    server = new_mock_asynction_socket_io(spec, max_worker_number)
-    server.init_app(app=Flask(__name__))
-    server._register_handlers()
-    connect_handler = deep_unwrap(server.server.handlers[namespace]["connect"])
 
     background_tasks: MutableSequence[MockThread] = []
 
@@ -460,9 +440,15 @@ def test_registered_connection_handler_spawns_minimum_worker_number(faker: Faker
         background_tasks.append(mt)
         return mt
 
-    with patch.object(server, "start_background_task", start_background_task_mock):
-        connect_handler()
-        assert len(background_tasks) == sub_messages_number + 1
+    flask_app = Flask(__name__)
+    server = new_mock_asynction_socket_io(spec, flask_app, max_worker_number)
+    server._register_handlers()
+
+    with patch.object(SocketIO, "run"):
+        with patch.object(server, "start_background_task", start_background_task_mock):
+            server.run(flask_app)
+
+            assert len(background_tasks) == sub_messages_number + 1
 
 
 def test_make_subscription_task_with_message_payload_and_ack(faker: Faker):
@@ -572,27 +558,3 @@ def test_make_subscription_task_with_message_payload_but_no_ack(faker: Faker):
         _, data = emit_mock.call_args[0]
         jsonschema.validate(data, message.payload)
         assert True
-
-
-def test_task_scheduler(faker: Faker):
-    server = Mock()
-    tasks = [Mock() for _ in range(faker.pyint(min_value=3, max_value=10))]
-    queue = Mock()
-    event = Mock()
-
-    max_is_set_calls = faker.pyint(min_value=5, max_value=15)
-    is_set_calls: MutableSequence[None] = []
-
-    def mock_is_set() -> bool:
-        is_set_calls.append(None)
-        if len(is_set_calls) > max_is_set_calls:
-            return False
-
-        return True
-
-    event.is_set = mock_is_set
-    task_scheduler(server=server, tasks=tasks, queue=queue, event=event)
-    server.sleep.assert_has_calls(
-        [call(server.subscription_task_interval)] * max_is_set_calls
-    )
-    assert queue.put.call_count == max_is_set_calls

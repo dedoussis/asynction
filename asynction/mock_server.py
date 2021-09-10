@@ -19,7 +19,7 @@ from typing import Sequence
 
 from faker import Faker
 from faker.exceptions import UnsupportedFeature
-from flask.app import Flask
+from flask import Flask
 from flask_socketio import SocketIO
 from hypothesis import HealthCheck
 from hypothesis import Phase
@@ -33,7 +33,6 @@ from hypothesis_jsonschema._from_schema import STRING_FORMATS
 
 from asynction.server import AsynctionSocketIO
 from asynction.types import AsyncApiSpec
-from asynction.types import ChannelBindings
 from asynction.types import ErrorHandler
 from asynction.types import JSONMapping
 from asynction.types import JSONSchema
@@ -106,12 +105,9 @@ def task_scheduler(
     server: "MockAsynctionSocketIO",
     tasks: Sequence[SubscriptionTask],
     queue: "Queue[SubscriptionTask]",
-    event: threading.Event,
 ) -> None:
     while True:
         for task in tasks:
-            if not event.is_set():
-                return
             queue.put(task)
             server.sleep(server.subscription_task_interval)
 
@@ -131,7 +127,7 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
         subscription_task_interval: int,
         max_worker_number: int,
         custom_formats_sample_size: int,
-        **kwargs
+        **kwargs,
     ):
         """This is a private constructor.
         Use the :meth:`MockAsynctionSocketIO.from_spec` factory instead.
@@ -141,6 +137,7 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
         self.max_worker_number = max_worker_number
         self.faker = Faker()
         self.custom_formats = make_faker_formats(self.faker, custom_formats_sample_size)
+        self._subscription_tasks: Sequence[SubscriptionTask] = []
 
     @classmethod
     def from_spec(
@@ -153,7 +150,7 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
         subscription_task_interval: int = 1,
         max_worker_number: int = 8,
         custom_formats_sample_size: int = 20,
-        **kwargs
+        **kwargs,
     ) -> SocketIO:
         """Create a Flask-SocketIO mock server given an AsyncAPI spec.
         The server emits events containing payloads of fake data in regular intervals,
@@ -218,45 +215,8 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
             subscription_task_interval=subscription_task_interval,
             max_worker_number=max_worker_number,
             custom_formats_sample_size=custom_formats_sample_size,
-            **kwargs
+            **kwargs,
         )
-
-    def _register_connection_handlers(
-        self,
-        namespace: str,
-        subscription_tasks: Sequence[SubscriptionTask],
-        channel_bindings: Optional[ChannelBindings],
-    ) -> None:
-        # TODO: lazy evaluate queue and event
-        queue: "Queue[SubscriptionTask]" = self.server.eio.create_queue()
-        event: threading.Event = self.server.eio.create_event()
-
-        def connect_handler() -> None:
-            event.set()
-            for _ in range(min(self.max_worker_number, len(subscription_tasks))):
-                t: threading.Thread = self.start_background_task(
-                    task_runner, queue=queue
-                )
-                t.daemon = True
-
-            scheduler_t: threading.Thread = self.start_background_task(
-                task_scheduler,
-                server=self,
-                tasks=subscription_tasks,
-                queue=queue,
-                event=event,
-            )
-            scheduler_t.daemon = True
-
-        def disconnect_handler() -> None:
-            event.clear()
-
-        if self.validation:
-            with_bindings_validation = bindings_validator_factory(channel_bindings)
-            connect_handler = with_bindings_validation(connect_handler)
-
-        self.on_event("connect", connect_handler, namespace)
-        self.on_event("disconnect", disconnect_handler, namespace)
 
     def _register_handlers(
         self, default_error_handler: Optional[ErrorHandler] = None
@@ -275,14 +235,21 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
                     self.on_event(message.name, handler, namespace)
 
             if channel.subscribe is not None:
-                subscription_tasks = [
-                    self.make_subscription_task(message, namespace)
-                    for message in channel.subscribe.message.oneOf
+                self._subscription_tasks = [
+                    *self._subscription_tasks,
+                    *[
+                        self.make_subscription_task(message, namespace)
+                        for message in channel.subscribe.message.oneOf
+                    ],
                 ]
 
-                self._register_connection_handlers(
-                    namespace, subscription_tasks, channel.bindings
-                )
+            connect_handler = _noop_handler
+
+            if self.validation:
+                with_bindings_validation = bindings_validator_factory(channel.bindings)
+                connect_handler = with_bindings_validation(connect_handler)
+
+            self.on_event("connect", connect_handler, namespace)
 
         if default_error_handler is not None:
             self.on_error_default(default_error_handler)
@@ -313,3 +280,25 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
             return handler
 
         return _noop_handler
+
+    def run(
+        self,
+        app: Flask,
+        host: Optional[str] = None,
+        port: Optional[int] = None,
+        **kwargs,
+    ) -> None:
+        queue: "Queue[SubscriptionTask]" = self.server.eio.create_queue()
+        for _ in range(min(self.max_worker_number, len(self._subscription_tasks))):
+            t: threading.Thread = self.start_background_task(task_runner, queue=queue)
+            t.daemon = True
+
+        scheduler_t: threading.Thread = self.start_background_task(
+            task_scheduler,
+            server=self,
+            tasks=self._subscription_tasks,
+            queue=queue,
+        )
+        scheduler_t.daemon = True
+
+        return super().run(app, host=host, port=port, **kwargs)

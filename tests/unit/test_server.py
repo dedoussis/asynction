@@ -354,7 +354,7 @@ def test_register_handlers_adds_ack_validator_if_validation_is_enabled(faker: Fa
         handler_with_validation(*args)
 
 
-def test_register_handlers_omits_payload_validator_if_validation_is_disabled(
+def test_register_handlers_skips_payload_validator_if_validation_is_disabled(
     faker: Faker,
 ):
     namespace = f"/{faker.pystr()}"

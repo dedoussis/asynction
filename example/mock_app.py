@@ -14,6 +14,7 @@ faker = Faker()
 
 mock_asio = MockAsynctionSocketIO.from_spec(
     spec_path=Path(__file__).parent.joinpath("asyncapi.yml"),
+    validation=False,
     server_name=os.environ.get("ASYNCAPI_SERVER_NAME", "demo"),
     logger=logger,
     async_mode="gevent",

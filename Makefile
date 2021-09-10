@@ -23,6 +23,7 @@ clean-build:
 clean-tests:
 	rm -rf .pytest_cache
 	rm -rf .coverage* coverage.*
+	rm -rf .hypothesis
 
 clean-mypy:
 	rm -rf .mypy_cache
@@ -37,7 +38,7 @@ test-integration:
 	pytest -vvv --mypy tests/integration
 
 test-e2e: clean
-	docker-compose -f tests/e2e/docker-compose.yml  up --build --abort-on-container-exit --exit-code-from test_runner
+	docker-compose -f tests/e2e/docker-compose.yml up --build --abort-on-container-exit --exit-code-from test_runner
 
 format:
 	black .

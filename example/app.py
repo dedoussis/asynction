@@ -4,7 +4,6 @@ from gevent import monkey
 monkey.patch_all()
 
 import os
-from logging import getLogger
 from pathlib import Path
 from typing import MutableMapping
 from typing import Optional
@@ -16,8 +15,6 @@ from flask_socketio import emit
 from typing_extensions import TypedDict
 
 from asynction import AsynctionSocketIO
-
-logger = getLogger(__name__)
 
 Sid = str
 Username = str
@@ -97,11 +94,11 @@ flask_app = Flask(__name__)
 asio = AsynctionSocketIO.from_spec(
     spec_path=Path(__file__).parent.joinpath("asyncapi.yml"),
     server_name=os.environ.get("ASYNCAPI_SERVER_NAME", "demo"),
-    logger=logger,
+    logger=True,
     async_mode="gevent",
     app=flask_app,
     cors_allowed_origins="*",
 )
 
 if __name__ == "__main__":
-    asio.run(app=flask_app, debug=True, log_output=logger, host="0.0.0.0")
+    asio.run(app=flask_app, debug=True, log_output=True, host="0.0.0.0")

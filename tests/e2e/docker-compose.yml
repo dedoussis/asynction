@@ -5,13 +5,19 @@ services:
     build:
       context: ${PWD}
       dockerfile: tests/e2e/Dockerfile
-    ports:
-      - "5000:5000"
+  mock_asynction_server:
+    build:
+      context: ${PWD}
+      dockerfile: tests/e2e/Dockerfile-mock
+    environment:
+      SUBSCRIPTION_TASK_INTERVAL: 0.01
   test_runner:
     build:
       context: ${PWD}
       dockerfile: tests/e2e/Dockerfile-tests
     environment:
       SERVER_URL: ws://asynction_server:5000
+      MOCK_SERVER_URL: ws://mock_asynction_server:5000
+      MOCK_SERVER_WAIT_INTERVAL: 5 # To make sure that all mock events have emitted
     command: [-vvv, --mypy, tests/e2e]
-    depends_on: [asynction_server]
+    depends_on: [asynction_server, mock_asynction_server]

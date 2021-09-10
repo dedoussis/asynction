@@ -116,14 +116,14 @@ def test_echo_bot(
     echo_users: Sequence[ApplicationClient],
 ):
     echo_bot_username, echo_bot_client, echo_bot_mock_ack = echo_bot
-    echo_bot_client.connect(server_url, wait=True)
+    echo_bot_client.connect(server_url)
     cb_mock = Mock()
     echo_bot_client.emit(Event.ADD_USER.value, echo_bot_username, callback=cb_mock)
     echo_bot_client.sleep(WAIT_INTERVAL)
     cb_mock.assert_called_once_with({"error": None})
 
     for echo_user_username, echo_user_client, echo_user_mock_ack in echo_users:
-        echo_user_client.connect(server_url, wait=True)
+        echo_user_client.connect(server_url)
         cb_mock = Mock()
         echo_user_client.emit(
             Event.ADD_USER.value, echo_user_username, callback=cb_mock

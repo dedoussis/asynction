@@ -47,7 +47,6 @@ components:
       x-handler: tests.fixtures.handlers.echo
       payload:
         type: string
-        format: sentence
       x-ack:
         args:
           type: boolean
@@ -64,8 +63,8 @@ components:
       name: echo
       payload:
         type: string
+        format: sentence
     EchoErrors:
       name: echo errors
       payload:
         type: string
-        format: sentence

@@ -23,7 +23,7 @@ The current areas of focus are:
 ## Roadmap
 
 - [ ] Improving the existing generated documentation.
-- [ ] CLI support to provide commands such as `$ asynction mock --spec ./asyncapi.yml --port 3000`
+- [ ] CLI tooling to provide commands such as `$ asynction mock --spec ./asyncapi.yml --port 3000`
 - [ ] Exposing an [AsyncAPI playground](https://playground.asyncapi.io/) via a Flask route, in a similar manner to how Connexion exposes a Swagger UI.
 - [ ] Type casting: Whenever possible Asynction should try to parse the argument values and do type casting to the related Python native values.
 - [ ] Dynamic rendering of the [AsyncAPI](https://www.asyncapi.com/) spec. Could use [Jinja2](https://jinja.palletsprojects.com/en/3.0.x/) to allow the parametrisation of the spec.

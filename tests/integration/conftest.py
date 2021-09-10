@@ -33,7 +33,7 @@ def asynction_socketio_server_factory(
 @pytest.fixture
 def mock_asynction_socketio_server_factory(
     fixture_paths: FixturePaths, flask_app: Flask
-) -> Callable[[Path], SocketIO]:
+) -> Callable[[Path], MockAsynctionSocketIO]:
     def factory(
         spec_path: Path = fixture_paths.simple, server_name: Optional[str] = None
     ) -> SocketIO:

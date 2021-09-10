@@ -3,7 +3,7 @@ from typing import Callable
 
 import pytest
 from faker import Faker
-from flask.app import Flask
+from flask import Flask
 from flask_socketio import SocketIO
 
 from asynction.exceptions import BindingsValidationException

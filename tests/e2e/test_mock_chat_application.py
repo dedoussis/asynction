@@ -51,7 +51,7 @@ def test_automatic_mock_event_emission(
         assert data["username"].istitle()
         user_joined_mock_ack(user_joined_event)
 
-    client.connect(mock_server_url)
+    client.connect(mock_server_url, wait=False)
     # Make sure that all events have been emitted:
     client.sleep(mock_server_wait_interval)
 

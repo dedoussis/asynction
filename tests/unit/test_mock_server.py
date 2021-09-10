@@ -1,4 +1,3 @@
-import threading
 from ipaddress import IPv4Address
 from typing import Any
 from typing import Callable
@@ -27,9 +26,10 @@ from asynction.mock_server import generate_fake_data_from_schema
 from asynction.mock_server import make_faker_formats
 from asynction.mock_server import task_runner
 from asynction.mock_server import task_scheduler
-from asynction.types import AsyncApiSpec, ErrorHandler
+from asynction.types import AsyncApiSpec
 from asynction.types import Channel
 from asynction.types import ChannelBindings
+from asynction.types import ErrorHandler
 from asynction.types import Message
 from asynction.types import MessageAck
 from asynction.types import OneOfMessages

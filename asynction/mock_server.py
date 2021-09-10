@@ -12,8 +12,8 @@ from pathlib import Path
 from queue import Queue
 from random import choice
 from typing import Callable
-from typing import List
 from typing import Mapping
+from typing import MutableSequence
 from typing import Optional
 from typing import Sequence
 
@@ -86,7 +86,7 @@ def generate_fake_data_from_schema(
     def example_generating_inner_function(ex):
         examples.append(ex)
 
-    examples: List[JSONMapping] = []
+    examples: MutableSequence[JSONMapping] = []
     example_generating_inner_function()
     return choice(examples)
 

@@ -10,7 +10,7 @@ services:
       context: ${PWD}
       dockerfile: tests/e2e/Dockerfile-mock
     environment:
-      SUBSCRIPTION_TASK_INTERVAL: 0.01
+      SUBSCRIPTION_TASK_INTERVAL: 0.1
   test_runner:
     build:
       context: ${PWD}

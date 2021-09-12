@@ -319,16 +319,13 @@ def test_register_handlers_registers_default_error_handler(
 
 
 class MockThread:
-    def __init__(
-        self, target: Callable, args: Sequence, kwargs: Mapping[str, Any], daemon: bool
-    ):
+    def __init__(self, target: Callable, args: Sequence, kwargs: Mapping[str, Any]):
         self.target = target
         self.args = args
         self.kwargs = kwargs
-        self.daemon = daemon
 
 
-def test_run_spanws_daemon_background_tasks_and_calls_super_run(faker: Faker):
+def test_run_spawns_background_tasks_and_calls_super_run(faker: Faker):
     namespace = f"/{faker.pystr()}"
     spec = AsyncApiSpec(
         channels={
@@ -353,7 +350,7 @@ def test_run_spanws_daemon_background_tasks_and_calls_super_run(faker: Faker):
     background_tasks: MutableSequence[MockThread] = []
 
     def start_background_task_mock(target, *args, **kwargs):
-        mt = MockThread(target=target, args=args, kwargs=kwargs, daemon=False)
+        mt = MockThread(target=target, args=args, kwargs=kwargs)
         background_tasks.append(mt)
         return mt
 
@@ -363,9 +360,7 @@ def test_run_spanws_daemon_background_tasks_and_calls_super_run(faker: Faker):
 
             assert len(background_tasks) == 2
             assert background_tasks[0].target == task_runner
-            assert background_tasks[0].daemon
             assert background_tasks[-1].target == task_scheduler
-            assert background_tasks[0].daemon
 
             super_run_mock.assert_called_once_with(flask_app, host=None, port=None)
 
@@ -395,7 +390,7 @@ def test_run_respects_maximum_number_of_workers(faker: Faker):
     background_tasks: MutableSequence[MockThread] = []
 
     def start_background_task_mock(target, *args, **kwargs):
-        mt = MockThread(target=target, args=args, kwargs=kwargs, daemon=False)
+        mt = MockThread(target=target, args=args, kwargs=kwargs)
         background_tasks.append(mt)
         return mt
 
@@ -436,7 +431,7 @@ def test_run_spawns_minimum_number_of_workers(faker: Faker):
     background_tasks: MutableSequence[MockThread] = []
 
     def start_background_task_mock(target, *args, **kwargs):
-        mt = MockThread(target=target, args=args, kwargs=kwargs, daemon=False)
+        mt = MockThread(target=target, args=args, kwargs=kwargs)
         background_tasks.append(mt)
         return mt
 

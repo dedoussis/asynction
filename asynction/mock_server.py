@@ -7,7 +7,6 @@ an :class:`AsynctionSocketIO` server that:
 * Listens for all events defined in the given AsyncAPI specification,
   returning fake acknowledgmentds where applicable.
 """
-import threading
 from pathlib import Path
 from queue import Queue
 from random import choice
@@ -289,16 +288,20 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
         **kwargs,
     ) -> None:
         queue: "Queue[SubscriptionTask]" = self.server.eio.create_queue()
-        for _ in range(min(self.max_worker_number, len(self._subscription_tasks))):
-            t: threading.Thread = self.start_background_task(task_runner, queue=queue)
-            t.daemon = True
 
-        scheduler_t: threading.Thread = self.start_background_task(
+        # Ideally, the tasks created below (both runner and scheduler) should
+        # be daemonic. However, python-engineio does not support
+        # daemonic background tasks. See the relevant issue:
+        # https://github.com/miguelgrinberg/python-engineio/issues/244
+
+        for _ in range(min(self.max_worker_number, len(self._subscription_tasks))):
+            _ = self.start_background_task(task_runner, queue=queue)
+
+        _ = self.start_background_task(
             task_scheduler,
             server=self,
             tasks=self._subscription_tasks,
             queue=queue,
         )
-        scheduler_t.daemon = True
 
         return super().run(app, host=host, port=port, **kwargs)

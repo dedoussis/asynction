@@ -7,7 +7,7 @@ WORKDIR /opt/asynction
 ENV PKG_VERSION=tests
 
 RUN pip install .[mock]
-RUN pip install -r example/requirements-mock.txt
+RUN make example/install-server-mock-requirements
 
 FROM python:slim
 

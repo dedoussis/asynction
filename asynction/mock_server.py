@@ -7,6 +7,7 @@ an :class:`AsynctionSocketIO` server that:
 * Listens for all events defined in the given AsyncAPI specification,
   returning fake acknowledgmentds where applicable.
 """
+import threading
 from pathlib import Path
 from queue import Queue
 from random import choice
@@ -280,6 +281,31 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
 
         return _noop_handler
 
+    def start_background_task(
+        self, target: Callable, *args, **kwargs
+    ) -> threading.Thread:
+
+        # The tasks created in the :meth:`MockAsynctionSocketIO.run` method below
+        # (both runner and scheduler) MUST be daemonic.
+        # However, python-engineio does not support daemonic background tasks,
+        # unless the chosen async mode defaults to some daemon-like behaviour.
+        # Native threads have daemon set to False by default, which is rather
+        # inconvinient for this use case.
+        # See the relevant issue:
+        # https://github.com/miguelgrinberg/python-engineio/issues/244
+        #
+        # The current method is a hack that accounts for the threading scenario,
+        # to ensure that native threads are started as daemons.
+
+        if self.async_mode not in ["threading"]:
+            return super().start_background_task(target, *args, **kwargs)
+
+        th: threading.Thread = self.server.eio._async["thread"](
+            target=target, args=args, kwargs=kwargs, daemon=True
+        )
+        th.start()
+        return th
+
     def run(
         self,
         app: Flask,
@@ -288,11 +314,6 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
         **kwargs,
     ) -> None:
         queue: "Queue[SubscriptionTask]" = self.server.eio.create_queue()
-
-        # Ideally, the tasks created below (both runner and scheduler) should
-        # be daemonic. However, python-engineio does not support
-        # daemonic background tasks. See the relevant issue:
-        # https://github.com/miguelgrinberg/python-engineio/issues/244
 
         for _ in range(min(self.max_worker_number, len(self._subscription_tasks))):
             _ = self.start_background_task(task_runner, queue=queue)

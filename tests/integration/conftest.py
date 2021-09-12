@@ -24,7 +24,10 @@ def asynction_socketio_server_factory(
         spec_path: Path = fixture_paths.simple, server_name: Optional[str] = None
     ) -> SocketIO:
         return AsynctionSocketIO.from_spec(
-            spec_path=spec_path, server_name=server_name, app=flask_app
+            spec_path=spec_path,
+            server_name=server_name,
+            app=flask_app,
+            async_mode="threading",
         )
 
     return factory

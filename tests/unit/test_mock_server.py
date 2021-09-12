@@ -586,9 +586,9 @@ def test_start_background_daemon_task_with_threading_async_mode(faker: Faker):
 
 def test_start_background_daemon_task_with_non_threading_async_mode(faker: Faker):
     spec = AsyncApiSpec(channels={f"/{faker.pystr()}": Channel()})
-    server = new_mock_asynction_socket_io(
-        spec, app=Flask(__name__), async_mode="gevent"
-    )
+    server = new_mock_asynction_socket_io(spec, app=Flask(__name__))
+
+    server.async_mode = "gevent"
 
     def target():
         # noop

@@ -6,6 +6,7 @@ from typing import MutableSequence
 from typing import Optional
 from typing import Sequence
 from unittest.mock import ANY
+from unittest.mock import Mock
 from unittest.mock import patch
 from uuid import uuid4
 
@@ -26,6 +27,7 @@ from asynction.mock_server import generate_fake_data_from_schema
 from asynction.mock_server import make_faker_formats
 from asynction.mock_server import task_runner
 from asynction.mock_server import task_scheduler
+from asynction.server import AsynctionSocketIO
 from asynction.types import AsyncApiSpec
 from asynction.types import Channel
 from asynction.types import ChannelBindings
@@ -129,7 +131,10 @@ def test_mock_asynction_socketio_from_spec(fixture_paths: FixturePaths):
 
 
 def new_mock_asynction_socket_io(
-    spec: AsyncApiSpec, app: Optional[Flask] = None, max_worker_number: int = 8
+    spec: AsyncApiSpec,
+    app: Optional[Flask] = None,
+    max_worker_number: int = 8,
+    async_mode: str = "threading",
 ) -> MockAsynctionSocketIO:
     return MockAsynctionSocketIO(
         spec=spec,
@@ -138,6 +143,7 @@ def new_mock_asynction_socket_io(
         subscription_task_interval=1,
         max_worker_number=max_worker_number,
         custom_formats_sample_size=20,
+        async_mode=async_mode,
     )
 
 
@@ -553,3 +559,45 @@ def test_make_subscription_task_with_message_payload_but_no_ack(faker: Faker):
         _, data = emit_mock.call_args[0]
         jsonschema.validate(data, message.payload)
         assert True
+
+
+def test_start_background_daemon_task_with_threading_async_mode(faker: Faker):
+    spec = AsyncApiSpec(channels={f"/{faker.pystr()}": Channel()})
+    server = new_mock_asynction_socket_io(
+        spec, app=Flask(__name__), async_mode="threading"
+    )
+
+    def target():
+        # noop
+        pass
+
+    args = tuple(faker.pylist())
+    kwargs = faker.pydict()
+    mock_thread_cls = Mock()
+    server.server.eio._async["thread"] = mock_thread_cls
+
+    t = server.start_background_task(target, *args, **kwargs)
+
+    mock_thread_cls.assert_called_once_with(
+        target=target, args=args, kwargs=kwargs, daemon=True
+    )
+    t.start.assert_called_once_with()  # type: ignore
+
+
+def test_start_background_daemon_task_with_non_threading_async_mode(faker: Faker):
+    spec = AsyncApiSpec(channels={f"/{faker.pystr()}": Channel()})
+    server = new_mock_asynction_socket_io(
+        spec, app=Flask(__name__), async_mode="gevent"
+    )
+
+    def target():
+        # noop
+        pass
+
+    args = tuple(faker.pylist())
+    kwargs = faker.pydict()
+
+    with patch.object(AsynctionSocketIO, "start_background_task") as super_mock:
+        server.start_background_task(target, *args, **kwargs)
+
+        super_mock.assert_called_once_with(target, *args, **kwargs)

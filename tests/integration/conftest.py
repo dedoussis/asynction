@@ -27,7 +27,6 @@ def asynction_socketio_server_factory(
             spec_path=spec_path,
             server_name=server_name,
             app=flask_app,
-            async_mode="threading",
         )
 
     return factory
@@ -38,10 +37,16 @@ def mock_asynction_socketio_server_factory(
     fixture_paths: FixturePaths, flask_app: Flask
 ) -> Callable[[Path], MockAsynctionSocketIO]:
     def factory(
-        spec_path: Path = fixture_paths.simple, server_name: Optional[str] = None
+        spec_path: Path = fixture_paths.simple,
+        server_name: Optional[str] = None,
+        subscription_task_interval: float = 1,
     ) -> SocketIO:
         return MockAsynctionSocketIO.from_spec(
-            spec_path=spec_path, server_name=server_name, app=flask_app
+            spec_path=spec_path,
+            server_name=server_name,
+            app=flask_app,
+            async_mode="threading",
+            subscription_task_interval=subscription_task_interval,
         )
 
     return factory

@@ -25,7 +25,7 @@ def test_client_receives_messages_from_mock_server(
     socketio_test_client = mock_asio.test_client(
         flask_app, flask_test_client=flask_test_client
     )
-    mock_asio.sleep(mock_asio.subscription_task_interval * 2)
+    mock_asio.sleep(mock_asio.subscription_task_interval)
     received = socketio_test_client.get_received()
 
     assert len(received) > 0

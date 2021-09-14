@@ -25,6 +25,8 @@ jobs:
             ${{ runner.os }}-
       - name: Install dependencies
         run: make requirements-install
+      - name: Install mock dependencies
+        run: make requirements-mock-install
       - name: Install dev dependencies
         run: make requirements-dev-install
       - name: Build docs

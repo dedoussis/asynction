@@ -14,9 +14,11 @@ _Disclaimer: Asynction is still at an early stage and should not be used in prod
 - HTTP request validation, upon connection, based on the channel binding schemata within the API specification.
 - Callback validation, upon the ACK of a message, based on the message `x-ack` schemata within the API specification.
 - Automatic registration of all event and error handlers defined within the API specification.
-- Mock server support
+- [Mock server support](#mock-server)
 - AsyncAPI [playground](https://playground.asyncapi.io/?load=https://raw.githubusercontent.com/asyncapi/asyncapi/master/examples/2.0.0/simple.yml) _(coming soon)_
 - Authentication à la [Connexion](https://connexion.readthedocs.io/en/latest/security.html) _(coming soon)_
+
+A complete example can be found [here](example/) (includes examples of both normal and mock server implementations).
 
 ## Prerequisites
 
@@ -34,7 +36,7 @@ With mock server support:
 $ pip install asynction[mock]
 ```
 
-## Usage
+## Usage (basic example)
 
 Example event and error handler callables located at `./my_api/handlers.py`:
 
@@ -145,14 +147,63 @@ asio = AsynctionSocketIO.from_spec(
     spec_path="./docs/asyncapi.yaml",
     app=flask_app,
     message_queue="redis://localhost:6379",
-    # any other kwarg that the flask_socketio.SocketIO constructor accepts
+    # or any other kwarg that the flask_socketio.SocketIO constructor accepts
 )
+
+if __name__ == "__main__":
+    asio.run(app=flask_app)
 ```
 
 The `AsynctionSocketIO` class extends the `SocketIO` class of the Flask-SocketIO library.  
 The above `asio` server object has all the event and error handlers registered, and is ready to run.  
 Validation of the message payloads, the channel bindings and the ack callbacks is also enabled by default.  
 Without Asynction, one would need to add additional boilerplate to register the handlers (as shown [here](https://flask-socketio.readthedocs.io/en/latest/#error-handling)) and implement the respective validators.
+
+##  Mock server
+
+Asynction can also create a fake "mock" based off an AsyncAPI document. This enables the consumers of a SocketIO API to interract with the API before it's even built.
+
+```python
+from asynction import MockAsynctionSocketIO
+from flask import Flask
+
+flask_app = Flask(__name__)
+
+mock_asio = MockAsynctionSocketIO.from_spec(
+    spec_path="./docs/asyncapi.yaml",
+    app=flask_app,
+)
+
+if __name__ == "__main__":
+    mock_asio.run(app=flask_app)
+```
+
+The mock server:
+
+1. Listens for all events defined in the given spec, returning fake acknowledgements where applicable.
+1. Periodically emits events containing payloads of fake data, for the clients to listen on.
+
+The fake data generation is fueled by [Faker](https://faker.readthedocs.io/en/master/), hence the use of the mock server functionality requires the installation of extra dependecies: `pip install asynction[mock]`
+
+To make the fake generated data more realistic, one may define a faker provider as part of the schemata of their spec using the [format](https://json-schema.org/understanding-json-schema/reference/string.html#format) keyword of the JSON Schema specification:
+
+```yaml
+# example of a Message object
+NewMessageReceived:
+  name: new message
+  payload:
+    type: object
+    properties:
+      username:
+        type: string
+        format: first_name
+      message:
+        type: string
+        format: sentence
+    required: [username, message]
+```
+
+The formats supported are essentially all the [faker providers](https://faker.readthedocs.io/en/master/providers.html) that yield a string value.
 
 ## Further resources
 

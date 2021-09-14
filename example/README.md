@@ -37,3 +37,10 @@ Client: <http://localhost:3000>.
 Server: <http://localhost:5000>.
 
 To connect to the bonus `/admin` Socket.IO namespace, use the `token` URL query param when accessing the client app: <http://localhost:3000?token=admin>.
+
+## Mock server
+
+```bash
+$ make run-server-mock  # Listens to localhost:5000 by default
+$ make run-client  # The same app client should seamingly integrate with the mock server
+```

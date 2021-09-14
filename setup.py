@@ -73,6 +73,7 @@ setup(
             "specification",
             "flask-socketio",
             "connexion",
+            "mock",
         ]
     ),
     name="asynction",

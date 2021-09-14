@@ -56,6 +56,7 @@ root/
 │   └───unit/
 ├───Makefile
 ├───requirements-dev.txt
+├───requirements-mock.txt
 ├───requirements-test.txt
 ├───requirements.txt
 ├───setup.py
@@ -64,7 +65,7 @@ root/
 
 - The `asynction` directory is a python package that contains the runtime source of the framework.
 - `docs` is the source directory of the [Sphinx](https://www.sphinx-doc.org/) documentation hosted at <https://asynction.dedouss.is>.
-- `example` includes the implementation of <https://socket.io/demos/chat> using Asynction.
+- `example` includes the implementation of <https://socket.io/demos/chat> using Asynction. It also includes a mock implementation of the spec.
 - `tests` is the source of the entire test suite, consisting of unit, integration and e2e tests.
 - The top level `Makefile` is a toolbox of useful commands for installing dependencies as well as testing, linting and packaging the code. It is also used as the entrypoint interface for all CI/CD operations.
 

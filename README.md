@@ -185,7 +185,7 @@ The mock server:
 
 The fake data generation is fueled by [Faker](https://faker.readthedocs.io/en/master/), hence the use of the mock server functionality requires the installation of extra dependecies: `pip install asynction[mock]`
 
-To make the fake generated data more realistic, one may define a faker provider as part of the schemata of their spec using the [format](https://json-schema.org/understanding-json-schema/reference/string.html#format) keyword of the JSON Schema specification:
+To make the fake generated data more realistic, one may attach faker providers to the string schemata of their spec using the [format](https://json-schema.org/understanding-json-schema/reference/string.html#format) keyword of JSON Schema:
 
 ```yaml
 # example of a Message object
@@ -213,6 +213,8 @@ The formats supported are essentially all the [faker providers](https://faker.re
 ## Specification Extentions
 
 Asynction has extended the AsyncAPI 2.0.0 specification to provide support for coupling SocketIO semantical entities (such as namespaces, events and acks) to python objects (such as handler callabes or other `flask_socketio.SocketIO` methods). Some of the extentions below are necessary to express the Socket.IO protocol semantics, while others are solely needed for the programmatic purposes of Asynction. The extentions introduced adhere to the [Specification Extention guidelines](https://www.asyncapi.com/docs/specifications/2.0.0#specificationExtensions) of the AsyncAPI spec.
+
+For further guidance on how to generally express a SocketIO API using AsyncAPI, refer to this article: <https://dedouss.is/posts/2021-07-14-documenting-socketio-part-2.html>
 
 ### Event handler
 

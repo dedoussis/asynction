@@ -3,13 +3,15 @@
 import asynction
 
 
-def test_asynction_socket_io_attr():
-    assert hasattr(asynction, "AsynctionSocketIO")
-
-
-def test_asynction_exceptiions_attr():
-    assert hasattr(asynction, "AsynctionException")
-    assert hasattr(asynction, "ValidationException")
-    assert hasattr(asynction, "PayloadValidationException")
-    assert hasattr(asynction, "BindingsValidationException")
-    assert hasattr(asynction, "MessageAckValidationException")
+def test_assynction_all_attrs():
+    for attr in [
+        "AsynctionSocketIO",
+        "AsynctionException",
+        "ValidationException",
+        "PayloadValidationException",
+        "BindingsValidationException",
+        "MessageAckValidationException",
+        "MockAsynctionSocketIO",
+    ]:
+        assert hasattr(asynction, attr)
+        assert attr in asynction.__all__

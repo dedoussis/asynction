@@ -1,0 +1,2 @@
+Faker==8.11.0
+hypothesis_jsonschema==0.20.1

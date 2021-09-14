@@ -23,6 +23,7 @@ clean-build:
 clean-tests:
 	rm -rf .pytest_cache
 	rm -rf .coverage* coverage.*
+	rm -rf .hypothesis
 
 clean-mypy:
 	rm -rf .mypy_cache
@@ -31,13 +32,13 @@ typecheck:
 	mypy --package asynction --config-file setup.cfg
 
 test-unit:
-	pytest -vvv --mypy --cov=asynction --cov-report=xml tests/unit
+	pytest -vvv --mypy --cov asynction --cov-report xml --cov-report term tests/unit
 
 test-integration:
 	pytest -vvv --mypy tests/integration
 
 test-e2e: clean
-	docker-compose -f tests/e2e/docker-compose.yml  up --build --abort-on-container-exit --exit-code-from test_runner
+	docker-compose -f tests/e2e/docker-compose.yml up --build --abort-on-container-exit --exit-code-from test_runner
 
 format:
 	black .

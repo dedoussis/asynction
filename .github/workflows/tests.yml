@@ -1,6 +1,12 @@
 name: tests
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - "*"
+  pull_request:
+    branches:
+      - main
 
 jobs:
   static-checks:
@@ -21,6 +27,8 @@ jobs:
             ${{ runner.os }}-
       - name: Install dependencies
         run: make requirements-install
+      - name: Install mock dependencies
+        run: make requirements-mock-install
       - name: Install test dependencies
         run: make requirements-test-install
       - name: Linting
@@ -69,6 +77,8 @@ jobs:
             ${{ runner.os }}-
       - name: Install dependencies
         run: make requirements-install
+      - name: Install mock dependencies
+        run: make requirements-mock-install
       - name: Install test dependencies
         run: make requirements-test-install
       - name: Test
@@ -80,10 +90,10 @@ jobs:
           flags: unittests
           name: codecov-umbrella
           fail_ci_if_error: true
-          path_to_write_report: ./coverage/codecov_report.txt
           verbose: true
 
   integration:
+    needs: unit
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -105,12 +115,15 @@ jobs:
             ${{ runner.os }}-
       - name: Install dependencies
         run: make requirements-install
+      - name: Install mock dependencies
+        run: make requirements-mock-install
       - name: Install test dependencies
         run: make requirements-test-install
       - name: Test
         run: make test-integration
 
   e2e:
+    needs: integration
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2

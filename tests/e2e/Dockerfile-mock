@@ -6,8 +6,8 @@ WORKDIR /opt/asynction
 
 ENV PKG_VERSION=tests
 
-RUN pip install .
-RUN make example/install-server-requirements
+RUN pip install .[mock]
+RUN make example/install-server-mock-requirements
 
 FROM python:slim
 
@@ -22,4 +22,4 @@ WORKDIR /opt/asynction/example
 
 EXPOSE 5000
 
-ENTRYPOINT ["python", "app.py"]
+ENTRYPOINT ["python", "mock_app.py"]

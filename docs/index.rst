@@ -18,6 +18,14 @@ Asynction SocketIO Server
 .. autoclass:: asynction.AsynctionSocketIO
    :members: from_spec
 
+Mock Asynction Server
+-------------------------
+
+.. automodule:: asynction.mock_server
+
+.. autoclass:: asynction.MockAsynctionSocketIO
+   :members: from_spec
+
 Exceptions
 ----------
 

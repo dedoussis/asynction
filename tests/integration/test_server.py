@@ -1,8 +1,9 @@
+from enum import Enum
 from typing import Callable
 
 import pytest
 from faker import Faker
-from flask.app import Flask
+from flask import Flask
 from flask_socketio import SocketIO
 
 from asynction.exceptions import BindingsValidationException
@@ -13,10 +14,26 @@ from tests.fixtures import FixturePaths
 AsynctionFactory = Callable[..., SocketIO]
 
 
+class FactoryFixture(Enum):
+    ASYNCTION_SOCKET_IO = "asynction_socketio_server_factory"
+    MOCK_ASYNCTION_SOCKET_IO = "mock_asynction_socketio_server_factory"
+
+
+@pytest.mark.parametrize(
+    argnames="factory_fixture",
+    argvalues=[
+        FactoryFixture.ASYNCTION_SOCKET_IO,
+        FactoryFixture.MOCK_ASYNCTION_SOCKET_IO,
+    ],
+    ids=["server", "mock_server"],
+)
 def test_client_can_successfully_connect(
-    asynction_socketio_server_factory: AsynctionFactory, flask_app: Flask
+    factory_fixture: FactoryFixture,
+    flask_app: Flask,
+    request: pytest.FixtureRequest,
 ):
-    socketio_server = asynction_socketio_server_factory()
+    server_factory: AsynctionFactory = request.getfixturevalue(factory_fixture.value)
+    socketio_server = server_factory()
     flask_test_client = flask_app.test_client()
     socketio_test_client = socketio_server.test_client(
         flask_app, flask_test_client=flask_test_client
@@ -49,13 +66,23 @@ def test_client_emits_and_receives_message_successfully(
     assert received_args[0] == message_to_echo
 
 
+@pytest.mark.parametrize(
+    argnames="factory_fixture",
+    argvalues=[
+        FactoryFixture.ASYNCTION_SOCKET_IO,
+        FactoryFixture.MOCK_ASYNCTION_SOCKET_IO,
+    ],
+    ids=["server", "mock_server"],
+)
 def test_client_emitting_invalid_message(
-    asynction_socketio_server_factory: AsynctionFactory,
+    factory_fixture: FactoryFixture,
     flask_app: Flask,
     faker: Faker,
     fixture_paths: FixturePaths,
+    request: pytest.FixtureRequest,
 ):
-    socketio_server = asynction_socketio_server_factory(spec_path=fixture_paths.echo)
+    server_factory: AsynctionFactory = request.getfixturevalue(factory_fixture.value)
+    socketio_server = server_factory(spec_path=fixture_paths.echo)
     flask_test_client = flask_app.test_client()
     socketio_test_client = socketio_server.test_client(
         flask_app, flask_test_client=flask_test_client
@@ -65,23 +92,43 @@ def test_client_emitting_invalid_message(
         socketio_test_client.emit("echo", faker.pyint())
 
 
+@pytest.mark.parametrize(
+    argnames="factory_fixture",
+    argvalues=[
+        FactoryFixture.ASYNCTION_SOCKET_IO,
+        FactoryFixture.MOCK_ASYNCTION_SOCKET_IO,
+    ],
+    ids=["server", "mock_server"],
+)
 def test_server_emitting_invalid_message(
-    asynction_socketio_server_factory: AsynctionFactory,
+    factory_fixture: FactoryFixture,
     fixture_paths: FixturePaths,
     faker: Faker,
+    request: pytest.FixtureRequest,
 ):
-    socketio_server = asynction_socketio_server_factory(spec_path=fixture_paths.echo)
+    server_factory: AsynctionFactory = request.getfixturevalue(factory_fixture.value)
+    socketio_server = server_factory(spec_path=fixture_paths.echo)
     with pytest.raises(PayloadValidationException):
         socketio_server.emit("echo", faker.pyint())
 
 
+@pytest.mark.parametrize(
+    argnames="factory_fixture",
+    argvalues=[
+        FactoryFixture.ASYNCTION_SOCKET_IO,
+        FactoryFixture.MOCK_ASYNCTION_SOCKET_IO,
+    ],
+    ids=["server", "mock_server"],
+)
 def test_client_connecting_with_valid_bindings(
-    asynction_socketio_server_factory: AsynctionFactory,
+    factory_fixture: FactoryFixture,
+    fixture_paths: FixturePaths,
     flask_app: Flask,
     faker: Faker,
-    fixture_paths: FixturePaths,
+    request: pytest.FixtureRequest,
 ):
-    socketio_server = asynction_socketio_server_factory(spec_path=fixture_paths.echo)
+    server_factory: AsynctionFactory = request.getfixturevalue(factory_fixture.value)
+    socketio_server = server_factory(spec_path=fixture_paths.echo)
     flask_test_client = flask_app.test_client()
 
     restricted_namespace = "/admin"
@@ -95,12 +142,22 @@ def test_client_connecting_with_valid_bindings(
     assert True
 
 
+@pytest.mark.parametrize(
+    argnames="factory_fixture",
+    argvalues=[
+        FactoryFixture.ASYNCTION_SOCKET_IO,
+        FactoryFixture.MOCK_ASYNCTION_SOCKET_IO,
+    ],
+    ids=["server", "mock_server"],
+)
 def test_client_connecting_with_invalid_bindings(
-    asynction_socketio_server_factory: AsynctionFactory,
+    factory_fixture: FactoryFixture,
     flask_app: Flask,
     fixture_paths: FixturePaths,
+    request: pytest.FixtureRequest,
 ):
-    socketio_server = asynction_socketio_server_factory(spec_path=fixture_paths.echo)
+    server_factory: AsynctionFactory = request.getfixturevalue(factory_fixture.value)
+    socketio_server = server_factory(spec_path=fixture_paths.echo)
     flask_test_client = flask_app.test_client()
 
     with pytest.raises(BindingsValidationException):
@@ -112,12 +169,22 @@ def test_client_connecting_with_invalid_bindings(
         )
 
 
+@pytest.mark.parametrize(
+    argnames="factory_fixture",
+    argvalues=[
+        FactoryFixture.ASYNCTION_SOCKET_IO,
+        FactoryFixture.MOCK_ASYNCTION_SOCKET_IO,
+    ],
+    ids=["server", "mock_server"],
+)
 def test_client_can_connect_to_server_that_uses_server_name(
-    asynction_socketio_server_factory: AsynctionFactory,
+    factory_fixture: FactoryFixture,
     flask_app: Flask,
     fixture_paths: FixturePaths,
+    request: pytest.FixtureRequest,
 ):
-    socketio_server = asynction_socketio_server_factory(
+    server_factory: AsynctionFactory = request.getfixturevalue(factory_fixture.value)
+    socketio_server = server_factory(
         spec_path=fixture_paths.simple_with_servers, server_name="production"
     )
     flask_test_client = flask_app.test_client()

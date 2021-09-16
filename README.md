@@ -214,7 +214,7 @@ The formats supported are essentially all the [faker providers](https://faker.re
 
 ## CLI
 
-For convenience, Asynction provides a command-line interface (CLI) that aims to be a toolbox of useful utilities for the development, testing and mocking of any Asynction app (ie Socket.IO app driven by an AsyncAPI doc). For example, it allows one to run a "mock" instance of a Socket.IO server, only by passing the AsyncAPI YAML file, without even having to start the development of the server itself.
+For convenience, Asynction provides a command-line interface (CLI) that aims to be a toolbox of useful utilities for the development, testing and mocking of Asynction apps (ie any Socket.IO app driven by an AsyncAPI doc). For example, it allows one to run a "mock" instance of their Socket.IO server, only by passing the AsyncAPI YAML file, without even having to start the development of the server itself.
 
 All commands support the `–-help` (or `-h`) argument to display additional information.
 

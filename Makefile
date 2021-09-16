@@ -62,7 +62,7 @@ docs/% example/%:
 	$(MAKE) -C $(@D) $(@F:.%=%)
 
 docker-build:
-	docker build . -t $(DOCKER_TAG) --build-arg VERSION=$(PKG_VERSION)
+	docker build --build-arg VERSION=$(PKG_VERSION) -t $(DOCKER_TAG) .
 
 docker-push:
 	docker push $(DOCKER_TAG)

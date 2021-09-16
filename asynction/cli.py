@@ -4,11 +4,11 @@ eventlet.monkey_patch()  # noreorder
 
 import argparse
 from functools import singledispatch
-from importlib_metadata import version
 from pathlib import Path
 from typing import Optional
 
 from flask import Flask
+from importlib_metadata import version
 
 import asynction
 

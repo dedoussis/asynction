@@ -79,6 +79,8 @@ jobs:
         run: make requirements-install
       - name: Install mock dependencies
         run: make requirements-mock-install
+      - name: Install CLI dependencies
+        run: make requirements-cli-install
       - name: Install test dependencies
         run: make requirements-test-install
       - name: Test

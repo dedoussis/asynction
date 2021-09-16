@@ -1,3 +1,4 @@
+import threading
 from ipaddress import IPv4Address
 from typing import Any
 from typing import Callable
@@ -6,7 +7,6 @@ from typing import MutableSequence
 from typing import Optional
 from typing import Sequence
 from unittest.mock import ANY
-from unittest.mock import Mock
 from unittest.mock import patch
 from uuid import uuid4
 
@@ -133,15 +133,12 @@ def test_mock_asynction_socketio_from_spec(fixture_paths: FixturePaths):
 def new_mock_asynction_socket_io(
     spec: AsyncApiSpec,
     app: Optional[Flask] = None,
-    max_worker_number: int = 8,
     async_mode: str = "threading",
 ) -> MockAsynctionSocketIO:
     return MockAsynctionSocketIO(
         spec=spec,
         validation=True,
         app=app,
-        subscription_task_interval=1,
-        max_worker_number=max_worker_number,
         custom_formats_sample_size=20,
         async_mode=async_mode,
     )
@@ -401,12 +398,12 @@ def test_run_respects_maximum_number_of_workers(faker: Faker):
         return mt
 
     flask_app = Flask(__name__)
-    server = new_mock_asynction_socket_io(spec, flask_app, max_worker_number)
+    server = new_mock_asynction_socket_io(spec, flask_app)
     server._register_handlers()
 
     with patch.object(SocketIO, "run"):
         with patch.object(server, "start_background_task", start_background_task_mock):
-            server.run(flask_app)
+            server.run(flask_app, max_worker_number=max_worker_number)
 
             assert len(background_tasks) == max_worker_number + 1
 
@@ -442,12 +439,12 @@ def test_run_spawns_minimum_number_of_workers(faker: Faker):
         return mt
 
     flask_app = Flask(__name__)
-    server = new_mock_asynction_socket_io(spec, flask_app, max_worker_number)
+    server = new_mock_asynction_socket_io(spec, flask_app)
     server._register_handlers()
 
     with patch.object(SocketIO, "run"):
         with patch.object(server, "start_background_task", start_background_task_mock):
-            server.run(flask_app)
+            server.run(flask_app, max_worker_number=max_worker_number)
 
             assert len(background_tasks) == sub_messages_number + 1
 
@@ -573,15 +570,14 @@ def test_start_background_daemon_task_with_threading_async_mode(faker: Faker):
 
     args = tuple(faker.pylist())
     kwargs = faker.pydict()
-    mock_thread_cls = Mock()
-    server.server.eio._async["thread"] = mock_thread_cls
 
-    t = server.start_background_task(target, *args, **kwargs)
+    with patch.object(threading, "Thread") as mock_thread_cls:
+        t = server.start_background_task(target, *args, **kwargs)
 
-    mock_thread_cls.assert_called_once_with(
-        target=target, args=args, kwargs=kwargs, daemon=True
-    )
-    t.start.assert_called_once_with()  # type: ignore
+        mock_thread_cls.assert_called_once_with(
+            target=target, args=args, kwargs=kwargs, daemon=True
+        )
+        t.start.assert_called_once_with()  # type: ignore
 
 
 def test_start_background_daemon_task_with_non_threading_async_mode(faker: Faker):

@@ -5,10 +5,20 @@ import pytest
 import socketio
 
 
+@pytest.mark.parametrize(
+    argnames="server_url_fixture",
+    argvalues=["mock_server_url", "cli_mock_server_url"],
+    ids=["mock_server", "cli_mock_server"],
+)
 @pytest.mark.filterwarnings("error")
 def test_automatic_mock_event_emission(
-    mock_server_url: str, mock_server_wait_interval: float, client: socketio.Client
+    server_url_fixture: str,
+    mock_client_wait_timeout: float,
+    mock_client_wait_interval: float,
+    client: socketio.Client,
+    request: pytest.FixtureRequest,
 ):
+    server_url: str = request.getfixturevalue(server_url_fixture)
     new_message_event = "new message"
     new_message_mock_ack = Mock()
 
@@ -51,9 +61,9 @@ def test_automatic_mock_event_emission(
         assert data["username"].istitle()
         user_joined_mock_ack(user_joined_event)
 
-    client.connect(mock_server_url, wait=False)
-    # Make sure that all events have been emitted:
-    client.sleep(mock_server_wait_interval)
+    client.connect(server_url, wait_timeout=mock_client_wait_timeout)
+    # Wait for all messages to arrive:
+    client.sleep(mock_client_wait_interval)
 
     new_message_mock_ack.assert_called_with(new_message_event)
     typing_mock_ack.assert_called_with(typing_event)

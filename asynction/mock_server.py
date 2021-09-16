@@ -8,6 +8,7 @@ an :class:`AsynctionSocketIO` server that:
   returning fake acknowledgmentds where applicable.
 """
 import threading
+from functools import partial
 from pathlib import Path
 from queue import Queue
 from random import choice
@@ -20,7 +21,6 @@ from typing import Sequence
 from faker import Faker
 from faker.exceptions import UnsupportedFeature
 from flask import Flask
-from flask_socketio import SocketIO
 from hypothesis import HealthCheck
 from hypothesis import Phase
 from hypothesis import Verbosity
@@ -102,14 +102,14 @@ def task_runner(queue: "Queue[SubscriptionTask]") -> None:
 
 
 def task_scheduler(
-    server: "MockAsynctionSocketIO",
     tasks: Sequence[SubscriptionTask],
     queue: "Queue[SubscriptionTask]",
+    sleep: Callable[[], None],
 ) -> None:
     while True:
         for task in tasks:
             queue.put(task)
-            server.sleep(server.subscription_task_interval)
+            sleep()
 
 
 def _noop_handler(*args, **kwargs) -> None:
@@ -124,8 +124,6 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
         spec: AsyncApiSpec,
         validation: bool,
         app: Optional[Flask],
-        subscription_task_interval: float,
-        max_worker_number: int,
         custom_formats_sample_size: int,
         **kwargs,
     ):
@@ -133,8 +131,6 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
         Use the :meth:`MockAsynctionSocketIO.from_spec` factory instead.
         """
         super().__init__(spec, validation=validation, app=app, **kwargs)
-        self.subscription_task_interval = subscription_task_interval
-        self.max_worker_number = max_worker_number
         self.faker = Faker()
         self.custom_formats = make_faker_formats(self.faker, custom_formats_sample_size)
         self._subscription_tasks: Sequence[SubscriptionTask] = []
@@ -147,11 +143,9 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
         server_name: Optional[str] = None,
         default_error_handler: Optional[ErrorHandler] = None,
         app: Optional[Flask] = None,
-        subscription_task_interval: float = 1,
-        max_worker_number: int = 8,
         custom_formats_sample_size: int = 20,
         **kwargs,
-    ) -> SocketIO:
+    ) -> "MockAsynctionSocketIO":
         """Create a Flask-SocketIO mock server given an AsyncAPI spec.
         The server emits events containing payloads of fake data in regular intervals,
         through background subscription tasks.
@@ -163,8 +157,6 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
         In addition to the args and kwargs of :meth:`AsynctionSocketIO.from_spec`,
         this factory method accepts some extra keyword arguments:
 
-        * ``subscription_task_interval``
-        * ``max_worker_number``
         * ``custom_formats_sample_size``
 
         :param spec_path: The path where the AsyncAPI YAML specification is located.
@@ -212,8 +204,6 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
             server_name=server_name,
             default_error_handler=default_error_handler,
             app=app,
-            subscription_task_interval=subscription_task_interval,
-            max_worker_number=max_worker_number,
             custom_formats_sample_size=custom_formats_sample_size,
             **kwargs,
         )
@@ -297,32 +287,58 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
         # The current method is a hack that accounts for the threading scenario,
         # to ensure that native threads are started as daemons.
 
-        if self.async_mode not in ["threading"]:
-            return super().start_background_task(target, *args, **kwargs)
+        if self.async_mode == "threading":
+            th = threading.Thread(target=target, args=args, kwargs=kwargs, daemon=True)
+            th.start()
+            return th
 
-        th: threading.Thread = self.server.eio._async["thread"](
-            target=target, args=args, kwargs=kwargs, daemon=True
-        )
-        th.start()
-        return th
+        return super().start_background_task(target, *args, **kwargs)
 
     def run(
         self,
         app: Flask,
         host: Optional[str] = None,
         port: Optional[int] = None,
+        subscription_task_interval: float = 1.0,
+        max_worker_number: int = 8,
         **kwargs,
     ) -> None:
+        """
+        Run the mock Asynction SocketIO web server.
+
+        In addition to the args and kwargs of :meth:`flask_socketio.SocketIO.run`,
+        this method accepts some extra keyword arguments:
+
+        * ``subscription_task_interval``
+        * ``max_worker_number``
+
+        :param app: The flask application instance.
+        :param host: The hostname or IP address for the server to listen on.
+                     Defaults to ``127.0.0.1``.
+        :param port: The port number for the server to listen on. Defaults to
+                     ``5000``.
+        :param subscription_task_interval: How often (in seconds) a subscription task
+                                           (thread that emits an event to
+                                           a connected client) is scheduled.
+                                           Defaults to ``1.0``.
+        :param max_worker_number: The maximum number of workers to be started for the
+                                  purposes of executing background subscription tasks.
+                                  Defaults to ``8``.
+        :param kwargs: Additional web server options that are propagated to
+                       :meth:`flask_socketio.SocketIO.run`. The web server options
+                       are specific to the server used in each of the supported
+                       async modes. Refer to the Flask-SocketIO docs for details.
+        """
         queue: "Queue[SubscriptionTask]" = self.server.eio.create_queue()
 
-        for _ in range(min(self.max_worker_number, len(self._subscription_tasks))):
+        for _ in range(min(max_worker_number, len(self._subscription_tasks))):
             _ = self.start_background_task(task_runner, queue=queue)
 
         _ = self.start_background_task(
             task_scheduler,
-            server=self,
             tasks=self._subscription_tasks,
             queue=queue,
+            sleep=partial(self.sleep, subscription_task_interval),
         )
 
         return super().run(app, host=host, port=port, **kwargs)

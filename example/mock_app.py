@@ -19,8 +19,15 @@ mock_asio = MockAsynctionSocketIO.from_spec(
     async_mode="gevent",
     app=flask_app,
     cors_allowed_origins="*",
-    subscription_task_interval=float(os.environ.get("SUBSCRIPTION_TASK_INTERVAL", "1")),
 )
 
 if __name__ == "__main__":
-    mock_asio.run(app=flask_app, debug=True, log_output=True, host="0.0.0.0")
+    mock_asio.run(
+        app=flask_app,
+        debug=True,
+        log_output=True,
+        host="0.0.0.0",
+        subscription_task_interval=float(
+            os.environ.get("SUBSCRIPTION_TASK_INTERVAL", "1")
+        ),
+    )

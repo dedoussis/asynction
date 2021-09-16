@@ -84,6 +84,8 @@ def load_handler(handler_id: str) -> Callable:
 
 
 class AsynctionSocketIO(SocketIO):
+    """Inherits the :class:`flask_socketio.SocketIO` class."""
+
     def __init__(
         self,
         spec: AsyncApiSpec,
@@ -109,7 +111,7 @@ class AsynctionSocketIO(SocketIO):
         **kwargs,
     ) -> SocketIO:
         """Create a Flask-SocketIO server from an AsyncAPI spec.
-        This is the single entrypoint to the Asynction API.
+        This is the single entrypoint to the Asynction server API.
 
         :param spec_path: The path where the AsyncAPI YAML specification is located.
         :param validation: When set to ``False``, message payloads, channel

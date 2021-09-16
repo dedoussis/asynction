@@ -15,6 +15,7 @@ _Disclaimer: Asynction is still at an early stage and should not be used in prod
 - Callback validation, upon the ACK of a message, based on the message `x-ack` schemata within the API specification.
 - Automatic registration of all event and error handlers defined within the API specification.
 - [Mock server support](#mock-server)
+- [CLI](#cli)
 - AsyncAPI [playground](https://playground.asyncapi.io/?load=https://raw.githubusercontent.com/asyncapi/asyncapi/master/examples/2.0.0/simple.yml) _(coming soon)_
 - Authentication à la [Connexion](https://connexion.readthedocs.io/en/latest/security.html) _(coming soon)_
 
@@ -26,14 +27,20 @@ A complete example can be found [here](example/) (includes examples of both norm
 
 ## Install
 
-```bash
+```console
 $ pip install asynction
 ```
 
 With mock server support:
 
-```bash
+```console
 $ pip install asynction[mock]
+```
+
+With CLI support:
+
+```console
+$ pip install asynction[cli]
 ```
 
 ## Usage (basic example)
@@ -204,6 +211,45 @@ NewMessageReceived:
 ```
 
 The formats supported are essentially all the [faker providers](https://faker.readthedocs.io/en/master/providers.html) that yield a string value.
+
+## CLI
+
+For convenience, Asynction provides a command-line interface (CLI) that aims to be a toolbox of useful utilities for the development, testing and mocking of any Asynction app (ie Socket.IO app driven by an AsyncAPI doc). For example, it allows one to run a "mock" instance of a Socket.IO server, only by passing the AsyncAPI YAML file, without even having to start the development of the server itself.
+
+All commands support the `–-help` (or `-h`) argument to display additional information.
+
+### Available commands
+
+- `mock run`
+
+  ```console
+  $ asynction --spec ./docs/asyncapi.yml mock run --port 5001 --debugger
+  * Restarting with stat
+  * Debugger is active!
+  * Debugger PIN: 339-844-897
+  (71320) wsgi starting up on http://0.0.0.0:5001
+  ...
+  ```
+
+- `scaffold` _(coming soon)_
+
+  ```console
+  $ asynction --spec ./docs/asyncapi.yml scaffold
+  ✨ Successfully generated app.py
+  ```
+
+### Dockerised
+
+The CLI is also available through docker, negating the need for a local python environment:
+
+```console
+$ docker run -v ${PWD}/docs/asyncapi.yml:/opt/asynction/asyncapi.yml dedoussis/asynction mock run --debugger
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 339-844-897
+(71320) wsgi starting up on http://0.0.0.0:5000
+...
+```
 
 ## Further resources
 

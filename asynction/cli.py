@@ -4,7 +4,7 @@ eventlet.monkey_patch()  # noreorder
 
 import argparse
 from functools import singledispatch
-from importlib.metadata import version
+from importlib_metadata import version
 from pathlib import Path
 from typing import Optional
 

@@ -1,6 +1,6 @@
-ARG VERSION=
-
 FROM python AS build-image
+
+ARG VERSION
 
 RUN pip install asynction[cli]==${VERSION}
 

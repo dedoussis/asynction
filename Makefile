@@ -66,6 +66,7 @@ docker-build:
 
 docker-push:
 	docker push $(DOCKER_TAG)
-	docker push $(REPO):latest
+	docker tag $(DOCKER_TAG) $(DOCKER_REPO):latest
+	docker push $(DOCKER_REPO):latest
 
 .PHONY: all-install clean clean-pyc clean-build clean-tests clean-mypy typecheck test-unit test-integration test-e2e format lint release dist docker-build docker-push

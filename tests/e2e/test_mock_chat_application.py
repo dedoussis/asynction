@@ -62,7 +62,9 @@ def test_automatic_mock_event_emission(
         user_joined_mock_ack(user_joined_event)
 
     client.connect(server_url, wait_timeout=mock_client_wait_timeout)
+    # Wait for all messages to arrive:
     client.sleep(mock_client_wait_interval)
+
     new_message_mock_ack.assert_called_with(new_message_event)
     typing_mock_ack.assert_called_with(typing_event)
     user_joined_mock_ack.assert_called_with(user_joined_event)

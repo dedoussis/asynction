@@ -27,7 +27,7 @@ def mock_client_wait_timeout() -> float:
 
 @pytest.fixture
 def mock_client_wait_interval() -> float:
-    return float(os.environ["MOCK_CLIENT_WAIT_TIMEOUT"])
+    return float(os.environ["MOCK_CLIENT_WAIT_INTERVAL"])
 
 
 @pytest.fixture

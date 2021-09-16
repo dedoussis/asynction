@@ -27,8 +27,8 @@ services:
       SERVER_URL: ws://asynction_server:5000
       MOCK_SERVER_URL: ws://mock_asynction_server:5000
       CLI_MOCK_SERVER_URL: ws://cli_mock_asynction_server:5000
-      MOCK_CLIENT_WAIT_TIMEOUT: "10"
-      MOCK_CLIENT_WAIT_INTERVAL: "10" # To make sure that all mock events have been emitted
+      MOCK_CLIENT_WAIT_TIMEOUT: 10
+      MOCK_CLIENT_WAIT_INTERVAL: 20 # To make sure that all mock events have been emitted
     command: [-vvv, --mypy, tests/e2e]
     depends_on:
       [asynction_server, mock_asynction_server, cli_mock_asynction_server]

@@ -50,7 +50,7 @@ def make_extra_requirements() -> Mapping[str, str]:
     return extra_requirements
 
 
-version = os.environ.get("PKG_VERSION", "tests")
+version = os.environ["PKG_VERSION"]
 
 
 setup(

@@ -8,9 +8,17 @@ from pathlib import Path
 from typing import Optional
 
 from flask import Flask
+from importlib_metadata import PackageNotFoundError
 from importlib_metadata import version
 
 import asynction
+
+
+def get_version() -> str:
+    try:
+        return version(asynction.__name__)
+    except PackageNotFoundError:
+        return "not-found"
 
 
 class AsynctionNamespace(argparse.Namespace):
@@ -45,7 +53,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--version",
         action="version",
-        version=f"%(prog)s {version(asynction.__name__)}",
+        version=f"%(prog)s {get_version()}",
     )
     parser.add_argument(
         "--spec",

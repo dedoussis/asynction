@@ -4,6 +4,7 @@ from unittest.mock import ANY
 from unittest.mock import patch
 
 from faker import Faker
+from importlib_metadata import PackageNotFoundError
 
 import asynction
 from asynction.cli import AsynctionNamespace
@@ -11,6 +12,18 @@ from asynction.cli import MockNamespace
 from asynction.cli import RunMockNamespace
 from asynction.cli import build_parser
 from asynction.cli import command
+from asynction.cli import get_version
+
+
+def test_get_version_found(faker: Faker):
+    mock_version = faker.pystr()
+    with patch.object(asynction.cli, "version", return_value=mock_version):
+        assert get_version() == mock_version
+
+
+def test_get_version_not_found():
+    with patch.object(asynction.cli, "version", side_effect=PackageNotFoundError()):
+        assert get_version() == "not-found"
 
 
 def test_build_parser():

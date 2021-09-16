@@ -13,7 +13,8 @@ import socketio
 @pytest.mark.filterwarnings("error")
 def test_automatic_mock_event_emission(
     server_url_fixture: str,
-    mock_server_wait_interval: float,
+    mock_client_wait_timeout: float,
+    mock_client_wait_interval: float,
     client: socketio.Client,
     request: pytest.FixtureRequest,
 ):
@@ -60,10 +61,8 @@ def test_automatic_mock_event_emission(
         assert data["username"].istitle()
         user_joined_mock_ack(user_joined_event)
 
-    client.connect(server_url, wait=False)
-    # Make sure that all events have been emitted:
-    client.sleep(mock_server_wait_interval)
-
+    client.connect(server_url, wait_timeout=mock_client_wait_timeout)
+    client.sleep(mock_client_wait_interval)
     new_message_mock_ack.assert_called_with(new_message_event)
     typing_mock_ack.assert_called_with(typing_event)
     user_joined_mock_ack.assert_called_with(user_joined_event)

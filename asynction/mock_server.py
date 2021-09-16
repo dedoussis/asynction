@@ -308,7 +308,7 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
         Run the mock Asynction SocketIO web server.
 
         In addition to the args and kwargs of :meth:`flask_socketio.SocketIO.run`,
-        this factory accepts some extra keyword arguments:
+        this method accepts some extra keyword arguments:
 
         * ``subscription_task_interval``
         * ``max_worker_number``
@@ -328,7 +328,7 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
         :param kwargs: Additional web server options that are propagated to
                        :meth:`flask_socketio.SocketIO.run`. The web server options
                        are specific to the server used in each of the supported
-                       async modes. Refer to the Flask-SocketIO for details.
+                       async modes. Refer to the Flask-SocketIO docs for details.
         """
         queue: "Queue[SubscriptionTask]" = self.server.eio.create_queue()
 

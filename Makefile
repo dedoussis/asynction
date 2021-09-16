@@ -2,7 +2,7 @@ NOOP=
 SPACE=$(NOOP) $(NOOP)
 DOCKER_REPO=dedoussis/asynction
 PKG_VERSION=$(shell git describe --abbrev=0 --tags)
-DOCKER_IMAGE=$(DOCKER_REPO):$(PKG_VERSION)
+DOCKER_TAG=$(DOCKER_REPO):$(PKG_VERSION)
 
 all-install: $(wildcard requirements*.txt)
 	pip install -r $(subst $(SPACE), -r ,$?)

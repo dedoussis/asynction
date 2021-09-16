@@ -5,12 +5,20 @@ services:
     build:
       context: ${PWD}
       dockerfile: tests/e2e/Dockerfile
+
   mock_asynction_server:
     build:
       context: ${PWD}
       dockerfile: tests/e2e/Dockerfile-mock
     environment:
       SUBSCRIPTION_TASK_INTERVAL: 0.1
+
+  cli_mock_asynction_server:
+    build:
+      context: ${PWD}
+      dockerfile: tests/e2e/Dockerfile-cli
+    command: ["--subscription-task-interval", "0.1", "--debugger"]
+
   test_runner:
     build:
       context: ${PWD}
@@ -18,6 +26,8 @@ services:
     environment:
       SERVER_URL: ws://asynction_server:5000
       MOCK_SERVER_URL: ws://mock_asynction_server:5000
+      CLI_MOCK_SERVER_URL: ws://cli_mock_asynction_server:5000
       MOCK_SERVER_WAIT_INTERVAL: 5 # To make sure that all mock events have emitted
     command: [-vvv, --mypy, tests/e2e]
-    depends_on: [asynction_server, mock_asynction_server]
+    depends_on:
+      [asynction_server, mock_asynction_server, cli_mock_asynction_server]

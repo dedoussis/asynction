@@ -1,6 +1,8 @@
 NOOP=
 SPACE=$(NOOP) $(NOOP)
+DOCKER_REPO=dedoussis/asynction
 PKG_VERSION=$(shell git describe --abbrev=0 --tags)
+DOCKER_IMAGE=$(DOCKER_REPO):$(PKG_VERSION)
 
 all-install: $(wildcard requirements*.txt)
 	pip install -r $(subst $(SPACE), -r ,$?)
@@ -59,4 +61,11 @@ dist: clean
 docs/% example/%:
 	$(MAKE) -C $(@D) $(@F:.%=%)
 
-.PHONY: all-install clean clean-pyc clean-build clean-tests clean-mypy typecheck test-unit test-integration test-e2e format lint release dist
+docker-build:
+	docker build . -t $(DOCKER_TAG) --build-arg VERSION=$(PKG_VERSION)
+
+docker-push:
+	docker push $(DOCKER_TAG)
+	docker push $(REPO):latest
+
+.PHONY: all-install clean clean-pyc clean-build clean-tests clean-mypy typecheck test-unit test-integration test-e2e format lint release dist docker-build docker-push

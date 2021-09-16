@@ -18,7 +18,7 @@ Both of the server and client applications are dockerised and bundled together i
 
 ### Using docker
 
-```bash
+```console
 $ make docker-run  # Launches both client and server
 ```
 
@@ -26,7 +26,7 @@ $ make docker-run  # Launches both client and server
 
 First make sure that you have python 3.7+ and node 12+ installed in your local environment.
 
-```bash
+```console
 $ make run-server  # Installs python deps and launches the server
 $ make run-client  # Installs node.js deps and launches the client
 ```
@@ -40,7 +40,7 @@ To connect to the bonus `/admin` Socket.IO namespace, use the `token` URL query 
 
 ## Mock server
 
-```bash
+```console
 $ make run-server-mock  # Listens to localhost:5000 by default
 $ make run-client  # The same app client should seamingly integrate with the mock server
 ```

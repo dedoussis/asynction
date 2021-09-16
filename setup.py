@@ -3,6 +3,7 @@
 import os
 from pathlib import Path
 from typing import Mapping
+from typing import Sequence
 
 from setuptools import find_packages
 from setuptools import setup
@@ -15,21 +16,42 @@ with open("requirements.txt") as requiremets_file:
     requirements = requiremets_file.read().split()
 
 
+def parse_requirements(file_path: Path) -> Sequence[str]:
+    reqs = []
+    with file_path.open() as f:
+        raw_reqs = f.read().split(os.linesep)
+        for raw_req in raw_reqs:
+            if raw_req:
+                stripped_raw_req = raw_req.strip()
+
+                expanded_reqs = (
+                    [stripped_raw_req]
+                    if not stripped_raw_req.startswith("-r ")
+                    else parse_requirements(
+                        Path.cwd().joinpath(stripped_raw_req[len("-r ") :].strip())
+                    )
+                )
+
+                reqs = [*reqs, *expanded_reqs]
+
+    return reqs
+
+
 def make_extra_requirements() -> Mapping[str, str]:
     extra_requirements = {}
     for req_file_path in Path(__file__).parent.glob("requirements-*.txt"):
         if req_file_path.name not in ["requirements-dev.txt", "requirements-test.txt"]:
             extra_req_name = req_file_path.name[len("requirements-") : -len(".txt")]
-            with req_file_path.open() as extra_req_file:
-                extra_requirements = {
-                    **extra_requirements,
-                    extra_req_name: extra_req_file.read().split(),
-                }
+            extra_requirements = {
+                **extra_requirements,
+                extra_req_name: parse_requirements(req_file_path),
+            }
 
     return extra_requirements
 
 
 version = os.environ["PKG_VERSION"]
+
 
 setup(
     author="Dimitrios Dedoussis",
@@ -78,6 +100,7 @@ setup(
     ),
     name="asynction",
     packages=find_packages(include=["asynction", "asynction.*"]),
+    entry_points={"console_scripts": ["asynction = asynction.__main__:main"]},
     url="https://github.com/dedoussis/asynction",
     version=version,
     zip_safe=False,

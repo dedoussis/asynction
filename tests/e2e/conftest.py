@@ -16,6 +16,11 @@ def mock_server_url() -> str:
 
 
 @pytest.fixture
+def cli_mock_server_url() -> str:
+    return os.environ["MOCK_SERVER_URL"]
+
+
+@pytest.fixture
 def mock_server_wait_interval() -> float:
     return float(os.environ["MOCK_SERVER_WAIT_INTERVAL"])
 

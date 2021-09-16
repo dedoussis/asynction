@@ -26,6 +26,9 @@ Mock Asynction Server
 .. autoclass:: asynction.MockAsynctionSocketIO
    :members: from_spec
 
+   .. automethod:: run
+
+
 Exceptions
 ----------
 

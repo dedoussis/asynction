@@ -1,2 +1,2 @@
-Faker~=8.12
+Faker~=8.13
 hypothesis_jsonschema==0.20.1

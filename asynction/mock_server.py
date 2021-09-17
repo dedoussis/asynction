@@ -170,13 +170,6 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
                                       without an explicit error handler.
                                       Equivelant of ``@socketio.on_error_default``
         :param app: The flask application instance. Defaults to ``None``.
-        :param subscription_task_interval: How often (in seconds) a subscription task
-                                           (thread that emits an event to
-                                           a connected client) is scheduled.
-                                           Defaults to ``1``.
-        :param max_worker_number: The maximum number of workers to be started for the
-                                  purposes of executing background subscription tasks.
-                                  Defaults to ``8``.
         :param custom_formats_sample_size: The ammout of the Faker provider samples
                                            to be used for each custom string format.
                                            Hypotheses uses these samples to generate
@@ -185,7 +178,7 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
                                            Defaults to ``20``.
         :param kwargs: Flask-SocketIO, Socket.IO and Engine.IO server options.
 
-        :returns: A Flask-SocketIO mock server, emitting events with fake data in
+        :returns: A Flask-SocketIO mock server, emitting events of fake data in
                   regular intervals.
                   The server also has mock event and error handlers registered.
 

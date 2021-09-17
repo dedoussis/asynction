@@ -6,7 +6,7 @@ SocketIO python framework driven by the [AsyncAPI](https://www.asyncapi.com/) sp
 
 The purpose of Asynction is to empower a specification first approach when developing [SocketIO](https://socket.io/) APIs in Python. It guarantees that your API will work in accordance with its documentation.
 
-_Disclaimer: Asynction is still at an early stage and should not be used in production codebases._
+_Disclaimer: Asynction is still at a beta stage. Extensive testing is recommended when using this library in production._
 
 ## Features
 

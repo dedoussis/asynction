@@ -10,10 +10,11 @@ _Disclaimer: Asynction is still at a beta stage. Extensive testing is recommende
 
 ## Features
 
-- Payload validation (for both incoming and outgoing events), based on the message schemata within the API specification.
-- HTTP request validation, upon connection, based on the channel binding schemata within the API specification.
-- Callback validation, upon the ACK of a message, based on the message `x-ack` schemata within the API specification.
-- Automatic registration of all event and error handlers defined within the API specification.
+- Out of the box validation on every Socket.IO interraction. In particular:
+  - Event validation (for both ingress and egress events), based on the specified message schemata
+  - HTTP request validation, upon connection, based on the channel binding schemata of each namespace
+  - Callback validation, upon the ACK of a message, based on the message `x-ack` schemata
+- Automatic registration of all event and error handlers that are referenced within the API specification.
 - [Mock server support](#mock-server)
 - [CLI](#cli)
 - AsyncAPI [playground](https://playground.asyncapi.io/?load=https://raw.githubusercontent.com/asyncapi/asyncapi/master/examples/2.0.0/simple.yml) _(coming soon)_
@@ -41,6 +42,13 @@ With CLI support:
 
 ```console
 $ pip install asynction[cli]
+```
+
+The CLI can also be installed via Homebrew:
+
+```console
+$ brew tap dedoussis/tap
+$ brew install asynction
 ```
 
 ## Usage (basic example)
@@ -190,7 +198,7 @@ The mock server:
 1. Listens for all events defined in the given spec, returning fake acknowledgements where applicable.
 1. Periodically emits events containing payloads of fake data, for the clients to listen on.
 
-The fake data generation is fueled by [Faker](https://faker.readthedocs.io/en/master/), hence the use of the mock server functionality requires the installation of extra dependecies: `pip install asynction[mock]`
+The fake data generation is fueled by [Faker](https://faker.readthedocs.io/en/master/) and [Hypothesis](https://hypothesis.readthedocs.io/en/latest/), hence the use of the mock server functionality requires the installation of extra dependecies: `pip install asynction[mock]`
 
 To make the fake generated data more realistic, one may attach faker providers to the string schemata of their spec using the [format](https://json-schema.org/understanding-json-schema/reference/string.html#format) keyword of JSON Schema:
 
@@ -240,7 +248,7 @@ All commands support the `–-help` (or `-h`) argument to display additional inf
 
 ### Dockerised
 
-The CLI is also available through docker, negating the need for a local python environment:
+The CLI can be installed via pip or Homebrew (see the [install section](#install)) but is also available through docker, negating the need for a local python environment:
 
 ```console
 $ docker run -v ${PWD}/docs/asyncapi.yml:/opt/asynction/asyncapi.yml dedoussis/asynction mock run --debugger

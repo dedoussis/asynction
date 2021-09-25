@@ -3,8 +3,10 @@ from importlib.resources import read_text
 from pathlib import Path
 from typing import Callable
 from typing import Text
+from typing import Union
 
 from flask import Blueprint
+from flask import Response
 from flask import jsonify
 from flask import render_template_string
 
@@ -12,7 +14,7 @@ from asynction.types import AsyncApiSpec
 
 from . import templates
 
-View = Callable[[], Text]
+View = Callable[[], Union[Text, Response]]
 
 
 def make_html_rendered_docs_view(spec: AsyncApiSpec) -> View:

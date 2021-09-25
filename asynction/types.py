@@ -201,14 +201,11 @@ class AsyncApiSpec:
     @staticmethod
     def from_dict(data: JSONMapping) -> "AsyncApiSpec":
         spec = forge(AsyncApiSpec, data)
-        spec._raw = data
+        spec._raw = data  # type: ignore
         return spec
 
     def to_dict(self) -> JSONMapping:
-        if hasattr(self, "_raw"):
-            return self._raw
-
-        return asdict(self)
+        return getattr(self, "_raw", asdict(self))
 
 
 ErrorHandler = Callable[[Exception], None]

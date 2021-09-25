@@ -1,3 +1,7 @@
+asyncapi: 2.2.0
+info:
+  title: Simple API with Servers
+  version: 0.0.1
 servers:
   development:
     url: localhost
@@ -9,7 +13,7 @@ channels:
   /:
     publish:
       message:
-        $ref: '#/components/messages/PingMessage'
+        $ref: "#/components/messages/PingMessage"
 components:
   messages:
     PingMessage:

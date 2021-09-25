@@ -32,6 +32,7 @@ from asynction.types import AsyncApiSpec
 from asynction.types import Channel
 from asynction.types import ChannelBindings
 from asynction.types import ErrorHandler
+from asynction.types import Info
 from asynction.types import Message
 from asynction.types import MessageAck
 from asynction.types import OneOfMessages
@@ -138,6 +139,7 @@ def new_mock_asynction_socket_io(
     return MockAsynctionSocketIO(
         spec=spec,
         validation=True,
+        docs=True,
         app=app,
         custom_formats_sample_size=20,
         async_mode=async_mode,
@@ -145,11 +147,14 @@ def new_mock_asynction_socket_io(
 
 
 def test_register_handlers_registers_noop_handler_for_message_with_no_ack(
+    server_info: Info,
     faker: Faker,
 ):
     namespace = f"/{faker.pystr()}"
     event_name = faker.word()
     spec = AsyncApiSpec(
+        asyncapi=faker.pystr(),
+        info=server_info,
         channels={
             namespace: Channel(
                 publish=Operation(
@@ -164,7 +169,7 @@ def test_register_handlers_registers_noop_handler_for_message_with_no_ack(
                     ),
                 )
             )
-        }
+        },
     )
     server = new_mock_asynction_socket_io(spec)
 
@@ -177,7 +182,9 @@ def test_register_handlers_registers_noop_handler_for_message_with_no_ack(
     assert handler == _noop_handler
 
 
-def test_register_handlers_registers_valid_handler_for_message_with_ack(faker: Faker):
+def test_register_handlers_registers_valid_handler_for_message_with_ack(
+    server_info: Info, faker: Faker
+):
     namespace = f"/{faker.pystr()}"
     event_name = faker.word()
     ack_schema = {
@@ -196,6 +203,8 @@ def test_register_handlers_registers_valid_handler_for_message_with_ack(faker: F
         "required": ["foo", "bar"],
     }
     spec = AsyncApiSpec(
+        asyncapi=faker.pystr(),
+        info=server_info,
         channels={
             namespace: Channel(
                 publish=Operation(
@@ -211,7 +220,7 @@ def test_register_handlers_registers_valid_handler_for_message_with_ack(faker: F
                     ),
                 )
             )
-        }
+        },
     )
     server = new_mock_asynction_socket_io(spec)
 
@@ -228,10 +237,13 @@ def test_register_handlers_registers_valid_handler_for_message_with_ack(faker: F
 
 
 def test_register_handlers_adds_payload_validator_if_validation_is_enabled(
+    server_info: Info,
     faker: Faker,
 ):
     namespace = f"/{faker.pystr()}"
     spec = AsyncApiSpec(
+        asyncapi=faker.pystr(),
+        info=server_info,
         channels={
             namespace: Channel(
                 publish=Operation(
@@ -246,7 +258,7 @@ def test_register_handlers_adds_payload_validator_if_validation_is_enabled(
                     ),
                 )
             )
-        }
+        },
     )
     server = new_mock_asynction_socket_io(spec)
 
@@ -261,9 +273,13 @@ def test_register_handlers_adds_payload_validator_if_validation_is_enabled(
         handler_with_validation(*args)
 
 
-def test_register_handlers_registers_connection_handler(faker: Faker):
+def test_register_handlers_registers_connection_handler(
+    server_info: Info, faker: Faker
+):
     namespace = f"/{faker.pystr()}"
-    spec = AsyncApiSpec(channels={namespace: Channel()})
+    spec = AsyncApiSpec(
+        asyncapi=faker.pystr(), info=server_info, channels={namespace: Channel()}
+    )
     server = new_mock_asynction_socket_io(spec)
 
     server._register_handlers()
@@ -276,10 +292,13 @@ def test_register_handlers_registers_connection_handler(faker: Faker):
 
 
 def test_register_handlers_registers_connection_handler_with_bindings_validation(
+    server_info: Info,
     faker: Faker,
 ):
     namespace = f"/{faker.pystr()}"
     spec = AsyncApiSpec(
+        asyncapi=faker.pystr(),
+        info=server_info,
         channels={
             namespace: Channel(
                 bindings=ChannelBindings(
@@ -288,7 +307,7 @@ def test_register_handlers_registers_connection_handler_with_bindings_validation
                     )
                 ),
             )
-        }
+        },
     )
     server = new_mock_asynction_socket_io(spec)
     flask_app = Flask(__name__)
@@ -313,9 +332,11 @@ def test_register_handlers_registers_connection_handler_with_bindings_validation
     ids=["with_default_error_handler", "without_default_error_handler"],
 )
 def test_register_handlers_registers_default_error_handler(
-    optional_error_handler: Optional[ErrorHandler],
+    optional_error_handler: Optional[ErrorHandler], server_info: Info, faker: Faker
 ):
-    server = new_mock_asynction_socket_io(AsyncApiSpec(channels={}))
+    server = new_mock_asynction_socket_io(
+        AsyncApiSpec(asyncapi=faker.pystr(), info=server_info, channels={})
+    )
 
     server._register_handlers(optional_error_handler)
     assert server.default_exception_handler == optional_error_handler
@@ -328,9 +349,13 @@ class MockThread:
         self.kwargs = kwargs
 
 
-def test_run_spawns_background_tasks_and_calls_super_run(faker: Faker):
+def test_run_spawns_background_tasks_and_calls_super_run(
+    server_info: Info, faker: Faker
+):
     namespace = f"/{faker.pystr()}"
     spec = AsyncApiSpec(
+        asyncapi=faker.pystr(),
+        info=server_info,
         channels={
             namespace: Channel(
                 subscribe=Operation(
@@ -344,7 +369,7 @@ def test_run_spawns_background_tasks_and_calls_super_run(faker: Faker):
                     ),
                 )
             )
-        }
+        },
     )
     flask_app = Flask(__name__)
     server = new_mock_asynction_socket_io(spec, flask_app)
@@ -368,12 +393,14 @@ def test_run_spawns_background_tasks_and_calls_super_run(faker: Faker):
             super_run_mock.assert_called_once_with(flask_app, host=None, port=None)
 
 
-def test_run_respects_maximum_number_of_workers(faker: Faker):
+def test_run_respects_maximum_number_of_workers(server_info: Info, faker: Faker):
     max_worker_number = faker.pyint(min_value=2, max_value=5)
     sub_messages_number = max_worker_number + faker.pyint(min_value=3, max_value=6)
 
     namespace = f"/{faker.pystr()}"
     spec = AsyncApiSpec(
+        asyncapi=faker.pystr(),
+        info=server_info,
         channels={
             namespace: Channel(
                 subscribe=Operation(
@@ -388,7 +415,7 @@ def test_run_respects_maximum_number_of_workers(faker: Faker):
                     ),
                 )
             )
-        }
+        },
     )
     background_tasks: MutableSequence[MockThread] = []
 
@@ -408,12 +435,14 @@ def test_run_respects_maximum_number_of_workers(faker: Faker):
             assert len(background_tasks) == max_worker_number + 1
 
 
-def test_run_spawns_minimum_number_of_workers(faker: Faker):
+def test_run_spawns_minimum_number_of_workers(server_info: Info, faker: Faker):
     max_worker_number = faker.pyint(min_value=8, max_value=15)
     sub_messages_number = max_worker_number - faker.pyint(min_value=3, max_value=5)
 
     namespace = f"/{faker.pystr()}"
     spec = AsyncApiSpec(
+        asyncapi=faker.pystr(),
+        info=server_info,
         channels={
             namespace: Channel(
                 subscribe=Operation(
@@ -428,7 +457,7 @@ def test_run_spawns_minimum_number_of_workers(faker: Faker):
                     ),
                 )
             )
-        }
+        },
     )
 
     background_tasks: MutableSequence[MockThread] = []
@@ -449,7 +478,9 @@ def test_run_spawns_minimum_number_of_workers(faker: Faker):
             assert len(background_tasks) == sub_messages_number + 1
 
 
-def test_make_subscription_task_with_message_payload_and_ack(faker: Faker):
+def test_make_subscription_task_with_message_payload_and_ack(
+    server_info: Info, faker: Faker
+):
     namespace = f"/{faker.pystr()}"
     message = Message(
         name=faker.word(),
@@ -476,13 +507,15 @@ def test_make_subscription_task_with_message_payload_and_ack(faker: Faker):
         ),
     )
     spec = AsyncApiSpec(
+        asyncapi=faker.pystr(),
+        info=server_info,
         channels={
             namespace: Channel(
                 subscribe=Operation(
                     message=OneOfMessages(oneOf=[message]),
                 )
             )
-        }
+        },
     )
     server = new_mock_asynction_socket_io(spec)
     task = server.make_subscription_task(message=message, namespace=namespace)
@@ -497,7 +530,9 @@ def test_make_subscription_task_with_message_payload_and_ack(faker: Faker):
         assert True
 
 
-def test_make_subscription_task_with_no_message_payload_but_ack(faker: Faker):
+def test_make_subscription_task_with_no_message_payload_but_ack(
+    server_info: Info, faker: Faker
+):
     namespace = f"/{faker.pystr()}"
     message = Message(
         name=faker.word(),
@@ -509,13 +544,15 @@ def test_make_subscription_task_with_no_message_payload_but_ack(faker: Faker):
         ),
     )
     spec = AsyncApiSpec(
+        asyncapi=faker.pystr(),
+        info=server_info,
         channels={
             namespace: Channel(
                 subscribe=Operation(
                     message=OneOfMessages(oneOf=[message]),
                 )
             )
-        }
+        },
     )
     server = new_mock_asynction_socket_io(spec)
     task = server.make_subscription_task(message=message, namespace=namespace)
@@ -527,7 +564,9 @@ def test_make_subscription_task_with_no_message_payload_but_ack(faker: Faker):
         )
 
 
-def test_make_subscription_task_with_message_payload_but_no_ack(faker: Faker):
+def test_make_subscription_task_with_message_payload_but_no_ack(
+    server_info: Info, faker: Faker
+):
     namespace = f"/{faker.pystr()}"
     message = Message(
         name=faker.word(),
@@ -537,13 +576,15 @@ def test_make_subscription_task_with_message_payload_but_no_ack(faker: Faker):
         },
     )
     spec = AsyncApiSpec(
+        asyncapi=faker.pystr(),
+        info=server_info,
         channels={
             namespace: Channel(
                 subscribe=Operation(
                     message=OneOfMessages(oneOf=[message]),
                 )
             )
-        }
+        },
     )
     server = new_mock_asynction_socket_io(spec)
     task = server.make_subscription_task(message=message, namespace=namespace)
@@ -558,8 +599,14 @@ def test_make_subscription_task_with_message_payload_but_no_ack(faker: Faker):
         assert True
 
 
-def test_start_background_daemon_task_with_threading_async_mode(faker: Faker):
-    spec = AsyncApiSpec(channels={f"/{faker.pystr()}": Channel()})
+def test_start_background_daemon_task_with_threading_async_mode(
+    server_info: Info, faker: Faker
+):
+    spec = AsyncApiSpec(
+        asyncapi=faker.pystr(),
+        info=server_info,
+        channels={f"/{faker.pystr()}": Channel()},
+    )
     server = new_mock_asynction_socket_io(
         spec, app=Flask(__name__), async_mode="threading"
     )
@@ -580,8 +627,14 @@ def test_start_background_daemon_task_with_threading_async_mode(faker: Faker):
         t.start.assert_called_once_with()  # type: ignore
 
 
-def test_start_background_daemon_task_with_non_threading_async_mode(faker: Faker):
-    spec = AsyncApiSpec(channels={f"/{faker.pystr()}": Channel()})
+def test_start_background_daemon_task_with_non_threading_async_mode(
+    server_info: Info, faker: Faker
+):
+    spec = AsyncApiSpec(
+        asyncapi=faker.pystr(),
+        info=server_info,
+        channels={f"/{faker.pystr()}": Channel()},
+    )
     server = new_mock_asynction_socket_io(spec, app=Flask(__name__))
 
     server.async_mode = "gevent"

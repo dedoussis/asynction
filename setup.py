@@ -77,9 +77,9 @@ setup(
     license="MIT license",
     long_description=readme,
     long_description_content_type="text/markdown",
-    include_package_data=True,
     package_data={
         "asynction": ["py.typed"],
+        "asynction.templates": ["index.html.j2"],
     },
     keywords=" ".join(
         [
@@ -96,6 +96,9 @@ setup(
             "flask-socketio",
             "connexion",
             "mock",
+            "documentation",
+            "docs",
+            "playground",
         ]
     ),
     name="asynction",
@@ -103,5 +106,5 @@ setup(
     entry_points={"console_scripts": ["asynction = asynction.__main__:main"]},
     url="https://github.com/dedoussis/asynction",
     version=version,
-    zip_safe=False,
+    zip_safe=True,
 )

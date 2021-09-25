@@ -18,6 +18,7 @@ from flask import Flask
 from flask_socketio import SocketIO
 
 from asynction.exceptions import ValidationException
+from asynction.playground_docs import make_docs_blueprint
 from asynction.types import GLOBAL_NAMESPACE
 from asynction.types import AsyncApiSpec
 from asynction.types import ChannelBindings
@@ -89,16 +90,28 @@ class AsynctionSocketIO(SocketIO):
     def __init__(
         self,
         spec: AsyncApiSpec,
-        validation: bool = True,
-        app: Optional[Flask] = None,
+        validation: bool,
+        docs: bool,
+        app: Optional[Flask],
         **kwargs,
     ):
         """This is a private constructor.
         Use the :meth:`AsynctionSocketIO.from_spec` factory instead.
         """
-        super().__init__(app=app, **kwargs)
         self.spec = spec
         self.validation = validation
+        self.docs = docs
+
+        super().__init__(app=app, **kwargs)
+
+    def init_app(self, app: Optional[Flask], **kwargs) -> None:
+        super().init_app(app, **kwargs)
+
+        if self.docs and app is not None:
+            docs_bp = make_docs_blueprint(
+                spec=self.spec, url_prefix=Path(self.sockio_mw.engineio_path).parent
+            )
+            app.register_blueprint(docs_bp)
 
     @classmethod
     def from_spec(
@@ -106,6 +119,7 @@ class AsynctionSocketIO(SocketIO):
         spec_path: Path,
         validation: bool = True,
         server_name: Optional[str] = None,
+        docs: bool = True,
         default_error_handler: Optional[ErrorHandler] = None,
         app: Optional[Flask] = None,
         **kwargs,
@@ -120,6 +134,11 @@ class AsynctionSocketIO(SocketIO):
         :param server_name: The server to pick from the AsyncAPI ``servers`` object.
                             The server object is then used to configure
                             the path ``kwarg`` of the SocketIO server.
+        :param docs: When set to ``True``, HTML rendered documentation is generated
+                     and served through the ``GET {base_path}/docs`` route of the app.
+                     The ``GET {base_path}/docs/asyncapi.json`` route is also exposed,
+                     returning the raw specification data for programmatic retrieval.
+                     Defaults to ``True``.
         :param default_error_handler: The error handler that handles any namespace
                                       without an explicit error handler.
                                       Equivelant of ``@socketio.on_error_default``
@@ -157,7 +176,7 @@ class AsynctionSocketIO(SocketIO):
             if url_parse_result.path:
                 kwargs["path"] = url_parse_result.path
 
-        asio = cls(spec, validation, app, **kwargs)
+        asio = cls(spec, validation, docs, app, **kwargs)
         asio._register_handlers(default_error_handler)
         return asio
 

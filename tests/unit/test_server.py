@@ -721,3 +721,31 @@ def test_emit_event_wraps_callback_with_validator(
 
     with pytest.raises(MessageAckValidationException):
         callback_with_validation(*callback_args)
+
+
+def test_init_app_registers_blueprint_if_docs_are_enabled(
+    server_info: Info, faker: Faker
+):
+    spec = AsyncApiSpec(
+        asyncapi=faker.pystr(),
+        info=server_info,
+        channels={},
+    )
+    server = AsynctionSocketIO(spec, True, True, None)
+    app = Flask(__name__)
+    server.init_app(app)
+    assert "asynction_docs" in app.blueprints
+
+
+def test_init_app_does_not_register_blueprint_if_docs_are_disabled(
+    server_info: Info, faker: Faker
+):
+    spec = AsyncApiSpec(
+        asyncapi=faker.pystr(),
+        info=server_info,
+        channels={},
+    )
+    server = AsynctionSocketIO(spec, True, False, None)
+    app = Flask(__name__)
+    server.init_app(app)
+    assert "asynction_docs" not in app.blueprints

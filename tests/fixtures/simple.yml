@@ -1,8 +1,12 @@
+asyncapi: 2.2.0
+info:
+  title: Simple API
+  version: 0.0.1
 channels:
   /:
     publish:
       message:
-        $ref: '#/components/messages/PingMessage'
+        $ref: "#/components/messages/PingMessage"
 components:
   messages:
     PingMessage:

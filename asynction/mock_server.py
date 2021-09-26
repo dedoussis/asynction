@@ -123,6 +123,7 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
         self,
         spec: AsyncApiSpec,
         validation: bool,
+        docs: bool,
         app: Optional[Flask],
         custom_formats_sample_size: int,
         **kwargs,
@@ -130,7 +131,7 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
         """This is a private constructor.
         Use the :meth:`MockAsynctionSocketIO.from_spec` factory instead.
         """
-        super().__init__(spec, validation=validation, app=app, **kwargs)
+        super().__init__(spec, validation=validation, docs=docs, app=app, **kwargs)
         self.faker = Faker()
         self.custom_formats = make_faker_formats(self.faker, custom_formats_sample_size)
         self._subscription_tasks: Sequence[SubscriptionTask] = []
@@ -141,6 +142,7 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
         spec_path: Path,
         validation: bool = True,
         server_name: Optional[str] = None,
+        docs: bool = True,
         default_error_handler: Optional[ErrorHandler] = None,
         app: Optional[Flask] = None,
         custom_formats_sample_size: int = 20,
@@ -166,6 +168,11 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
         :param server_name: The server to pick from the AsyncAPI ``servers`` object.
                             The server object is then used to configure
                             the path ``kwarg`` of the SocketIO server.
+        :param docs: When set to ``True``, HTML rendered documentation is generated
+                     and served through the ``GET {base_path}/docs`` route of the app.
+                     The ``GET {base_path}/docs/asyncapi.json`` route is also exposed,
+                     returning the raw specification data for programmatic retrieval.
+                     Defaults to ``True``.
         :param default_error_handler: The error handler that handles any namespace
                                       without an explicit error handler.
                                       Equivelant of ``@socketio.on_error_default``
@@ -195,6 +202,7 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
             spec_path,
             validation=validation,
             server_name=server_name,
+            docs=docs,
             default_error_handler=default_error_handler,
             app=app,
             custom_formats_sample_size=custom_formats_sample_size,

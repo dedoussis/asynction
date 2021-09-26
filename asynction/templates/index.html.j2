@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="x-ua-compatible" content="ie=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ info.title }} {{ info.version }} – Asynction Docs</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/@asyncapi/react-component@1.0.0-next.18/styles/default.min.css"
+      integriry="sha384-JD4WiisNFV+VyC+uSfnk/c4cpj/cbbFsHTp10LWs5DamvZfOzcV1xaaURK7SAknk"
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    >
+    <script
+      src="https://unpkg.com/@asyncapi/react-component@1.0.0-next.18/browser/standalone/index.js"
+      integriry="sha384-ZDyBf52lSGWGgpA8NKTsHueZMyrUEjVrqzNHpQtVxJdEgsCMRbmDijrmo2L2S671"
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+  </head>
+  <body>
+    <div id="asyncapi"></div>
+
+    <script>
+      const schema = {{ schema|tojson }}
+      AsyncApiStandalone.render({
+        schema,
+        config: {
+          show: {
+            sidebar: true,
+          }
+        },
+      }, document.getElementById('asyncapi'));
+    </script>
+
+  </body>
+</html>

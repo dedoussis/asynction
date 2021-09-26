@@ -156,8 +156,14 @@ def test_channel_raises_value_error_if_publish_messages_miss_handler(faker: Fake
         )
 
 
-def test_async_api_spec_from_dict_allows_extra_attrs(faker: Faker):
+def test_async_api_spec_from_and_to_dict(faker: Faker):
     data = {
+        "asyncapi": "2.1.0",
+        "info": {
+            "title": faker.sentence(),
+            "version": faker.pystr(),
+            "description": faker.sentence(),
+        },
         "channels": {
             GLOBAL_NAMESPACE: {
                 "description": faker.pystr(),
@@ -205,5 +211,6 @@ def test_async_api_spec_from_dict_allows_extra_attrs(faker: Faker):
         "servers": {"development": {"url": "localhost", "protocol": "ws"}},
     }
 
-    forged = forge(AsyncApiSpec, data)
-    assert isinstance(forged, AsyncApiSpec)
+    spec = AsyncApiSpec.from_dict(data)
+    assert isinstance(spec, AsyncApiSpec)
+    assert spec.to_dict() == data

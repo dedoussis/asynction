@@ -1,3 +1,4 @@
+from dataclasses import asdict
 from dataclasses import dataclass
 from dataclasses import field
 from enum import Enum
@@ -29,7 +30,7 @@ class MessageAck:
 @dataclass
 class Message:
     """
-    https://www.asyncapi.com/docs/specifications/2.0.0#messageObject
+    https://www.asyncapi.com/docs/specifications/2.1.0#messageObject
 
     The above message object is extended as follows:
     * `x-handler`: Allows the coupling of the message specification to
@@ -40,7 +41,7 @@ class Message:
     to the callback of the `emit`/`send` function. Deserialized to `x_ack`.
 
     The extentions are implemented as per:
-    https://www.asyncapi.com/docs/specifications/2.0.0#specificationExtensions
+    https://www.asyncapi.com/docs/specifications/2.1.0#specificationExtensions
     """
 
     name: str
@@ -91,7 +92,7 @@ register_forge(OneOfMessages, OneOfMessages.forge)
 
 @dataclass
 class Operation:
-    """https://www.asyncapi.com/docs/specifications/2.0.0#operationObject"""
+    """https://www.asyncapi.com/docs/specifications/2.1.0#operationObject"""
 
     message: OneOfMessages
 
@@ -110,7 +111,7 @@ class WebSocketsChannelBindings:
 
 @dataclass
 class ChannelBindings:
-    """https://www.asyncapi.com/docs/specifications/2.0.0#channelBindingsObject"""
+    """https://www.asyncapi.com/docs/specifications/2.1.0#channelBindingsObject"""
 
     ws: WebSocketsChannelBindings
 
@@ -125,11 +126,11 @@ class ChannelHandlers:
 @dataclass
 class Channel:
     """
-    https://www.asyncapi.com/docs/specifications/2.0.0#channelItemObject
+    https://www.asyncapi.com/docs/specifications/2.1.0#channelItemObject
 
     The above channel item object is extended to
     support default namespace handlers as per:
-    https://www.asyncapi.com/docs/specifications/2.0.0#specificationExtensions
+    https://www.asyncapi.com/docs/specifications/2.1.0#specificationExtensions
 
     The `x_handlers` field is serialized as `x-handlers`.
     """
@@ -173,22 +174,38 @@ class ServerProtocol(Enum):
 
 @dataclass
 class Server:
-    """https://www.asyncapi.com/docs/specifications/2.0.0#serverObject"""
+    """https://www.asyncapi.com/docs/specifications/2.1.0#serverObject"""
 
     url: str
     protocol: ServerProtocol
 
 
 @dataclass
-class AsyncApiSpec:
-    """https://www.asyncapi.com/docs/specifications/2.0.0#A2SObject"""
+class Info:
+    """https://www.asyncapi.com/docs/specifications/v2.1.0#infoObject"""
 
+    title: str
+    version: str
+    description: Optional[str] = None
+
+
+@dataclass
+class AsyncApiSpec:
+    """https://www.asyncapi.com/docs/specifications/2.1.0#A2SObject"""
+
+    asyncapi: str
     channels: Mapping[str, Channel]
+    info: Info
     servers: Mapping[str, Server] = field(default_factory=dict)
 
     @staticmethod
     def from_dict(data: JSONMapping) -> "AsyncApiSpec":
-        return forge(AsyncApiSpec, data)
+        spec = forge(AsyncApiSpec, data)
+        spec._raw = data  # type: ignore
+        return spec
+
+    def to_dict(self) -> JSONMapping:
+        return getattr(self, "_raw", asdict(self))
 
 
 ErrorHandler = Callable[[Exception], None]

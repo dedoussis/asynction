@@ -38,6 +38,8 @@ Server: <http://localhost:5000>.
 
 To connect to the bonus `/admin` Socket.IO namespace, use the `token` URL query param when accessing the client app: <http://localhost:3000?token=admin>.
 
+Server generated docs can be accessed at <http://localhost:5000/docs>.
+
 ## Mock server
 
 ```console

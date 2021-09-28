@@ -23,8 +23,8 @@
     <div id="asyncapi"></div>
 
     <script>
-      const schema = {{ schema|tojson }}
-      AsyncApiStandalone.render({
+      const schema = {{ schema | tojson | safe }}
+      AsyncApiStandalone.hydrate({
         schema,
         config: {
           show: {

@@ -202,7 +202,7 @@ def test_client_can_connect_to_server_that_uses_server_name_and_render_docs(
 
     assert resp.status_code == 200
     assert resp.mimetype == "text/html"
-    assert "AsyncApiStandalone.render" in resp.data.decode()
+    assert "AsyncApiStandalone.hydrate" in resp.data.decode()
 
 
 def test_client_emits_invalid_msg_and_server_emits_back_via_validation_error_handler(
@@ -285,7 +285,7 @@ def test_docs_rendered_html_endpoint(
 
     assert resp.status_code == 200
     assert resp.mimetype == "text/html"
-    assert "AsyncApiStandalone.render" in resp.data.decode()
+    assert "AsyncApiStandalone.hydrate" in resp.data.decode()
 
 
 @pytest.mark.parametrize(

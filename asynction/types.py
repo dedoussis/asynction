@@ -30,7 +30,7 @@ class MessageAck:
 @dataclass
 class Message:
     """
-    https://www.asyncapi.com/docs/specifications/2.1.0#messageObject
+    https://www.asyncapi.com/docs/specifications/2.2.0#messageObject
 
     The above message object is extended as follows:
     * `x-handler`: Allows the coupling of the message specification to
@@ -41,7 +41,7 @@ class Message:
     to the callback of the `emit`/`send` function. Deserialized to `x_ack`.
 
     The extentions are implemented as per:
-    https://www.asyncapi.com/docs/specifications/2.1.0#specificationExtensions
+    https://www.asyncapi.com/docs/specifications/2.2.0#specificationExtensions
     """
 
     name: str
@@ -92,7 +92,7 @@ register_forge(OneOfMessages, OneOfMessages.forge)
 
 @dataclass
 class Operation:
-    """https://www.asyncapi.com/docs/specifications/2.1.0#operationObject"""
+    """https://www.asyncapi.com/docs/specifications/2.2.0#operationObject"""
 
     message: OneOfMessages
 
@@ -111,7 +111,7 @@ class WebSocketsChannelBindings:
 
 @dataclass
 class ChannelBindings:
-    """https://www.asyncapi.com/docs/specifications/2.1.0#channelBindingsObject"""
+    """https://www.asyncapi.com/docs/specifications/2.2.0#channelBindingsObject"""
 
     ws: WebSocketsChannelBindings
 
@@ -126,11 +126,11 @@ class ChannelHandlers:
 @dataclass
 class Channel:
     """
-    https://www.asyncapi.com/docs/specifications/2.1.0#channelItemObject
+    https://www.asyncapi.com/docs/specifications/2.2.0#channelItemObject
 
     The above channel item object is extended to
     support default namespace handlers as per:
-    https://www.asyncapi.com/docs/specifications/2.1.0#specificationExtensions
+    https://www.asyncapi.com/docs/specifications/2.2.0#specificationExtensions
 
     The `x_handlers` field is serialized as `x-handlers`.
     """
@@ -174,7 +174,7 @@ class ServerProtocol(Enum):
 
 @dataclass
 class Server:
-    """https://www.asyncapi.com/docs/specifications/2.1.0#serverObject"""
+    """https://www.asyncapi.com/docs/specifications/2.2.0#serverObject"""
 
     url: str
     protocol: ServerProtocol
@@ -182,7 +182,7 @@ class Server:
 
 @dataclass
 class Info:
-    """https://www.asyncapi.com/docs/specifications/v2.1.0#infoObject"""
+    """https://www.asyncapi.com/docs/specifications/v2.2.0#infoObject"""
 
     title: str
     version: str
@@ -191,7 +191,7 @@ class Info:
 
 @dataclass
 class AsyncApiSpec:
-    """https://www.asyncapi.com/docs/specifications/2.1.0#A2SObject"""
+    """https://www.asyncapi.com/docs/specifications/2.2.0#A2SObject"""
 
     asyncapi: str
     channels: Mapping[str, Channel]

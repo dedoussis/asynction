@@ -1,6 +1,6 @@
-import eventlet
+from gevent import monkey
 
-eventlet.monkey_patch()  # noreorder
+monkey.patch_all()  # noreorder
 
 import argparse
 from functools import singledispatch

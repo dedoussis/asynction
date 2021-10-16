@@ -1,7 +1,3 @@
-from gevent import monkey
-
-monkey.patch_all()  # noreorder
-
 import argparse
 from functools import singledispatch
 from pathlib import Path
@@ -156,6 +152,7 @@ def _run_mock_command(args: RunMockNamespace, parser: argparse.ArgumentParser) -
         logger=args.debugger,
         app=flask_app,
         cors_allowed_origins="*",
+        async_mode="threading",
         custom_formats_sample_size=args.custom_formats_sample_size,
     )
 

@@ -147,6 +147,7 @@ def test_command_with_mock_run_namespace(faker: Faker):
             validation=not without_validation,
             server_name=server_name,
             custom_formats_sample_size=custom_formats_sample_size,
+            async_mode="threading",
             logger=debugger,
             app=ANY,
             cors_allowed_origins="*",

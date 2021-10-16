@@ -70,6 +70,7 @@ setup(
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
     ],
     description="SocketIO framework driven by the AsyncAPI specification. Built on top of Flask-SocketIO. Inspired by Connexion.",
     install_requires=requirements,

@@ -158,7 +158,7 @@ def test_channel_raises_value_error_if_publish_messages_miss_handler(faker: Fake
 
 def test_async_api_spec_from_and_to_dict(faker: Faker):
     data = {
-        "asyncapi": "2.1.0",
+        "asyncapi": "2.2.0",
         "info": {
             "title": faker.sentence(),
             "version": faker.pystr(),

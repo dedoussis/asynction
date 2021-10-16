@@ -83,7 +83,7 @@ def admin_error(e):
 Example specification located at `./docs/asyncapi.yaml`:
 
 ```yaml
-asyncapi: 2.1.0
+asyncapi: 2.2.0
 
 info:
   title: User Account Service

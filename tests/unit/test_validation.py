@@ -73,7 +73,7 @@ def test_validate_payload_with_array_schema_and_multiple_valid_args(
         args=[{"hello": faker.pystr()}, faker.pyint()],
         schema={
             "type": "array",
-            "items": [
+            "prefixItems": [
                 {"type": "object", "properties": {"hello": {"type": "string"}}},
                 {"type": "number"},
             ],
@@ -90,7 +90,7 @@ def test_validate_payload_with_array_schema_and_multiple_invalid_args(
             args=[{"hello": faker.pystr()}, faker.pyint()],
             schema={
                 "type": "array",
-                "items": [
+                "prefixItems": [
                     {
                         "type": "object",
                         "properties": {"hello": {"type": "string"}},
@@ -160,7 +160,7 @@ def test_validate_ack_args_with_array_schema_and_multiple_valid_args(
         MessageAck(
             args={
                 "type": "array",
-                "items": [
+                "prefixItems": [
                     {"type": "object", "properties": {"hello": {"type": "string"}}},
                     {"type": "number"},
                 ],
@@ -179,7 +179,7 @@ def test_validate_ack_args_with_array_schema_and_multiple_invalid_args(
             MessageAck(
                 args={
                     "type": "array",
-                    "items": [
+                    "prefixItems": [
                         {
                             "type": "object",
                             "properties": {"hello": {"type": "string"}},

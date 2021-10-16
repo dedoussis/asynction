@@ -75,7 +75,7 @@ setup(
     description="SocketIO framework driven by the AsyncAPI specification. Built on top of Flask-SocketIO. Inspired by Connexion.",
     install_requires=requirements,
     extras_require=make_extra_requirements(),
-    license="MIT license",
+    license="MIT",
     long_description=readme,
     long_description_content_type="text/markdown",
     package_data={

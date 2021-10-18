@@ -1,5 +1,5 @@
 Flask-SocketIO~=5.0
 Flask>=0.9
-jsonschema~=4.0
+jsonschema~=4.1
 PyYAML~=6.0
 svarog>=0.1.6,<2.0.0

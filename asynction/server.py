@@ -14,6 +14,7 @@ import yaml
 from flask import Flask
 from flask_socketio import SocketIO
 
+from asynction.default_handlers import DEFAULT_ON_CONNECT_HANDLER
 from asynction.exceptions import ValidationException
 from asynction.loader import load_handler
 from asynction.playground_docs import make_docs_blueprint
@@ -225,6 +226,14 @@ class AsynctionSocketIO(SocketIO):
                         handler = with_payload_validation(handler)
 
                     self.on_event(message.name, handler, namespace)
+
+            if server_security is not None and (
+                channel.x_handlers is None or channel.x_handlers.connect is None
+            ):
+                if channel.x_handlers is None:
+                    channel.x_handlers = ChannelHandlers()
+                if channel.x_handlers.connect is None:
+                    channel.x_handlers.connect = DEFAULT_ON_CONNECT_HANDLER
 
             if channel.x_handlers is not None:
                 self._register_namespace_handlers(

@@ -1,4 +1,8 @@
+import base64
 from typing import Any
+from typing import Mapping
+from typing import Optional
+from typing import Sequence
 
 from flask import request
 from flask_socketio import emit
@@ -52,3 +56,44 @@ def authenticated_connect() -> None:
 def echo_failed_validation(e: Exception) -> None:
     if isinstance(e, ValidationException):
         emit("echo errors", "Incoming message failed validation")
+
+
+def basic_info(
+    username: str, password: str, required_scopes: Optional[Sequence[str]] = None
+) -> Mapping:
+    if username != "username" or password != "password":
+        raise ConnectionRefusedError("Invalid username or password")
+
+    return dict(user=username, scopes=list(required_scopes))
+
+
+def bearer_info(
+    token: str,
+    required_scopes: Optional[Sequence[str]] = None,
+    bearer_format: Optional[str] = None,
+) -> Mapping:
+    username, password = base64.b64decode(token).decode().split(":")
+    if username != "username" or password != "password" or bearer_format != "test":
+        raise ConnectionRefusedError("Invalid username or password")
+
+    return dict(user=username, scopes=list(required_scopes))
+
+
+def api_key_info(
+    token: str,
+    required_scopes: Optional[Sequence[str]] = None,
+    bearer_format: Optional[str] = None,
+) -> Mapping:
+    username, password = base64.b64decode(token).decode().split(":")
+    if username != "username" or password != "password":
+        raise ConnectionRefusedError("Invalid username or password")
+
+    return dict(user=username, scopes=list(required_scopes))
+
+
+def token_info(token: str) -> Mapping:
+    username, password = base64.b64decode(token).decode().split(":")
+    if username != "username" or password != "password":
+        raise ConnectionRefusedError("Invalid username or password")
+
+    return dict(user=username, scopes=["a", "b"])

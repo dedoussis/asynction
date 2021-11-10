@@ -1,0 +1,39 @@
+asyncapi: 2.0.0
+info:
+  title: Test
+  version: 1.0.0
+servers:
+  test:
+    protocol: wss
+    url: 127.0.0.1/socket.io
+    security:
+      - basic: []
+      - bearer: ["a"]
+      - apiKey: ["a"]
+channels:
+  /:
+    subscribe:
+      message:
+        $ref: "#/components/messages/Test"
+components:
+  messages:
+    Test:
+      name: test
+      payload:
+        type: string
+
+  securitySchemes:
+    basic:
+      type: http
+      scheme: basic
+      x-basicInfoFunc: tests.fixtures.handlers.basic_info
+    bearer:
+      type: http
+      scheme: bearer
+      bearerFormat: test
+      x-apiKeyInfoFunc: tests.fixtures.handlers.bearer_info
+    apiKey:
+      type: httpApiKey
+      in: query
+      name: api_key
+      x-apiKeyInfoFunc: tests.fixtures.handlers.api_key_info

@@ -1,3 +1,4 @@
+import base64
 from enum import Enum
 from typing import Callable
 
@@ -313,3 +314,137 @@ def test_docs_raw_specification_endpoint(
 
     with fixture_paths.simple.open() as f:
         assert resolve_references(yaml.safe_load(f.read())) == resp.json
+
+
+@pytest.mark.parametrize(
+    argnames="factory_fixture",
+    argvalues=[FactoryFixture.ASYNCTION_SOCKET_IO],
+    ids=["server"],
+)
+def test_client_fails_to_connect_with_no_auth(
+    factory_fixture: FactoryFixture,
+    flask_app: Flask,
+    fixture_paths: FixturePaths,
+    request: pytest.FixtureRequest,
+):
+    server_factory: AsynctionFactory = request.getfixturevalue(factory_fixture.value)
+
+    socketio_server = server_factory(
+        spec_path=fixture_paths.security, server_name="test"
+    )
+    flask_test_client = flask_app.test_client()
+
+    with pytest.raises(ConnectionRefusedError):
+        socketio_test_client = socketio_server.test_client(
+            flask_app, flask_test_client=flask_test_client
+        )
+
+        assert socketio_test_client.is_connected() is False
+
+
+@pytest.mark.parametrize(
+    argnames="factory_fixture",
+    argvalues=[FactoryFixture.ASYNCTION_SOCKET_IO],
+    ids=["server"],
+)
+def test_client_connects_with_http_basic_auth(
+    factory_fixture: FactoryFixture,
+    flask_app: Flask,
+    fixture_paths: FixturePaths,
+    request: pytest.FixtureRequest,
+):
+    server_factory: AsynctionFactory = request.getfixturevalue(factory_fixture.value)
+
+    socketio_server = server_factory(
+        spec_path=fixture_paths.security, server_name="test"
+    )
+    flask_test_client = flask_app.test_client()
+
+    basic_auth = base64.b64encode("username:password".encode()).decode()
+    headers = {"Authorization": f"basic {basic_auth}"}
+    socketio_test_client = socketio_server.test_client(
+        flask_app, flask_test_client=flask_test_client, headers=headers
+    )
+
+    assert socketio_test_client.is_connected() is True
+
+
+@pytest.mark.parametrize(
+    argnames="factory_fixture",
+    argvalues=[FactoryFixture.ASYNCTION_SOCKET_IO],
+    ids=["server"],
+)
+def test_client_connects_with_http_bearer_auth(
+    factory_fixture: FactoryFixture,
+    flask_app: Flask,
+    fixture_paths: FixturePaths,
+    request: pytest.FixtureRequest,
+):
+    server_factory: AsynctionFactory = request.getfixturevalue(factory_fixture.value)
+
+    socketio_server = server_factory(
+        spec_path=fixture_paths.security, server_name="test"
+    )
+    flask_test_client = flask_app.test_client()
+
+    basic_auth = base64.b64encode("username:password".encode()).decode()
+    headers = {"Authorization": f"bearer {basic_auth}"}
+    socketio_test_client = socketio_server.test_client(
+        flask_app, flask_test_client=flask_test_client, headers=headers
+    )
+
+    assert socketio_test_client.is_connected() is True
+
+
+@pytest.mark.parametrize(
+    argnames="factory_fixture",
+    argvalues=[FactoryFixture.ASYNCTION_SOCKET_IO],
+    ids=["server"],
+)
+def test_client_connects_with_http_api_key_auth(
+    factory_fixture: FactoryFixture,
+    flask_app: Flask,
+    fixture_paths: FixturePaths,
+    request: pytest.FixtureRequest,
+):
+    server_factory: AsynctionFactory = request.getfixturevalue(factory_fixture.value)
+
+    socketio_server = server_factory(
+        spec_path=fixture_paths.security, server_name="test"
+    )
+    flask_test_client = flask_app.test_client()
+
+    basic_auth = base64.b64encode("username:password".encode()).decode()
+    query = f"api_key={basic_auth}"
+    socketio_test_client = socketio_server.test_client(
+        flask_app, flask_test_client=flask_test_client, query_string=query
+    )
+
+    assert socketio_test_client.is_connected() is True
+
+
+@pytest.mark.parametrize(
+    argnames="factory_fixture",
+    argvalues=[FactoryFixture.ASYNCTION_SOCKET_IO],
+    ids=["server"],
+)
+def test_client_connects_with_oauth2(
+    factory_fixture: FactoryFixture,
+    flask_app: Flask,
+    fixture_paths: FixturePaths,
+    request: pytest.FixtureRequest,
+):
+    server_factory: AsynctionFactory = request.getfixturevalue(factory_fixture.value)
+
+    socketio_server = server_factory(
+        spec_path=fixture_paths.security_oauth2, server_name="test"
+    )
+    flask_test_client = flask_app.test_client()
+
+    basic_auth = base64.b64encode("username:password".encode()).decode()
+    headers = {"Authorization": f"bearer {basic_auth}"}
+    socketio_test_client = socketio_server.test_client(
+        flask_app, flask_test_client=flask_test_client, headers=headers
+    )
+
+    assert socketio_test_client.is_connected() is True

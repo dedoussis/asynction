@@ -2,7 +2,6 @@ from dataclasses import asdict
 from dataclasses import dataclass
 from dataclasses import field
 from enum import Enum
-from typing import Any
 from typing import Callable
 from typing import Mapping
 from typing import Optional
@@ -13,9 +12,8 @@ from svarog import forge
 from svarog import register_forge
 from svarog.types import Forge
 
-JSONMappingValue = Any
-JSONMapping = Mapping[str, JSONMappingValue]
-JSONSchema = JSONMapping
+from asynction.common_types import JSONMapping, JSONSchema
+from asynction.security import SecurityRequirement
 
 GLOBAL_NAMESPACE = "/"
 
@@ -178,6 +176,7 @@ class Server:
 
     url: str
     protocol: ServerProtocol
+    security: Optional[Sequence[SecurityRequirement]] = None
 
 
 @dataclass

@@ -37,6 +37,7 @@ from asynction.types import ErrorHandler
 from asynction.types import JSONMapping
 from asynction.types import JSONSchema
 from asynction.types import Message
+from asynction.types import SecurityRequirement
 from asynction.validation import bindings_validator_factory
 from asynction.validation import publish_message_validator_factory
 
@@ -210,7 +211,9 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
         )
 
     def _register_handlers(
-        self, default_error_handler: Optional[ErrorHandler] = None
+        self,
+        default_error_handler: Optional[ErrorHandler] = None,
+        server_security: Optional[Sequence[SecurityRequirement]] = None
     ) -> None:
         for namespace, channel in self.spec.channels.items():
             if channel.publish is not None:

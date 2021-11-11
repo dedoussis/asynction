@@ -82,7 +82,7 @@ def validate_api_key(
     bearer_format: Optional[str] = None,
 ) -> Union[Mapping, None]:
     """
-    Adapted from: https://github.com/zalando/connexion/blob/main/connexion/security/security_handler_factory.py#L221
+    Adapted from: https://github.com/zalando/connexion/blob/main/connexion/security/security_handler_factory.py#L221  # noqa: 501
     """
     authorization = request.headers.get("Authorization")
     if not authorization:
@@ -191,7 +191,7 @@ def get_cookie_value(cookies, name):
     :param cookies: str: cookies raw data
     :param name: str: cookies key
 
-    Borrowed from https://github.com/zalando/connexion/blob/main/connexion/security/security_handler_factory.py#L206
+    Borrowed from https://github.com/zalando/connexion/blob/main/connexion/security/security_handler_factory.py#L206  # noqa: 501
     """
     cookie_parser = http.cookies.SimpleCookie()
     cookie_parser.load(str(cookies))
@@ -302,8 +302,8 @@ def build_security_handler(
             for check in security_checks:
 
                 # if a security check fails if will raise the appropriate exception
-                # if the security check passes it will return a dict of kwargs to pass to the handler
-                # if the check is not applicable based on lack provided argument the check will return None indicating
+                # if the security check passes it will return a dict of kwargs to pass to the handler   # noqa: 501
+                # if the check is not applicable based on lack provided argument the check will return None indicating   # noqa: 501
                 # that the next (if any) check should be run.
                 security_args = check(request)
                 if security_args:
@@ -318,7 +318,7 @@ def build_security_handler(
 
 def security_handler_factory(security: Sequence[SecurityRequirement]) -> Callable:
     """
-    Build a security handler decorator based on security object and securitySchemes provided in the API file.
+    Build a security handler decorator based on security object and securitySchemes provided in the API file.  # noqa: 501
     """
     security_handler = build_security_handler(security)
 

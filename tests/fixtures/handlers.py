@@ -64,7 +64,8 @@ def basic_info(
     if username != "username" or password != "password":
         raise ConnectionRefusedError("Invalid username or password")
 
-    return dict(user=username, scopes=list(required_scopes))
+    scopes = list(required_scopes) if required_scopes else []
+    return dict(user=username, scopes=scopes)
 
 
 def bearer_info(
@@ -76,7 +77,8 @@ def bearer_info(
     if username != "username" or password != "password" or bearer_format != "test":
         raise ConnectionRefusedError("Invalid username or password")
 
-    return dict(user=username, scopes=list(required_scopes))
+    scopes = list(required_scopes) if required_scopes else []
+    return dict(user=username, scopes=scopes)
 
 
 def api_key_info(
@@ -88,7 +90,8 @@ def api_key_info(
     if username != "username" or password != "password":
         raise ConnectionRefusedError("Invalid username or password")
 
-    return dict(user=username, scopes=list(required_scopes))
+    scopes = list(required_scopes) if required_scopes else []
+    return dict(user=username, scopes=scopes)
 
 
 def token_info(token: str) -> Mapping:

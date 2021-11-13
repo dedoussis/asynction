@@ -9,7 +9,10 @@ from asynction.common_types import JSONMapping
 from .exceptions import UnsupportedSecurityScheme
 
 
-class HTTPSecuritySchemeType(Enum):
+class HTTPAuthenticationScheme(Enum):
+    """
+    https://www.iana.org/assignments/http-authschemes/http-authschemes.xhtml
+    """
     BASIC = "basic"
     DIGEST = "digest"
     BEARER = "bearer"
@@ -21,7 +24,7 @@ class OAuth2FlowType(Enum):
     """
     IMPLICIT = "implicit"
     PASSWORD = "password"
-    CLIENT_CREDENTIALS = "clientCredentials	"
+    CLIENT_CREDENTIALS = "clientCredentials"
     AUTHORIZATION_CODE = "authorizationCode"
 
 
@@ -30,7 +33,7 @@ class OAuth2Flow:
     """
     https://www.asyncapi.com/docs/specifications/v2.2.0#oauthFlowObject
     """
-    scopes: Sequence[str]
+    scopes: Mapping[str, str]
     authorization_url: Optional[str] = None
     token_url: Optional[str] = None
     refresh_url: Optional[str] = None
@@ -66,7 +69,7 @@ register_forge(OAuth2Flow, OAuth2Flow.forge)
 
 class SecuritySchemesType(Enum):
     """
-    https://www.asyncapi.com/docs/specifications/v2.2.0#securitySchemeObject
+    https://www.asyncapi.com/docs/specifications/v2.2.0#securitySchemeObjectType
     """
     USER_PASSWORD = "userPassword"
     API_KEY = "apiKey"
@@ -88,11 +91,11 @@ class SecurityScheme:
     """
     https://www.asyncapi.com/docs/specifications/v2.2.0#securitySchemeObject
     """
-    type: SecuritySchemesType
+    type: SecuritySchemeType
     description: Optional[str] = None
     name: Optional[str] = None  # Required for httpApiKey
     in_: Optional[str] = None  # Required for httpApiKey | apiKey
-    scheme: Optional[HTTPSecuritySchemeType] = None  # Required for http
+    scheme: Optional[HTTPAuthenticationScheme] = None  # Required for http
     bearer_format: Optional[str] = None  # Optional for http ("bearer")
     flows: Optional[Mapping[OAuth2FlowType, OAuth2Flow]] = None  # Required for oauth2
     open_id_connect_url: Optional[str] = None  # Required for openIdConnect

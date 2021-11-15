@@ -23,6 +23,7 @@ from asynction.types import SecuritySchemesType
 TokenInfoFunc = Callable[[str], Mapping]
 BasicInfoFunc = Callable[[str, str, Optional[Sequence[str]]], Mapping]
 APIKeyInfoFunc = Callable[[str, Optional[Sequence[str]], Optional[str]], Mapping]
+ScopeValidateFunc = Callable[[Sequence[str], Sequence[str]], bool]
 
 
 def extract_auth_header(request: Request) -> Optional[Tuple[str, str]]:
@@ -126,6 +127,20 @@ def validate_scopes(
     return not missing_scopes
 
 
+def load_scope_validate_func(scheme: SecurityScheme) -> ScopeValidateFunc:
+    # importing here because doing it at the top leads to a circular import
+    from asynction.server import load_handler
+
+    scope_validate_func = None
+    if scheme.x_scope_verify_func:
+        scope_validate_func = load_handler(scheme.x_scope_verify_func)
+
+    if not scope_validate_func:
+        scope_validate_func = validate_scopes
+
+    return scope_validate_func
+
+
 def load_basic_info_func(scheme: SecurityScheme) -> BasicInfoFunc:
     # importing here because doing it at the top leads to a circular import
     from asynction.server import load_handler
@@ -171,6 +186,7 @@ def build_http_security_check(
     required_scopes = requirement.scopes
     if scheme.scheme == HTTPAuthenticationScheme.BASIC:
         basic_info_func = load_basic_info_func(scheme)
+        scope_validate_func = load_scope_validate_func(scheme)
 
         def http_security_check(request: Request):
             token_info = validate_basic(request, basic_info_func, required_scopes)
@@ -179,13 +195,18 @@ def build_http_security_check(
 
             token_scopes = token_info.get("scope", token_info.get("scopes", ""))
 
-            validate_scopes(required_scopes, token_scopes)
+            if not scope_validate_func(required_scopes, token_scopes):
+                raise SecurityException(
+                    f"Invalid scopes: required: {required_scopes}, provided: {token_scopes}"  # noqa: 501
+                )
 
             return token_info
 
         return http_security_check
     elif scheme.scheme == HTTPAuthenticationScheme.BEARER:
         api_key_info_func = load_api_key_info_func(scheme)
+        scope_validate_func = load_scope_validate_func(scheme)
+
         bearer_format = scheme.bearer_format
 
         def http_bearer_security_check(request: Request):
@@ -197,7 +218,10 @@ def build_http_security_check(
 
             token_scopes = token_info.get("scope", token_info.get("scopes", ""))
 
-            validate_scopes(required_scopes, token_scopes)
+            if not scope_validate_func(required_scopes, token_scopes):
+                raise SecurityException(
+                    f"Invalid scopes: required: {required_scopes}, provided: {token_scopes}"  # noqa: 501
+                )
 
             return token_info
 
@@ -226,6 +250,8 @@ def build_http_api_key_security_check(
     requirement: SecurityRequirement, scheme: SecurityScheme
 ) -> Callable[[Request], Mapping]:
     api_key_info_func = load_api_key_info_func(scheme)
+    scope_validate_func = load_scope_validate_func(scheme)
+
     required_scopes = requirement.scopes
     api_key_in = scheme.in_
     api_key_name = scheme.name
@@ -258,7 +284,10 @@ def build_http_api_key_security_check(
 
         token_scopes = token_info.get("scope", token_info.get("scopes", ""))
 
-        validate_scopes(required_scopes, token_scopes)
+        if not scope_validate_func(required_scopes, token_scopes):
+            raise SecurityException(
+                f"Invalid scopes: required: {required_scopes}, provided: {token_scopes}"  # noqa: 501
+            )
 
         return token_info
 
@@ -273,12 +302,17 @@ def build_oauth2_security_check(
 
     def oauth2_security_check(request: Request):
         token_info = validate_authorization_header(request, token_info_func)
+        scope_validate_func = load_scope_validate_func(scheme)
+
         if token_info is None:
             return None
 
         token_scopes = token_info.get("scope", token_info.get("scopes", ""))
 
-        validate_scopes(required_scopes, token_scopes)
+        if not scope_validate_func(required_scopes, token_scopes):
+            raise SecurityException(
+                f"Invalid scopes: required: {required_scopes}, provided: {token_scopes}"  # noqa: 501
+            )
 
         return token_info
 

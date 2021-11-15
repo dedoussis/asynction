@@ -208,7 +208,13 @@ def test_async_api_spec_from_and_to_dict(faker: Faker):
                 },
             }
         },
-        "servers": {"development": {"url": "localhost", "protocol": "ws"}},
+        "servers": {
+            "development": {
+                "url": "localhost",
+                "protocol": "ws",
+                "security": [{"test": []}],
+            }
+        },
         "components": {
             "securitySchemes": {"test": {"type": "http", "scheme": "basic"}}
         },

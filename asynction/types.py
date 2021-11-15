@@ -186,6 +186,7 @@ class SecurityRequirement:
         # we have to make sure that the object doesn't actually have more
         # keys for some reason. If it does it is malformed
         if len(data) > 1:
+            print(data)
             raise ValueError
 
         # now that we are sure the object is well formed

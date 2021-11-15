@@ -132,8 +132,8 @@ def load_scope_validate_func(scheme: SecurityScheme) -> ScopeValidateFunc:
     from asynction.server import load_handler
 
     scope_validate_func = None
-    if scheme.x_scope_verify_func:
-        scope_validate_func = load_handler(scheme.x_scope_verify_func)
+    if scheme.x_scope_validate_func:
+        scope_validate_func = load_handler(scheme.x_scope_validate_func)
 
     if not scope_validate_func:
         scope_validate_func = validate_scopes

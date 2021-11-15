@@ -123,7 +123,7 @@ class SecurityScheme:
     x_basic_info_func: Optional[str] = None  # Required for http(basic)
     x_token_info_func: Optional[str] = None  # Required for oauth2
     x_api_key_info_func: Optional[str] = None  # Required for apiKey
-    x_scope_verify_func: Optional[str] = None  # Optional for oauth2
+    x_scope_validate_func: Optional[str] = None  # Optional for oauth2
 
     def __post_init__(self):
         if self.type not in SUPPORTED_SECURITY_SCHEMES:
@@ -164,6 +164,10 @@ class SecurityScheme:
             x_api_key_info_func=forge(
                 type_.__annotations__["x_api_key_info_func"],
                 data.get("x-apiKeyInfoFunc"),
+            ),
+            x_scope_validate_func=forge(
+                type_.__annotations__["x_scope_validate_func"],
+                data.get("x-scopeValidateFunc"),
             ),
         )
 

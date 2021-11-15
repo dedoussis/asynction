@@ -91,6 +91,7 @@ def api_key_info(
         raise ConnectionRefusedError("Invalid username or password")
 
     scopes = list(required_scopes) if required_scopes else []
+    print(scopes, required_scopes)
     return dict(user=username, scopes=scopes)
 
 

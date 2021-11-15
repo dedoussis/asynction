@@ -318,8 +318,11 @@ def test_docs_raw_specification_endpoint(
 
 @pytest.mark.parametrize(
     argnames="factory_fixture",
-    argvalues=[FactoryFixture.ASYNCTION_SOCKET_IO],
-    ids=["server"],
+    argvalues=[
+        FactoryFixture.ASYNCTION_SOCKET_IO,
+        FactoryFixture.MOCK_ASYNCTION_SOCKET_IO,
+    ],
+    ids=["server", "mock_server"],
 )
 def test_client_fails_to_connect_with_no_auth(
     factory_fixture: FactoryFixture,
@@ -344,8 +347,11 @@ def test_client_fails_to_connect_with_no_auth(
 
 @pytest.mark.parametrize(
     argnames="factory_fixture",
-    argvalues=[FactoryFixture.ASYNCTION_SOCKET_IO],
-    ids=["server"],
+    argvalues=[
+        FactoryFixture.ASYNCTION_SOCKET_IO,
+        FactoryFixture.MOCK_ASYNCTION_SOCKET_IO,
+    ],
+    ids=["server", "mock_server"],
 )
 def test_client_connects_with_http_basic_auth(
     factory_fixture: FactoryFixture,
@@ -371,8 +377,11 @@ def test_client_connects_with_http_basic_auth(
 
 @pytest.mark.parametrize(
     argnames="factory_fixture",
-    argvalues=[FactoryFixture.ASYNCTION_SOCKET_IO],
-    ids=["server"],
+    argvalues=[
+        FactoryFixture.ASYNCTION_SOCKET_IO,
+        FactoryFixture.MOCK_ASYNCTION_SOCKET_IO,
+    ],
+    ids=["server", "mock_server"],
 )
 def test_client_connects_with_http_bearer_auth(
     factory_fixture: FactoryFixture,
@@ -398,8 +407,11 @@ def test_client_connects_with_http_bearer_auth(
 
 @pytest.mark.parametrize(
     argnames="factory_fixture",
-    argvalues=[FactoryFixture.ASYNCTION_SOCKET_IO],
-    ids=["server"],
+    argvalues=[
+        FactoryFixture.ASYNCTION_SOCKET_IO,
+        FactoryFixture.MOCK_ASYNCTION_SOCKET_IO,
+    ],
+    ids=["server", "mock_server"],
 )
 def test_client_connects_with_http_api_key_auth(
     factory_fixture: FactoryFixture,
@@ -425,8 +437,11 @@ def test_client_connects_with_http_api_key_auth(
 
 @pytest.mark.parametrize(
     argnames="factory_fixture",
-    argvalues=[FactoryFixture.ASYNCTION_SOCKET_IO],
-    ids=["server"],
+    argvalues=[
+        FactoryFixture.ASYNCTION_SOCKET_IO,
+        FactoryFixture.MOCK_ASYNCTION_SOCKET_IO,
+    ],
+    ids=["server", "mock_server"],
 )
 def test_client_connects_with_oauth2(
     factory_fixture: FactoryFixture,

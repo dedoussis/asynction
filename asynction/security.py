@@ -1,47 +1,62 @@
 import base64
 import http.cookies
+import sys
 from functools import wraps
 from typing import Callable
 from typing import Mapping
 from typing import Optional
 from typing import Sequence
+from typing import Tuple
 from typing import Union
 
 from flask import Request
 from flask import request as current_flask_request
 
-from asynction.loader import load_handler
-from asynction.security import SecurityRequirement
-from asynction.security import SecuritySchemesType
-
-from .exceptions import SecurityException
-from .exceptions import UnsupportedSecurityScheme
-from .types import HTTPSecuritySchemeType
-from .types import SecurityScheme
+from asynction.exceptions import SecurityException
+from asynction.exceptions import UnregisteredSecurityScheme
+from asynction.exceptions import UnsupportedSecurityScheme
+from asynction.types import HTTPAuthenticationScheme
+from asynction.types import SecurityRequirement
+from asynction.types import SecurityScheme
+from asynction.types import SecuritySchemesType
 
 TokenInfoFunc = Callable[[str], Mapping]
 BasicInfoFunc = Callable[[str, str, Optional[Sequence[str]]], Mapping]
 APIKeyInfoFunc = Callable[[str, Optional[Sequence[str]], Optional[str]], Mapping]
 
 
-def validate_basic(
-    request: Request, basic_info_func: BasicInfoFunc, required_scopes: Sequence[str]
-) -> Union[Mapping, None]:
+def extract_auth_header(request: Request) -> Optional[Tuple[str, str]]:
     authorization = request.headers.get("Authorization")
 
     if not authorization:
         return None
     try:
-        auth_type, user_pass = authorization.split(None, 1)
+        lhs, rhs = authorization.split(None, 1)
+        return lhs, rhs
     except ValueError as err:
         raise SecurityException from err
 
-    if HTTPSecuritySchemeType(auth_type.lower()) != HTTPSecuritySchemeType.BASIC:
+
+def validate_basic(
+    request: Request, basic_info_func: BasicInfoFunc, required_scopes: Sequence[str]
+) -> Union[Mapping, None]:
+    auth = extract_auth_header(request)
+    if not auth:
         return None
+    auth_type, user_pass = auth
+    if not auth_type or not user_pass:
+        raise SecurityException
+
+    if HTTPAuthenticationScheme(auth_type.lower()) != HTTPAuthenticationScheme.BASIC:
+        return None
+
     try:
         username, password = base64.b64decode(user_pass).decode("latin1").split(":", 1)
     except Exception as err:
         raise SecurityException from err
+
+    if not username or not password:
+        raise SecurityException
 
     token_info = basic_info_func(username, password, required_scopes)
     if token_info is None:
@@ -56,14 +71,12 @@ def validate_authorization_header(
     """Check that the provided request contains a properly formatted Authorization
     header and invokes the token_info_func on the token inside of the header.
     """
-    authorization = request.headers.get("Authorization")
-    if not authorization:
+    auth = extract_auth_header(request)
+    if not auth:
         return None
-
-    try:
-        auth_type, token = authorization.split(None, 1)
-    except ValueError as err:
-        raise SecurityException from err
+    auth_type, token = auth
+    if not auth_type or not token:
+        raise SecurityException
 
     if auth_type.lower() != "bearer":
         return None
@@ -84,14 +97,13 @@ def validate_api_key(
     """
     Adapted from: https://github.com/zalando/connexion/blob/main/connexion/security/security_handler_factory.py#L221  # noqa: 501
     """
-    authorization = request.headers.get("Authorization")
-    if not authorization:
+    auth = extract_auth_header(request)
+    if not auth:
         return None
+    auth_type, token = auth
 
-    try:
-        auth_type, token = authorization.split(None, 1)
-    except ValueError as err:
-        raise SecurityException from err
+    if not auth_type or not token:
+        raise SecurityException
 
     if auth_type.lower() != "bearer":
         return None
@@ -115,6 +127,9 @@ def validate_scopes(
 
 
 def load_basic_info_func(scheme: SecurityScheme) -> BasicInfoFunc:
+    # importing here because doing it at the top leads to a circular import
+    from asynction.server import load_handler
+
     if scheme.x_basic_info_func is not None:
         basic_info_func = load_handler(scheme.x_basic_info_func)
         if not basic_info_func:
@@ -125,6 +140,9 @@ def load_basic_info_func(scheme: SecurityScheme) -> BasicInfoFunc:
 
 
 def load_token_info_func(scheme: SecurityScheme) -> TokenInfoFunc:
+    # importing here because doing it at the top leads to a circular import
+    from asynction.server import load_handler
+
     if scheme.x_token_info_func is not None:
         token_info_func = load_handler(scheme.x_token_info_func)
         if not token_info_func:
@@ -135,6 +153,9 @@ def load_token_info_func(scheme: SecurityScheme) -> TokenInfoFunc:
 
 
 def load_api_key_info_func(scheme: SecurityScheme) -> APIKeyInfoFunc:
+    # importing here because doing it at the top leads to a circular import
+    from asynction.server import load_handler
+
     if scheme.x_api_key_info_func is not None:
         token_info_func = load_handler(scheme.x_api_key_info_func)
         if not token_info_func:
@@ -145,11 +166,11 @@ def load_api_key_info_func(scheme: SecurityScheme) -> APIKeyInfoFunc:
 
 
 def build_http_security_check(
-    requirement: SecurityRequirement,
+    requirement: SecurityRequirement, scheme: SecurityScheme
 ) -> Callable[[Request], Mapping]:
     required_scopes = requirement.scopes
-    if requirement.scheme.scheme == HTTPSecuritySchemeType.BASIC:
-        basic_info_func = load_basic_info_func(requirement.scheme)
+    if scheme.scheme == HTTPAuthenticationScheme.BASIC:
+        basic_info_func = load_basic_info_func(scheme)
 
         def http_security_check(request: Request):
             token_info = validate_basic(request, basic_info_func, required_scopes)
@@ -163,9 +184,9 @@ def build_http_security_check(
             return token_info
 
         return http_security_check
-    elif requirement.scheme.scheme == HTTPSecuritySchemeType.BEARER:
-        api_key_info_func = load_api_key_info_func(requirement.scheme)
-        bearer_format = requirement.scheme.bearer_format
+    elif scheme.scheme == HTTPAuthenticationScheme.BEARER:
+        api_key_info_func = load_api_key_info_func(scheme)
+        bearer_format = scheme.bearer_format
 
         def http_bearer_security_check(request: Request):
             token_info = validate_api_key(
@@ -202,46 +223,36 @@ def get_cookie_value(cookies, name):
 
 
 def build_http_api_key_security_check(
-    requirement: SecurityRequirement,
+    requirement: SecurityRequirement, scheme: SecurityScheme
 ) -> Callable[[Request], Mapping]:
-    api_key_info_func = load_api_key_info_func(requirement.scheme)
+    api_key_info_func = load_api_key_info_func(scheme)
     required_scopes = requirement.scopes
-    api_key_in = requirement.scheme.in_
-    api_key_name = requirement.scheme.name
+    api_key_in = scheme.in_
+    api_key_name = scheme.name
     if api_key_name is None:
         raise SecurityException("invalid api key name specified")
     if api_key_in not in ["query", "header", "cookie"]:
         raise SecurityException("invalid api key location specified")
 
     def http_api_key_security_check(request: Request):
-        def _immutable_pop(_dict, key):
-            """
-            Pops the key from an immutable dict and returns the value that was popped,
-            and a new immutable dict without the popped key.
-            """
-            cls = type(_dict)
-            try:
-                _dict = _dict.to_dict(flat=False)
-                return _dict.pop(key)[0], cls(_dict)
-            except AttributeError:
-                _dict = dict(_dict.items())
-                return _dict.pop(key), cls(_dict)
+        api_key = None
 
         if api_key_in == "query":
             if api_key_name is not None:
-                apikey = request.args.get(api_key_name)
+                api_key = request.args.get(api_key_name)
         elif api_key_in == "header":
             if api_key_name is not None:
-                apikey = request.headers.get(api_key_name)
+                api_key = request.headers.get(api_key_name)
         elif api_key_in == "cookie":
-            cookieslist = request.headers.get("Cookie")
-            apikey = get_cookie_value(cookieslist, api_key_name)
+            cookies_list = request.headers.get("Cookie")
+            api_key = get_cookie_value(cookies_list, api_key_name)
         else:
             return None
-        if apikey is None:
+
+        if api_key is None:
             return None
 
-        token_info = api_key_info_func(apikey, required_scopes, None)
+        token_info = api_key_info_func(api_key, required_scopes, None)
         if token_info is None:
             return None
 
@@ -255,9 +266,9 @@ def build_http_api_key_security_check(
 
 
 def build_oauth2_security_check(
-    requirement: SecurityRequirement,
+    requirement: SecurityRequirement, scheme: SecurityScheme
 ) -> Callable[[Request], Mapping]:
-    token_info_func = load_token_info_func(requirement.scheme)
+    token_info_func = load_token_info_func(scheme)
     required_scopes = requirement.scopes
 
     def oauth2_security_check(request: Request):
@@ -284,16 +295,22 @@ _BUILDER_DISPATCH = {
 
 def build_security_handler(
     security: Sequence[SecurityRequirement],
+    security_schemes: Mapping[str, SecurityScheme],
 ) -> Callable[[Request], Mapping]:
     # build a list of security validators based on the provided security schemes
     security_checks = []
 
     for requirement in security:
-        scheme = SecuritySchemesType(requirement.scheme.type)
-        builder = _BUILDER_DISPATCH.get(scheme)
+        scheme = security_schemes.get(requirement.name)
+        if not scheme:
+            raise UnregisteredSecurityScheme(requirement.name)
+
+        scheme_type = SecuritySchemesType(scheme.type)
+        builder = _BUILDER_DISPATCH.get(scheme_type)
         if not builder:
-            raise UnsupportedSecurityScheme
-        security_checks.append(builder(requirement))
+            raise UnsupportedSecurityScheme(str(scheme_type))
+
+        security_checks.append(builder(requirement, scheme))
 
     def security_handler(request: Request) -> Mapping:
 
@@ -311,16 +328,20 @@ def build_security_handler(
             else:
                 raise SecurityException("No checks passed")
         except SecurityException as err:
+            print(err, file=sys.stdout)
             raise ConnectionRefusedError(str(err)) from err
 
     return security_handler
 
 
-def security_handler_factory(security: Sequence[SecurityRequirement]) -> Callable:
+def security_handler_factory(
+    security: Sequence[SecurityRequirement],
+    security_schemes: Mapping[str, SecurityScheme],
+) -> Callable:
     """
     Build a security handler decorator based on security object and securitySchemes provided in the API file.  # noqa: 501
     """
-    security_handler = build_security_handler(security)
+    security_handler = build_security_handler(security, security_schemes)
 
     def decorator(handler: Callable):
         if handler is None:

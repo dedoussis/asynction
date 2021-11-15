@@ -2,6 +2,7 @@ from dataclasses import asdict
 from dataclasses import dataclass
 from dataclasses import field
 from enum import Enum
+from typing import Any
 from typing import Callable
 from typing import Mapping
 from typing import Optional
@@ -12,10 +13,191 @@ from svarog import forge
 from svarog import register_forge
 from svarog.types import Forge
 
-from asynction.common_types import JSONMapping, JSONSchema
-from asynction.security import SecurityRequirement
+from asynction.exceptions import UnsupportedSecurityScheme
 
 GLOBAL_NAMESPACE = "/"
+
+JSONMappingValue = Any
+JSONMapping = Mapping[str, JSONMappingValue]
+JSONSchema = JSONMapping
+
+
+class HTTPAuthenticationScheme(Enum):
+    """
+    https://www.iana.org/assignments/http-authschemes/http-authschemes.xhtml
+    """
+
+    BASIC = "basic"
+    DIGEST = "digest"
+    BEARER = "bearer"
+
+
+class OAuth2FlowType(Enum):
+    """
+    https://www.asyncapi.com/docs/specifications/v2.2.0#oauthFlowsObject
+    """
+
+    IMPLICIT = "implicit"
+    PASSWORD = "password"
+    CLIENT_CREDENTIALS = "clientCredentials"
+    AUTHORIZATION_CODE = "authorizationCode"
+
+
+@dataclass
+class OAuth2Flow:
+    """
+    https://www.asyncapi.com/docs/specifications/v2.2.0#oauthFlowObject
+    """
+
+    scopes: Mapping[str, str]
+    authorization_url: Optional[str] = None
+    token_url: Optional[str] = None
+    refresh_url: Optional[str] = None
+
+    @staticmethod
+    def forge(
+        type_: Type["OAuth2Flow"], data: JSONMapping, forge: Forge
+    ) -> "OAuth2Flow":
+        return type_(
+            scopes=forge(type_.__annotations__["scopes"], data.get("scopes")),
+            authorization_url=forge(
+                type_.__annotations__["authorization_url"], data.get("authorizationUrl")
+            ),
+            token_url=forge(type_.__annotations__["token_url"], data.get("tokenUrl")),
+            refresh_url=forge(
+                type_.__annotations__["refresh_url"], data.get("refreshUrl")
+            ),
+        )
+
+
+register_forge(OAuth2Flow, OAuth2Flow.forge)
+
+
+class SecuritySchemesType(Enum):
+    """
+    https://www.asyncapi.com/docs/specifications/v2.2.0#securitySchemeObjectType
+    """
+
+    USER_PASSWORD = "userPassword"
+    API_KEY = "apiKey"
+    X509 = "X509"
+    SYMMETRIC_ENCRYPTION = "symmetricEncryption"
+    ASYMMETRIC_ENCRYPTION = "asymmetricEncryption"
+    HTTP_API_KEY = "httpApiKey"
+    HTTP = "http"
+    OAUTH2 = "oauth2"
+    OPENID_CONNECT = "openIdConnect"
+    PLAIN = "plain"
+    SCRAM_SHA256 = "scramSha256"
+    SCRAM_SHA512 = "scramSha512"
+    GSSAPI = "gssapi"
+
+
+SUPPORTED_SECURITY_SCHEMES = frozenset(
+    [
+        SecuritySchemesType.HTTP,
+        SecuritySchemesType.HTTP_API_KEY,
+        SecuritySchemesType.OAUTH2,
+    ]
+)
+SUPPORTED_HTTP_AUTHENTICATION_SCHEMES = frozenset(
+    [HTTPAuthenticationScheme.BASIC, HTTPAuthenticationScheme.BEARER]
+)
+
+
+@dataclass
+class SecurityScheme:
+    """
+    https://www.asyncapi.com/docs/specifications/v2.2.0#securitySchemeObject
+    """
+
+    type: SecuritySchemesType
+    description: Optional[str] = None
+    name: Optional[str] = None  # Required for httpApiKey
+    in_: Optional[str] = None  # Required for httpApiKey | apiKey
+    scheme: Optional[HTTPAuthenticationScheme] = None  # Required for http
+    bearer_format: Optional[str] = None  # Optional for http ("bearer")
+    flows: Optional[Mapping[OAuth2FlowType, OAuth2Flow]] = None  # Required for oauth2
+    open_id_connect_url: Optional[str] = None  # Required for openIdConnect
+
+    x_basic_info_func: Optional[str] = None  # Required for http(basic)
+    x_token_info_func: Optional[str] = None  # Required for oauth2
+    x_api_key_info_func: Optional[str] = None  # Required for apiKey
+    x_scope_verify_func: Optional[str] = None  # Optional for oauth2
+
+    def __post_init__(self):
+        if self.type not in SUPPORTED_SECURITY_SCHEMES:
+            raise UnsupportedSecurityScheme(self.type)
+
+        if self.type == SecuritySchemesType.HTTP:
+            if not self.scheme:
+                raise
+            if self.scheme not in SUPPORTED_HTTP_AUTHENTICATION_SCHEMES:
+                raise
+
+    @staticmethod
+    def forge(
+        type_: Type["SecurityScheme"], data: JSONMapping, forge: Forge
+    ) -> "SecurityScheme":
+        return type_(
+            type=forge(type_.__annotations__["type"], data.get("type")),
+            description=forge(
+                type_.__annotations__["description"], data.get("description")
+            ),
+            name=forge(type_.__annotations__["name"], data.get("name")),
+            in_=forge(type_.__annotations__["in_"], data.get("in")),
+            scheme=forge(type_.__annotations__["scheme"], data.get("scheme")),
+            bearer_format=forge(
+                type_.__annotations__["bearer_format"], data.get("bearerFormat")
+            ),
+            flows=forge(type_.__annotations__["flows"], data.get("flows")),
+            open_id_connect_url=forge(
+                type_.__annotations__["open_id_connect_url"],
+                data.get("openIdConnectUrl"),
+            ),
+            x_basic_info_func=forge(
+                type_.__annotations__["x_basic_info_func"], data.get("x-basicInfoFunc")
+            ),
+            x_token_info_func=forge(
+                type_.__annotations__["x_token_info_func"], data.get("x-tokenInfoFunc")
+            ),
+            x_api_key_info_func=forge(
+                type_.__annotations__["x_api_key_info_func"],
+                data.get("x-apiKeyInfoFunc"),
+            ),
+        )
+
+
+register_forge(SecurityScheme, SecurityScheme.forge)
+
+
+@dataclass
+class SecurityRequirement:
+    # https://www.asyncapi.com/docs/specifications/v2.2.0#securityRequirementObject
+    name: str
+    scopes: Sequence[str]
+
+    @staticmethod
+    def forge(
+        type_: Type["SecurityRequirement"], data: JSONMapping, forge: Forge
+    ) -> "SecurityRequirement":
+        # Since the API file technically is a list of objects in the form
+        # name: [scopes]
+        # we have to make sure that the object doesn't actually have more
+        # keys for some reason. If it does it is malformed
+        if len(data) > 1:
+            raise ValueError
+
+        # now that we are sure the object is well formed
+        # we take the first (and only) key value pair as name: scopes
+        name, scopes = next(iter(data.items()))
+        return type_(
+            name=forge(type_.__annotations__["name"], name),
+            scopes=forge(type_.__annotations__["scopes"], scopes),
+        )
+
+
+register_forge(SecurityRequirement, SecurityRequirement.forge)
 
 
 @dataclass
@@ -189,6 +371,26 @@ class Info:
 
 
 @dataclass
+class Components:
+    """https://www.asyncapi.com/docs/specifications/v2.2.0#componentsObject"""
+
+    security_schemes: Optional[Mapping[str, SecurityScheme]] = None
+
+    @staticmethod
+    def forge(
+        type_: Type["Components"], data: JSONMapping, forge: Forge
+    ) -> "Components":
+        return type_(
+            security_schemes=forge(
+                type_.__annotations__["security_schemes"], data.get("securitySchemes")
+            )
+        )
+
+
+register_forge(Components, Components.forge)
+
+
+@dataclass
 class AsyncApiSpec:
     """https://www.asyncapi.com/docs/specifications/2.2.0#A2SObject"""
 
@@ -196,6 +398,7 @@ class AsyncApiSpec:
     channels: Mapping[str, Channel]
     info: Info
     servers: Mapping[str, Server] = field(default_factory=dict)
+    components: Components = field(default_factory=Components)
 
     @staticmethod
     def from_dict(data: JSONMapping) -> "AsyncApiSpec":

@@ -31,6 +31,8 @@ from hypothesis.strategies import sampled_from
 from hypothesis_jsonschema import from_schema
 from hypothesis_jsonschema._from_schema import STRING_FORMATS
 
+from asynction import UnregisteredSecurityScheme
+from asynction.security import security_handler_factory
 from asynction.server import AsynctionSocketIO
 from asynction.types import AsyncApiSpec
 from asynction.types import ErrorHandler
@@ -213,7 +215,7 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
     def _register_handlers(
         self,
         default_error_handler: Optional[ErrorHandler] = None,
-        server_security: Optional[Sequence[SecurityRequirement]] = None
+        server_security: Optional[Sequence[SecurityRequirement]] = None,
     ) -> None:
         for namespace, channel in self.spec.channels.items():
             if channel.publish is not None:
@@ -242,6 +244,17 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
             if self.validation:
                 with_bindings_validation = bindings_validator_factory(channel.bindings)
                 connect_handler = with_bindings_validation(connect_handler)
+
+            if server_security:
+                if not self.spec.components.security_schemes:
+                    raise UnregisteredSecurityScheme
+
+                # create a security handler wrapper
+                with_security = security_handler_factory(
+                    server_security, self.spec.components.security_schemes
+                )
+                # apply security
+                connect_handler = with_security(connect_handler)
 
             self.on_event("connect", connect_handler, namespace)
 

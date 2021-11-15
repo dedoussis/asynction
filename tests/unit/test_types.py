@@ -209,6 +209,9 @@ def test_async_api_spec_from_and_to_dict(faker: Faker):
             }
         },
         "servers": {"development": {"url": "localhost", "protocol": "ws"}},
+        "components": {
+            "securitySchemes": {"test": {"type": "http", "scheme": "basic"}}
+        },
     }
 
     spec = AsyncApiSpec.from_dict(data)

@@ -180,6 +180,15 @@ class SecurityScheme:
             if not self.scheme:
                 raise ValueError(f"scheme is required for {self.type} security schemes")
 
+        if self.type is SecuritySchemesType.HTTP_API_KEY:
+            options = ["query", "header", "cookie"]
+            if not self.in_ or self.in_ not in options:
+                raise ValueError(
+                    f'"in" field must be one of {options} for {self.type} security schemes'
+                )
+            if not self.name:
+                raise ValueError(f'"name" is required for {self.type} security schemes')
+
         # TODO include validation for other types
 
     @staticmethod

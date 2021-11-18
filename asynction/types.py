@@ -1,9 +1,11 @@
 from dataclasses import asdict
 from dataclasses import dataclass
 from dataclasses import field
+from dataclasses import fields
 from enum import Enum
 from typing import Any
 from typing import Callable
+from typing import Iterator
 from typing import Mapping
 from typing import Optional
 from typing import Sequence
@@ -12,8 +14,6 @@ from typing import Type
 from svarog import forge
 from svarog import register_forge
 from svarog.types import Forge
-
-from asynction.exceptions import UnsupportedSecurityScheme
 
 GLOBAL_NAMESPACE = "/"
 
@@ -73,6 +73,43 @@ class OAuth2Flow:
 register_forge(OAuth2Flow, OAuth2Flow.forge)
 
 
+@dataclass
+class OAuth2Flows:
+    implicit: Optional[OAuth2Flow] = None
+    password: Optional[OAuth2Flow] = None
+    client_credentials: Optional[OAuth2Flow] = None
+    authorization_code: Optional[OAuth2Flow] = None
+
+    @staticmethod
+    def forge(
+        type_: Type["OAuth2Flows"], data: JSONMapping, forge: Forge
+    ) -> "OAuth2Flows":
+        return type_(
+            implicit=forge(type_.__annotations__["implicit"], data.get("implicit")),
+            password=forge(type_.__annotations__["password"], data.get("password")),
+            client_credentials=forge(
+                type_.__annotations__["client_credentials"],
+                data.get("clientCredentials"),
+            ),
+            authorization_code=forge(
+                type_.__annotations__["authorization_code"],
+                data.get("authorizationCode"),
+            ),
+        )
+
+    def supported_scopes(self) -> Iterator[str]:
+        # note Cannot lru_cache this
+        # TypeError: unhashable type: 'OAuth2Flows'
+        for f in fields(self):  # dataclasses.fields
+            flow = getattr(self, f.name)
+            if flow:
+                for scope in flow.scopes:
+                    yield scope
+
+
+register_forge(OAuth2Flows, OAuth2Flows.forge)
+
+
 class SecuritySchemesType(Enum):
     """
     https://www.asyncapi.com/docs/specifications/v2.2.0#securitySchemeObjectType
@@ -93,18 +130,6 @@ class SecuritySchemesType(Enum):
     GSSAPI = "gssapi"
 
 
-SUPPORTED_SECURITY_SCHEMES = frozenset(
-    [
-        SecuritySchemesType.HTTP,
-        SecuritySchemesType.HTTP_API_KEY,
-        SecuritySchemesType.OAUTH2,
-    ]
-)
-SUPPORTED_HTTP_AUTHENTICATION_SCHEMES = frozenset(
-    [HTTPAuthenticationScheme.BASIC, HTTPAuthenticationScheme.BEARER]
-)
-
-
 @dataclass
 class SecurityScheme:
     """
@@ -117,7 +142,7 @@ class SecurityScheme:
     in_: Optional[str] = None  # Required for httpApiKey | apiKey
     scheme: Optional[HTTPAuthenticationScheme] = None  # Required for http
     bearer_format: Optional[str] = None  # Optional for http ("bearer")
-    flows: Optional[Mapping[OAuth2FlowType, OAuth2Flow]] = None  # Required for oauth2
+    flows: Optional[OAuth2Flows] = None  # Required for oauth2
     open_id_connect_url: Optional[str] = None  # Required for openIdConnect
 
     x_basic_info_func: Optional[str] = None  # Required for http(basic)
@@ -126,14 +151,20 @@ class SecurityScheme:
     x_scope_validate_func: Optional[str] = None  # Optional for oauth2
 
     def __post_init__(self):
-        if self.type not in SUPPORTED_SECURITY_SCHEMES:
-            raise UnsupportedSecurityScheme(self.type)
+        if not self.flows and self.type in [
+            SecuritySchemesType.OAUTH2,
+            SecuritySchemesType.OPENID_CONNECT,
+        ]:
+            raise ValueError(
+                "flows field should be be defined " f"for {self.type} security schemes"
+            )
 
-        if self.type == SecuritySchemesType.HTTP:
+        if self.type is SecuritySchemesType.HTTP:
+            # NOTE bearer_format is optional for HTTP
             if not self.scheme:
-                raise
-            if self.scheme not in SUPPORTED_HTTP_AUTHENTICATION_SCHEMES:
-                raise
+                raise ValueError(f"scheme is required for {self.type} security schemes")
+
+        # TODO include validation for other types
 
     @staticmethod
     def forge(
@@ -175,34 +206,7 @@ class SecurityScheme:
 register_forge(SecurityScheme, SecurityScheme.forge)
 
 
-@dataclass
-class SecurityRequirement:
-    # https://www.asyncapi.com/docs/specifications/v2.2.0#securityRequirementObject
-    name: str
-    scopes: Sequence[str]
-
-    @staticmethod
-    def forge(
-        type_: Type["SecurityRequirement"], data: JSONMapping, forge: Forge
-    ) -> "SecurityRequirement":
-        # Since the API file technically is a list of objects in the form
-        # name: [scopes]
-        # we have to make sure that the object doesn't actually have more
-        # keys for some reason. If it does it is malformed
-        if len(data) > 1:
-            print(data)
-            raise ValueError
-
-        # now that we are sure the object is well formed
-        # we take the first (and only) key value pair as name: scopes
-        name, scopes = next(iter(data.items()))
-        return type_(
-            name=forge(type_.__annotations__["name"], name),
-            scopes=forge(type_.__annotations__["scopes"], scopes),
-        )
-
-
-register_forge(SecurityRequirement, SecurityRequirement.forge)
+SecurityRequirement = Mapping[str, Sequence[str]]
 
 
 @dataclass
@@ -363,7 +367,7 @@ class Server:
 
     url: str
     protocol: ServerProtocol
-    security: Optional[Sequence[SecurityRequirement]] = None
+    security: Sequence[SecurityRequirement] = field(default_factory=list)
 
 
 @dataclass
@@ -379,7 +383,7 @@ class Info:
 class Components:
     """https://www.asyncapi.com/docs/specifications/v2.2.0#componentsObject"""
 
-    security_schemes: Optional[Mapping[str, SecurityScheme]] = None
+    security_schemes: Mapping[str, SecurityScheme] = field(default_factory=dict)
 
     @staticmethod
     def forge(
@@ -387,7 +391,8 @@ class Components:
     ) -> "Components":
         return type_(
             security_schemes=forge(
-                type_.__annotations__["security_schemes"], data.get("securitySchemes")
+                type_.__annotations__["security_schemes"],
+                data.get("securitySchemes", dict()),
             )
         )
 
@@ -404,6 +409,46 @@ class AsyncApiSpec:
     info: Info
     servers: Mapping[str, Server] = field(default_factory=dict)
     components: Components = field(default_factory=Components)
+
+    def __post_init__(self):
+        for server_name, server in self.servers.items():
+            for security_req in server.security:
+                (security_scheme_name, scopes), *other = security_req.items()
+
+                if other:
+                    raise ValueError(
+                        f"{server_name} contains invalid "
+                        f"security requirement: {security_req}"
+                    )
+
+                security_scheme = self.components.security_schemes.get(
+                    security_scheme_name
+                )
+                if security_scheme is None:
+                    raise ValueError(
+                        f"{security_scheme_name} referenced within {server_name} server"
+                        "does not exist in components/securitySchemes"
+                    )
+
+                if scopes:
+                    if security_scheme.type not in [
+                        SecuritySchemesType.OAUTH2,
+                        SecuritySchemesType.OPENID_CONNECT,
+                    ]:
+                        raise ValueError(
+                            "Scopes MUST be an empty array for "
+                            f"{security_scheme.type} security requirements"
+                        )
+
+                    if security_scheme.type is SecuritySchemesType.OAUTH2:
+                        supported_scopes = security_scheme.flows.supported_scopes()
+
+                        for scope in scopes:
+                            if scope not in supported_scopes:
+                                raise ValueError(
+                                    f"OAuth {scope} is not defined within "
+                                    "the {security_scheme_name} security scheme"
+                                )
 
     @staticmethod
     def from_dict(data: JSONMapping) -> "AsyncApiSpec":

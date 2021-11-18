@@ -16,7 +16,6 @@ import yaml
 from flask import Flask
 from flask_socketio import SocketIO
 
-from asynction.exceptions import UnregisteredSecurityScheme
 from asynction.exceptions import ValidationException
 from asynction.playground_docs import make_docs_blueprint
 from asynction.security import security_handler_factory
@@ -84,6 +83,10 @@ def load_handler(handler_id: str) -> Callable:
     module = import_module(".".join(module_path_elements))
 
     return getattr(module, object_name)
+
+
+def _noop_handler(*args, **kwargs) -> None:
+    return None
 
 
 class AsynctionSocketIO(SocketIO):
@@ -161,7 +164,7 @@ class AsynctionSocketIO(SocketIO):
 
         """
         spec = load_spec(spec_path=spec_path)
-        server_security = None
+        server_security: Sequence[SecurityRequirement] = []
         if (
             server_name is not None
             and kwargs.get("path") is None
@@ -181,7 +184,7 @@ class AsynctionSocketIO(SocketIO):
             server_security = server.security
 
         asio = cls(spec, validation, docs, app, **kwargs)
-        asio._register_handlers(default_error_handler, server_security=server_security)
+        asio._register_handlers(server_security, default_error_handler)
         return asio
 
     def _register_namespace_handlers(
@@ -189,10 +192,9 @@ class AsynctionSocketIO(SocketIO):
         namespace: str,
         channel_handlers: Optional[ChannelHandlers],
         channel_bindings: Optional[ChannelBindings],
-        server_security: Optional[Sequence[SecurityRequirement]] = None,
+        server_security: Sequence[SecurityRequirement],
     ) -> None:
-
-        on_connect = None
+        on_connect = _noop_handler
 
         # if a connection handler is defined then load it
         if channel_handlers and channel_handlers.connect is not None:
@@ -203,18 +205,6 @@ class AsynctionSocketIO(SocketIO):
                 on_connect = with_bindings_validation(on_connect)
 
         if server_security:
-            # if a connection handler was not defined and sever_security is present
-            # then we will inject a default handler to apply security
-            if not on_connect:
-
-                def _on_connect(*args, **kwargs):
-                    return None
-
-                on_connect = _on_connect
-
-            if not self.spec.components.security_schemes:
-                raise UnregisteredSecurityScheme
-
             # create a security handler wrapper
             with_security = security_handler_factory(
                 server_security, self.spec.components.security_schemes
@@ -224,7 +214,7 @@ class AsynctionSocketIO(SocketIO):
 
         # if no user defined connection handler was specified
         # or no security scheme was required then on_connect should still be None
-        if on_connect is not None:
+        if on_connect is not _noop_handler:
             self.on_event("connect", on_connect, namespace)
 
         if channel_handlers:
@@ -238,8 +228,8 @@ class AsynctionSocketIO(SocketIO):
 
     def _register_handlers(
         self,
+        server_security: Sequence[SecurityRequirement],
         default_error_handler: Optional[ErrorHandler] = None,
-        server_security: Optional[Sequence[SecurityRequirement]] = None,
     ) -> None:
         for namespace, channel in self.spec.channels.items():
             if channel.publish is not None:

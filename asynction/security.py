@@ -1,8 +1,8 @@
 import base64
 import http.cookies
-import sys
 from functools import wraps
 from typing import Callable
+from typing import List
 from typing import Mapping
 from typing import Optional
 from typing import Sequence
@@ -13,8 +13,6 @@ from flask import Request
 from flask import request as current_flask_request
 
 from asynction.exceptions import SecurityException
-from asynction.exceptions import UnregisteredSecurityScheme
-from asynction.exceptions import UnsupportedSecurityScheme
 from asynction.types import HTTPAuthenticationScheme
 from asynction.types import SecurityRequirement
 from asynction.types import SecurityScheme
@@ -24,6 +22,26 @@ TokenInfoFunc = Callable[[str], Mapping]
 BasicInfoFunc = Callable[[str, str, Optional[Sequence[str]]], Mapping]
 APIKeyInfoFunc = Callable[[str, Optional[Sequence[str]], Optional[str]], Mapping]
 ScopeValidateFunc = Callable[[Sequence[str], Sequence[str]], bool]
+InternalSecurityCheckResponse = Tuple[Optional[Mapping], Optional[str]]
+InternalSecurityCheck = Callable[[Request], InternalSecurityCheckResponse]
+SecurityCheck = Callable[[Request], Mapping]
+
+InternalSecurityRequirement = Tuple[str, Sequence[str]]
+SecurityCheckFactory = Callable[
+    [InternalSecurityRequirement, SecurityScheme], Optional[InternalSecurityCheck]
+]
+
+
+def unpack_security_requirement(
+    requirement: SecurityRequirement,
+) -> InternalSecurityRequirement:
+    return next(iter(requirement.items()))
+
+
+def unpack_security_requirements(
+    requirements: Sequence[SecurityRequirement],
+) -> Sequence[InternalSecurityRequirement]:
+    return list(map(unpack_security_requirement, requirements))
 
 
 def extract_auth_header(request: Request) -> Optional[Tuple[str, str]]:
@@ -181,26 +199,27 @@ def load_api_key_info_func(scheme: SecurityScheme) -> APIKeyInfoFunc:
 
 
 def build_http_security_check(
-    requirement: SecurityRequirement, scheme: SecurityScheme
-) -> Callable[[Request], Mapping]:
-    required_scopes = requirement.scopes
+    requirement: InternalSecurityRequirement, scheme: SecurityScheme
+) -> Optional[InternalSecurityCheck]:
+    _, required_scopes = requirement
     if scheme.scheme == HTTPAuthenticationScheme.BASIC:
         basic_info_func = load_basic_info_func(scheme)
         scope_validate_func = load_scope_validate_func(scheme)
 
-        def http_security_check(request: Request):
+        def http_security_check(request: Request) -> InternalSecurityCheckResponse:
             token_info = validate_basic(request, basic_info_func, required_scopes)
             if token_info is None:
-                return None
+                return None, None
 
             token_scopes = token_info.get("scope", token_info.get("scopes", ""))
 
             if not scope_validate_func(required_scopes, token_scopes):
-                raise SecurityException(
-                    f"Invalid scopes: required: {required_scopes}, provided: {token_scopes}"  # noqa: 501
+                return (
+                    None,
+                    f"Invalid scopes: required: {required_scopes}, provided: {token_scopes}",  # noqa: 501
                 )
 
-            return token_info
+            return token_info, None
 
         return http_security_check
     elif scheme.scheme == HTTPAuthenticationScheme.BEARER:
@@ -209,25 +228,28 @@ def build_http_security_check(
 
         bearer_format = scheme.bearer_format
 
-        def http_bearer_security_check(request: Request):
+        def http_bearer_security_check(
+            request: Request,
+        ) -> InternalSecurityCheckResponse:
             token_info = validate_api_key(
                 request, api_key_info_func, required_scopes, bearer_format
             )
             if token_info is None:
-                return None
+                return None, None
 
             token_scopes = token_info.get("scope", token_info.get("scopes", ""))
 
             if not scope_validate_func(required_scopes, token_scopes):
-                raise SecurityException(
-                    f"Invalid scopes: required: {required_scopes}, provided: {token_scopes}"  # noqa: 501
+                return (
+                    None,
+                    f"Invalid scopes: required: {required_scopes}, provided: {token_scopes}",  # noqa: 501
                 )
 
-            return token_info
+            return token_info, None
 
         return http_bearer_security_check
     else:
-        raise UnsupportedSecurityScheme
+        return None
 
 
 def get_cookie_value(cookies, name):
@@ -247,12 +269,12 @@ def get_cookie_value(cookies, name):
 
 
 def build_http_api_key_security_check(
-    requirement: SecurityRequirement, scheme: SecurityScheme
-) -> Callable[[Request], Mapping]:
+    requirement: InternalSecurityRequirement, scheme: SecurityScheme
+) -> Optional[InternalSecurityCheck]:
     api_key_info_func = load_api_key_info_func(scheme)
     scope_validate_func = load_scope_validate_func(scheme)
 
-    required_scopes = requirement.scopes
+    _, required_scopes = requirement
     api_key_in = scheme.in_
     api_key_name = scheme.name
     if api_key_name is None:
@@ -260,7 +282,7 @@ def build_http_api_key_security_check(
     if api_key_in not in ["query", "header", "cookie"]:
         raise SecurityException("invalid api key location specified")
 
-    def http_api_key_security_check(request: Request):
+    def http_api_key_security_check(request: Request) -> InternalSecurityCheckResponse:
         api_key = None
 
         if api_key_in == "query":
@@ -273,39 +295,40 @@ def build_http_api_key_security_check(
             cookies_list = request.headers.get("Cookie")
             api_key = get_cookie_value(cookies_list, api_key_name)
         else:
-            return None
+            return None, None
 
         if api_key is None:
-            return None
+            return None, None
 
         token_info = api_key_info_func(api_key, required_scopes, None)
         if token_info is None:
-            return None
+            return None, None
 
         token_scopes = token_info.get("scope", token_info.get("scopes", ""))
 
         if not scope_validate_func(required_scopes, token_scopes):
-            raise SecurityException(
-                f"Invalid scopes: required: {required_scopes}, provided: {token_scopes}"  # noqa: 501
+            return (
+                None,
+                f"Invalid scopes: required: {required_scopes}, provided: {token_scopes}",  # noqa: 501
             )
 
-        return token_info
+        return token_info, None
 
     return http_api_key_security_check
 
 
 def build_oauth2_security_check(
-    requirement: SecurityRequirement, scheme: SecurityScheme
-) -> Callable[[Request], Mapping]:
+    requirement: InternalSecurityRequirement, scheme: SecurityScheme
+) -> Optional[InternalSecurityCheck]:
     token_info_func = load_token_info_func(scheme)
-    required_scopes = requirement.scopes
+    _, required_scopes = requirement
 
-    def oauth2_security_check(request: Request):
+    def oauth2_security_check(request: Request) -> InternalSecurityCheckResponse:
         token_info = validate_authorization_header(request, token_info_func)
         scope_validate_func = load_scope_validate_func(scheme)
 
         if token_info is None:
-            return None
+            return None, None
 
         token_scopes = token_info.get("scope", token_info.get("scopes", ""))
 
@@ -314,13 +337,13 @@ def build_oauth2_security_check(
                 f"Invalid scopes: required: {required_scopes}, provided: {token_scopes}"  # noqa: 501
             )
 
-        return token_info
+        return token_info, None
 
     return oauth2_security_check
 
 
 # Dispatch table mapping SecuritySchemesType to security check builder
-_BUILDER_DISPATCH = {
+_BUILDER_DISPATCH: Mapping[SecuritySchemesType, SecurityCheckFactory] = {
     SecuritySchemesType.HTTP: build_http_security_check,
     SecuritySchemesType.OAUTH2: build_oauth2_security_check,
     SecuritySchemesType.HTTP_API_KEY: build_http_api_key_security_check,
@@ -328,42 +351,39 @@ _BUILDER_DISPATCH = {
 
 
 def build_security_handler(
-    security: Sequence[SecurityRequirement],
+    security: Sequence[InternalSecurityRequirement],
     security_schemes: Mapping[str, SecurityScheme],
-) -> Callable[[Request], Mapping]:
+) -> SecurityCheck:
     # build a list of security validators based on the provided security schemes
-    security_checks = []
+    security_checks: List[InternalSecurityCheck] = []
 
     for requirement in security:
-        scheme = security_schemes.get(requirement.name)
-        if not scheme:
-            raise UnregisteredSecurityScheme(requirement.name)
-
-        scheme_type = SecuritySchemesType(scheme.type)
-        builder = _BUILDER_DISPATCH.get(scheme_type)
+        requirement_name, _ = requirement
+        scheme = security_schemes[requirement_name]
+        builder = _BUILDER_DISPATCH.get(scheme.type)
         if not builder:
-            raise UnsupportedSecurityScheme(str(scheme_type))
-
-        security_checks.append(builder(requirement, scheme))
+            continue
+        check = builder(requirement, scheme)
+        if not check:
+            continue
+        security_checks.append(check)
 
     def security_handler(request: Request) -> Mapping:
 
-        try:
-            # apply the security schemes in the order listed in the API file
-            for check in security_checks:
+        # apply the security schemes in the order listed in the API file
+        for check in security_checks:
 
-                # if a security check fails if will raise the appropriate exception
-                # if the security check passes it will return a dict of kwargs to pass to the handler   # noqa: 501
-                # if the check is not applicable based on lack provided argument the check will return None indicating   # noqa: 501
-                # that the next (if any) check should be run.
-                security_args = check(request)
-                if security_args:
-                    return security_args
-            else:
-                raise SecurityException("No checks passed")
-        except SecurityException as err:
-            print(err, file=sys.stdout)
-            raise ConnectionRefusedError(str(err)) from err
+            # if a security check fails if will raise the appropriate exception
+            # if the security check passes it will return a dict of kwargs to pass to the handler   # noqa: 501
+            # if the check is not applicable based on lack provided argument the check will return None indicating   # noqa: 501
+            # that the next (if any) check should be run.
+            security_args, err = check(request)
+            if err:
+                raise SecurityException(err)
+            if security_args:
+                return security_args
+        else:
+            raise SecurityException("No checks passed")
 
     return security_handler
 
@@ -375,7 +395,8 @@ def security_handler_factory(
     """
     Build a security handler decorator based on security object and securitySchemes provided in the API file.  # noqa: 501
     """
-    security_handler = build_security_handler(security, security_schemes)
+    unpacked_security = unpack_security_requirements(security)
+    security_handler = build_security_handler(unpacked_security, security_schemes)
 
     def decorator(handler: Callable):
         if handler is None:

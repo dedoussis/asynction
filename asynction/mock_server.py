@@ -31,9 +31,9 @@ from hypothesis.strategies import sampled_from
 from hypothesis_jsonschema import from_schema
 from hypothesis_jsonschema._from_schema import STRING_FORMATS
 
-from asynction import UnregisteredSecurityScheme
 from asynction.security import security_handler_factory
 from asynction.server import AsynctionSocketIO
+from asynction.server import _noop_handler
 from asynction.types import AsyncApiSpec
 from asynction.types import ErrorHandler
 from asynction.types import JSONMapping
@@ -113,10 +113,6 @@ def task_scheduler(
         for task in tasks:
             queue.put(task)
             sleep()
-
-
-def _noop_handler(*args, **kwargs) -> None:
-    return None
 
 
 class MockAsynctionSocketIO(AsynctionSocketIO):
@@ -214,8 +210,8 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
 
     def _register_handlers(
         self,
+        server_security: Sequence[SecurityRequirement],
         default_error_handler: Optional[ErrorHandler] = None,
-        server_security: Optional[Sequence[SecurityRequirement]] = None,
     ) -> None:
         for namespace, channel in self.spec.channels.items():
             if channel.publish is not None:
@@ -246,9 +242,6 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
                 connect_handler = with_bindings_validation(connect_handler)
 
             if server_security:
-                if not self.spec.components.security_schemes:
-                    raise UnregisteredSecurityScheme
-
                 # create a security handler wrapper
                 with_security = security_handler_factory(
                     server_security, self.spec.components.security_schemes
@@ -256,7 +249,8 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
                 # apply security
                 connect_handler = with_security(connect_handler)
 
-            self.on_event("connect", connect_handler, namespace)
+            if connect_handler is not _noop_handler:
+                self.on_event("connect", connect_handler, namespace)
 
         if default_error_handler is not None:
             self.on_error_default(default_error_handler)

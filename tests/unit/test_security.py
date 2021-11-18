@@ -1,6 +1,3 @@
-import pytest
-
-from asynction import UnsupportedSecurityScheme
 from asynction.security import build_http_api_key_security_check
 from asynction.security import build_http_security_check
 from asynction.security import build_oauth2_security_check
@@ -10,8 +7,7 @@ from asynction.security import load_basic_info_func
 from asynction.security import load_token_info_func
 from asynction.types import HTTPAuthenticationScheme
 from asynction.types import OAuth2Flow
-from asynction.types import OAuth2FlowType
-from asynction.types import SecurityRequirement
+from asynction.types import OAuth2Flows
 from asynction.types import SecurityScheme
 from asynction.types import SecuritySchemesType
 from tests.fixtures import FixturePaths
@@ -43,7 +39,7 @@ def test_load_api_key_info_func(fixture_paths: FixturePaths):
 def test_load_token_info_func(fixture_paths: FixturePaths):
     scheme = SecurityScheme(
         SecuritySchemesType.OAUTH2,
-        flows={OAuth2FlowType.IMPLICIT: OAuth2Flow(scopes={"a": "a"})},
+        flows=OAuth2Flows(implicit=OAuth2Flow(scopes={"a": "a"})),
         x_token_info_func="tests.fixtures.handlers.token_info",
     )
     token_info = load_token_info_func(scheme)
@@ -52,7 +48,7 @@ def test_load_token_info_func(fixture_paths: FixturePaths):
 
 
 def test_build_basic_http_security_check():
-    requirement = SecurityRequirement("test", [])
+    requirement = ("test", [])
     scheme = SecurityScheme(
         SecuritySchemesType.HTTP,
         scheme=HTTPAuthenticationScheme.BASIC,
@@ -63,7 +59,7 @@ def test_build_basic_http_security_check():
 
 
 def test_build_bearer_http_security_check():
-    requirement = SecurityRequirement("test", [])
+    requirement = ("test", [])
     scheme = SecurityScheme(
         SecuritySchemesType.HTTP,
         scheme=HTTPAuthenticationScheme.BEARER,
@@ -74,7 +70,7 @@ def test_build_bearer_http_security_check():
 
 
 def test_build_http_api_key_security_check():
-    requirement = SecurityRequirement("test", [])
+    requirement = ("test", [])
     scheme = SecurityScheme(
         SecuritySchemesType.HTTP_API_KEY,
         name="api_key",
@@ -86,10 +82,10 @@ def test_build_http_api_key_security_check():
 
 
 def test_build_oauth2_security_check():
-    requirement = SecurityRequirement("test", [])
+    requirement = ("test", [])
     scheme = SecurityScheme(
         SecuritySchemesType.OAUTH2,
-        flows={OAuth2FlowType.IMPLICIT: OAuth2Flow(scopes={"a": "a"})},
+        flows=OAuth2Flows(implicit=OAuth2Flow(scopes={"a": "a"})),
         x_token_info_func="tests.fixtures.handlers.token_info",
     )
     check = build_oauth2_security_check(requirement, scheme)
@@ -98,10 +94,10 @@ def test_build_oauth2_security_check():
 
 def test_build_security_check_list():
     requirements = [
-        SecurityRequirement("basic", []),
-        SecurityRequirement("bearer", []),
-        SecurityRequirement("api_key", []),
-        SecurityRequirement("oauth2", ["a"]),
+        ("basic", []),
+        ("bearer", []),
+        ("api_key", []),
+        ("oauth2", ["a"]),
     ]
     schemes = dict(
         basic=SecurityScheme(
@@ -122,7 +118,7 @@ def test_build_security_check_list():
         ),
         oauth2=SecurityScheme(
             SecuritySchemesType.OAUTH2,
-            flows={OAuth2FlowType.IMPLICIT: OAuth2Flow(scopes={"a": "a"})},
+            flows=OAuth2Flows(implicit=OAuth2Flow(scopes={"a": "a"})),
             x_token_info_func="tests.fixtures.handlers.token_info",
         ),
     )
@@ -130,8 +126,3 @@ def test_build_security_check_list():
     check = build_security_handler(requirements, schemes)
     assert check
     assert callable(check)
-
-
-def test_build_unsupported_security_scheme_fails():
-    with pytest.raises(UnsupportedSecurityScheme):
-        SecurityScheme(SecuritySchemesType.OPENID_CONNECT)

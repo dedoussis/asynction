@@ -8,8 +8,8 @@ servers:
     url: 127.0.0.1/socket.io
     security:
       - basic: []
-      - bearer: ["a"]
-      - apiKey: ["a"]
+      - bearer: []
+      - apiKey: []
 channels:
   /:
     subscribe:

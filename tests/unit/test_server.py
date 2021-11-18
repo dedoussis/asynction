@@ -259,9 +259,9 @@ def test_register_handlers_registers_callables_with_correct_event_name_and_names
             )
         },
     )
-    server = AsynctionSocketIO(spec, True, True, None)
+    server = AsynctionSocketIO([spec], True, True, None)
 
-    server._register_handlers()
+    server._register_handlers(spec)
     assert len(server.handlers) == 1
     registered_event, registered_handler, registered_namespace = server.handlers[0]
     assert registered_event == event_name
@@ -287,9 +287,9 @@ def test_register_handlers_registers_channel_handlers(
             )
         },
     )
-    server = AsynctionSocketIO(spec, True, True, None)
+    server = AsynctionSocketIO([spec], True, True, None)
 
-    server._register_handlers()
+    server._register_handlers(spec)
 
     assert server.exception_handlers[namespace] == some_error
     for event_name, handler, handler_namespace in server.handlers:
@@ -326,9 +326,9 @@ def test_register_handlers_adds_payload_validator_if_validation_is_enabled(
             )
         },
     )
-    server = AsynctionSocketIO(spec, True, True, None)
+    server = AsynctionSocketIO([spec], True, True, None)
 
-    server._register_handlers()
+    server._register_handlers(spec)
     _, registered_handler, _ = server.handlers[0]
     handler_with_validation = deep_unwrap(registered_handler, depth=1)
     actual_handler = deep_unwrap(handler_with_validation)
@@ -370,9 +370,9 @@ def test_register_handlers_adds_ack_validator_if_validation_is_enabled(
             )
         },
     )
-    server = AsynctionSocketIO(spec, True, True, None)
+    server = AsynctionSocketIO([spec], True, True, None)
 
-    server._register_handlers()
+    server._register_handlers(spec)
     _, registered_handler, _ = server.handlers[0]
     handler_with_validation = deep_unwrap(registered_handler, depth=1)
     actual_handler = deep_unwrap(handler_with_validation)
@@ -410,9 +410,9 @@ def test_register_handlers_skips_payload_validator_if_validation_is_disabled(
             )
         },
     )
-    server = AsynctionSocketIO(spec, False, True, None)
+    server = AsynctionSocketIO([spec], False, True, None)
 
-    server._register_handlers()
+    server._register_handlers(spec)
     _, registered_handler, _ = server.handlers[0]
     handler_with_validation = deep_unwrap(registered_handler, depth=1)
     actual_handler = deep_unwrap(handler_with_validation)
@@ -431,14 +431,15 @@ def test_register_handlers_skips_payload_validator_if_validation_is_disabled(
 def test_register_handlers_registers_default_error_handler(
     optional_error_handler: Optional[ErrorHandler], server_info: Info, faker: Faker
 ):
+    spec = AsyncApiSpec(asyncapi=faker.pystr(), info=server_info, channels={})
     server = AsynctionSocketIO(
-        AsyncApiSpec(asyncapi=faker.pystr(), info=server_info, channels={}),
+        [spec],
         True,
         True,
         None,
     )
 
-    server._register_handlers(default_error_handler=optional_error_handler)
+    server._register_handlers(spec=spec, default_error_handler=optional_error_handler)
     assert server.default_exception_handler == optional_error_handler
 
 
@@ -449,7 +450,7 @@ def test_register_namespace_handlers_wraps_bindings_validator_if_validation_enab
             method="GET",
         )
     )
-    server = AsynctionSocketIO(mock.Mock(), True, True, None)
+    server = AsynctionSocketIO([mock.MagicMock()], True, True, None)
 
     server._register_namespace_handlers(
         GLOBAL_NAMESPACE, channel_handlers, channel_bindings, []
@@ -473,7 +474,7 @@ def test_register_namespace_handlers_omits_bindings_validator_if_validation_disa
             method="GET",
         )
     )
-    server = AsynctionSocketIO(mock.Mock(), False, True, None)
+    server = AsynctionSocketIO([mock.MagicMock()], False, True, None)
 
     server._register_namespace_handlers(
         GLOBAL_NAMESPACE, channel_handlers, channel_bindings, []
@@ -510,12 +511,12 @@ def test_register_namespace_handlers_includes_security_validator_if_security_nee
         ),
     )
 
-    server = AsynctionSocketIO(spec, False, True, None)
+    server = AsynctionSocketIO([spec], False, True, None)
     server._register_namespace_handlers(
         GLOBAL_NAMESPACE,
         channel_handlers,
         None,
-        server.spec.servers.get("test").security,
+        server.specs[0].servers.get("test").security,
     )
     event_name, registered_handler, _ = server.handlers[0]
     assert event_name == "connect"
@@ -553,11 +554,11 @@ def test_register_namespace_handlers_emits_security_if_security_enabled_on_names
         ),
     )
 
-    server = AsynctionSocketIO(spec, False, True, None)
+    server = AsynctionSocketIO([spec], False, True, None)
     security = (
         channel_security
         if channel_security is not None
-        else server.spec.servers.get("test").security
+        else server.specs[0].servers.get("test").security
     )
 
     server._register_namespace_handlers(
@@ -599,7 +600,7 @@ def test_emit_event_with_non_existent_namespace_raises_validation_exc(
             )
         },
     )
-    server = AsynctionSocketIO(spec, True, True, None)
+    server = AsynctionSocketIO([spec], True, True, None)
 
     with pytest.raises(ValidationException):
         # Correct event name but no namespace:
@@ -630,7 +631,7 @@ def test_emit_event_that_has_no_subscribe_operation_raises_validation_exc(
             )
         },
     )
-    server = AsynctionSocketIO(spec, True, True, None)
+    server = AsynctionSocketIO([spec], True, True, None)
 
     with pytest.raises(ValidationException):
         server.emit(
@@ -661,7 +662,7 @@ def test_emit_event_not_defined_under_given_valid_namespace_raises_validation_ex
             )
         },
     )
-    server = AsynctionSocketIO(spec, True, True, None)
+    server = AsynctionSocketIO([spec], True, True, None)
 
     with pytest.raises(ValidationException):
         # Correct namespace but undefined event:
@@ -691,7 +692,7 @@ def test_emit_event_with_invalid_args_fails_validation(server_info: Info, faker:
             )
         },
     )
-    server = AsynctionSocketIO(spec, True, True, None)
+    server = AsynctionSocketIO([spec], True, True, None)
 
     with pytest.raises(PayloadValidationException):
         # Event args do not adhere to the schema
@@ -722,7 +723,7 @@ def test_emit_valid_event_invokes_super_method(
             )
         },
     )
-    server = AsynctionSocketIO(spec, True, True, None)
+    server = AsynctionSocketIO([spec], True, True, None)
 
     event_args = [faker.pystr()]
     server.emit(event_name, *event_args, namespace=namespace)
@@ -755,7 +756,7 @@ def test_emit_validiation_is_ignored_if_validation_flag_is_false(
             )
         },
     )
-    server = AsynctionSocketIO(spec, False, True, None)
+    server = AsynctionSocketIO([spec], False, True, None)
 
     event_args = [faker.pystr()]  # invalid args
     server.emit(event_name, *event_args, namespace=namespace)
@@ -791,7 +792,7 @@ def test_emit_event_wraps_callback_with_validator(
             )
         },
     )
-    server = AsynctionSocketIO(spec, True, True, None)
+    server = AsynctionSocketIO([spec], True, True, None)
 
     def actual_callback(*args):
         # dummy callback
@@ -824,7 +825,7 @@ def test_init_app_registers_blueprint_if_docs_are_enabled(
         info=server_info,
         channels={},
     )
-    server = AsynctionSocketIO(spec, True, True, None)
+    server = AsynctionSocketIO([spec], True, True, None)
     app = Flask(__name__)
     server.init_app(app)
     assert "asynction_docs" in app.blueprints
@@ -838,7 +839,7 @@ def test_init_app_does_not_register_blueprint_if_docs_are_disabled(
         info=server_info,
         channels={},
     )
-    server = AsynctionSocketIO(spec, True, False, None)
+    server = AsynctionSocketIO([spec], True, False, None)
     app = Flask(__name__)
     server.init_app(app)
     assert "asynction_docs" not in app.blueprints

@@ -120,7 +120,7 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
 
     def __init__(
         self,
-        spec: AsyncApiSpec,
+        specs: Sequence[AsyncApiSpec],
         validation: bool,
         docs: bool,
         app: Optional[Flask],
@@ -130,7 +130,7 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
         """This is a private constructor.
         Use the :meth:`MockAsynctionSocketIO.from_spec` factory instead.
         """
-        super().__init__(spec, validation=validation, docs=docs, app=app, **kwargs)
+        super().__init__(specs, validation=validation, docs=docs, app=app, **kwargs)
         self.faker = Faker()
         self.custom_formats = make_faker_formats(self.faker, custom_formats_sample_size)
         self._subscription_tasks: Sequence[SubscriptionTask] = []
@@ -210,10 +210,11 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
 
     def _register_handlers(
         self,
+        spec: AsyncApiSpec,
         server_security: Sequence[SecurityRequirement] = (),
         default_error_handler: Optional[ErrorHandler] = None,
     ) -> None:
-        for namespace, channel in self.spec.channels.items():
+        for namespace, channel in spec.channels.items():
             if channel.publish is not None:
                 for message in channel.publish.message.oneOf:
                     handler = self.make_publish_handler(message)
@@ -247,10 +248,11 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
                 else server_security
             )
             if security:
+                _, spec = self.namespace_map[namespace]
                 # create a security handler wrapper
                 with_security = security_handler_factory(
                     security,
-                    self.spec.components.security_schemes,
+                    spec.components.security_schemes,
                 )
                 # apply security
                 connect_handler = with_security(connect_handler)

@@ -39,7 +39,7 @@ def test_load_api_key_info_func(fixture_paths: FixturePaths):
 def test_load_token_info_func(fixture_paths: FixturePaths):
     scheme = SecurityScheme(
         SecuritySchemesType.OAUTH2,
-        flows=OAuth2Flows(implicit=OAuth2Flow(scopes={"a": "a"})),
+        flows=OAuth2Flows(implicit=OAuth2Flow(authorization_url="", scopes={"a": "a"})),
         x_token_info_func="tests.fixtures.handlers.token_info",
     )
     token_info = load_token_info_func(scheme)
@@ -85,7 +85,7 @@ def test_build_oauth2_security_check():
     requirement = ("test", [])
     scheme = SecurityScheme(
         SecuritySchemesType.OAUTH2,
-        flows=OAuth2Flows(implicit=OAuth2Flow(scopes={"a": "a"})),
+        flows=OAuth2Flows(implicit=OAuth2Flow(authorization_url="", scopes={"a": "a"})),
         x_token_info_func="tests.fixtures.handlers.token_info",
     )
     check = build_oauth2_security_check(requirement, scheme)
@@ -118,7 +118,9 @@ def test_build_security_check_list():
         ),
         oauth2=SecurityScheme(
             SecuritySchemesType.OAUTH2,
-            flows=OAuth2Flows(implicit=OAuth2Flow(scopes={"a": "a"})),
+            flows=OAuth2Flows(
+                implicit=OAuth2Flow(authorization_url="", scopes={"a": "a"})
+            ),
             x_token_info_func="tests.fixtures.handlers.token_info",
         ),
     )

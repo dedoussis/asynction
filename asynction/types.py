@@ -97,6 +97,22 @@ class OAuth2Flows:
             ),
         )
 
+    def __post_init__(self):
+        if self.implicit is not None and self.implicit.authorization_url is None:
+            raise ValueError("Implicit OAuth flow is missing Authorization URL")
+        elif self.password is not None and self.password.token_url is None:
+            raise ValueError("Password OAuth flow is missing Token URL")
+        elif (
+            self.client_credentials is not None
+            and self.client_credentials.token_url is None
+        ):
+            raise ValueError("Client Credentials OAuth flow is missing Token URL")
+        elif (
+            self.authorization_code is not None
+            and self.authorization_code.token_url is None
+        ):
+            raise ValueError("Authorization code OAuth flow is missing Token URL")
+
     def supported_scopes(self) -> Iterator[str]:
         # note Cannot lru_cache this
         # TypeError: unhashable type: 'OAuth2Flows'

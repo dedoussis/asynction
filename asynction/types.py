@@ -184,7 +184,7 @@ class SecurityScheme:
             options = ["query", "header", "cookie"]
             if not self.in_ or self.in_ not in options:
                 raise ValueError(
-                    f'"in" field must be one of {options} for {self.type} security schemes'
+                    f'"in" field must be one of {options} for {self.type} security schemes'  # noqa: 501
                 )
             if not self.name:
                 raise ValueError(f'"name" is required for {self.type} security schemes')

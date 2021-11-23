@@ -114,9 +114,7 @@ class OAuth2Flows:
             raise ValueError("Authorization code OAuth flow is missing Token URL")
 
     def supported_scopes(self) -> Iterator[str]:
-        # note Cannot lru_cache this
-        # TypeError: unhashable type: 'OAuth2Flows'
-        for f in fields(self):  # dataclasses.fields
+        for f in fields(self):
             flow = getattr(self, f.name)
             if flow:
                 for scope in flow.scopes:
@@ -184,7 +182,8 @@ class SecurityScheme:
             options = ["query", "header", "cookie"]
             if not self.in_ or self.in_ not in options:
                 raise ValueError(
-                    f'"in" field must be one of {options} for {self.type} security schemes'  # noqa: 501
+                    f'"in" field must be one of {options} '
+                    f"for {self.type} security schemes"
                 )
             if not self.name:
                 raise ValueError(f'"name" is required for {self.type} security schemes')
@@ -472,7 +471,7 @@ class AsyncApiSpec:
                             if scope not in supported_scopes:
                                 raise ValueError(
                                     f"OAuth {scope} is not defined within "
-                                    "the {security_scheme_name} security scheme"
+                                    f"the {security_scheme_name} security scheme"
                                 )
 
     @staticmethod

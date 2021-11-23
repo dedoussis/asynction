@@ -254,7 +254,7 @@ def test_register_handlers_registers_callables_with_correct_event_name_and_names
     )
     server = AsynctionSocketIO(spec, True, True, None)
 
-    server._register_handlers([])
+    server._register_handlers()
     assert len(server.handlers) == 1
     registered_event, registered_handler, registered_namespace = server.handlers[0]
     assert registered_event == event_name
@@ -282,7 +282,7 @@ def test_register_handlers_registers_channel_handlers(
     )
     server = AsynctionSocketIO(spec, True, True, None)
 
-    server._register_handlers([])
+    server._register_handlers()
 
     assert server.exception_handlers[namespace] == some_error
     for event_name, handler, handler_namespace in server.handlers:
@@ -321,7 +321,7 @@ def test_register_handlers_adds_payload_validator_if_validation_is_enabled(
     )
     server = AsynctionSocketIO(spec, True, True, None)
 
-    server._register_handlers([])
+    server._register_handlers()
     _, registered_handler, _ = server.handlers[0]
     handler_with_validation = deep_unwrap(registered_handler, depth=1)
     actual_handler = deep_unwrap(handler_with_validation)
@@ -365,7 +365,7 @@ def test_register_handlers_adds_ack_validator_if_validation_is_enabled(
     )
     server = AsynctionSocketIO(spec, True, True, None)
 
-    server._register_handlers([])
+    server._register_handlers()
     _, registered_handler, _ = server.handlers[0]
     handler_with_validation = deep_unwrap(registered_handler, depth=1)
     actual_handler = deep_unwrap(handler_with_validation)
@@ -405,7 +405,7 @@ def test_register_handlers_skips_payload_validator_if_validation_is_disabled(
     )
     server = AsynctionSocketIO(spec, False, True, None)
 
-    server._register_handlers([])
+    server._register_handlers()
     _, registered_handler, _ = server.handlers[0]
     handler_with_validation = deep_unwrap(registered_handler, depth=1)
     actual_handler = deep_unwrap(handler_with_validation)
@@ -431,7 +431,7 @@ def test_register_handlers_registers_default_error_handler(
         None,
     )
 
-    server._register_handlers([], optional_error_handler)
+    server._register_handlers(default_error_handler=optional_error_handler)
     assert server.default_exception_handler == optional_error_handler
 
 

@@ -3,10 +3,8 @@ The :class:`AsynctionSocketIO` server is essentially a ``flask_socketio.SocketIO
 server with an additional factory classmethod.
 """
 from functools import singledispatch
-from importlib import import_module
 from pathlib import Path
 from typing import Any
-from typing import Callable
 from typing import Optional
 from typing import Sequence
 from urllib.parse import urlparse
@@ -26,6 +24,7 @@ from asynction.types import ChannelHandlers
 from asynction.types import ErrorHandler
 from asynction.types import JSONMapping
 from asynction.types import SecurityRequirement
+from asynction.utils import load_handler
 from asynction.validation import bindings_validator_factory
 from asynction.validation import callback_validator_factory
 from asynction.validation import publish_message_validator_factory
@@ -76,13 +75,6 @@ def load_spec(spec_path: Path) -> AsyncApiSpec:
     raw_resolved = resolve_references(raw_spec=raw)
 
     return AsyncApiSpec.from_dict(raw_resolved)
-
-
-def load_handler(handler_id: str) -> Callable:
-    *module_path_elements, object_name = handler_id.split(".")
-    module = import_module(".".join(module_path_elements))
-
-    return getattr(module, object_name)
 
 
 def _noop_handler(*args, **kwargs) -> None:
@@ -228,7 +220,7 @@ class AsynctionSocketIO(SocketIO):
 
     def _register_handlers(
         self,
-        server_security: Sequence[SecurityRequirement],
+        server_security: Sequence[SecurityRequirement] = (),
         default_error_handler: Optional[ErrorHandler] = None,
     ) -> None:
         for namespace, channel in self.spec.channels.items():

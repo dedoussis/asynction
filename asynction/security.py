@@ -1,13 +1,12 @@
 import base64
-import http.cookies
 from functools import wraps
+from http.cookies import SimpleCookie
 from typing import Callable
 from typing import List
 from typing import Mapping
 from typing import Optional
 from typing import Sequence
 from typing import Tuple
-from typing import Union
 
 from flask import Request
 from flask import request as current_flask_request
@@ -17,6 +16,7 @@ from asynction.types import HTTPAuthenticationScheme
 from asynction.types import SecurityRequirement
 from asynction.types import SecurityScheme
 from asynction.types import SecuritySchemesType
+from asynction.utils import load_handler
 
 TokenInfoFunc = Callable[[str], Mapping]
 BasicInfoFunc = Callable[[str, str, Optional[Sequence[str]]], Mapping]
@@ -58,7 +58,7 @@ def extract_auth_header(request: Request) -> Optional[Tuple[str, str]]:
 
 def validate_basic(
     request: Request, basic_info_func: BasicInfoFunc, required_scopes: Sequence[str]
-) -> Union[Mapping, None]:
+) -> Optional[Mapping]:
     auth = extract_auth_header(request)
     if not auth:
         return None
@@ -86,7 +86,7 @@ def validate_basic(
 
 def validate_authorization_header(
     request: Request, token_info_func: TokenInfoFunc
-) -> Union[Mapping, None]:
+) -> Optional[Mapping]:
     """Check that the provided request contains a properly formatted Authorization
     header and invokes the token_info_func on the token inside of the header.
     """
@@ -112,7 +112,7 @@ def validate_api_key(
     api_key_info_func: APIKeyInfoFunc,
     required_scopes: Sequence[str],
     bearer_format: Optional[str] = None,
-) -> Union[Mapping, None]:
+) -> Optional[Mapping]:
     """
     Adapted from: https://github.com/zalando/connexion/blob/main/connexion/security/security_handler_factory.py#L221  # noqa: 501
     """
@@ -146,9 +146,6 @@ def validate_scopes(
 
 
 def load_scope_validate_func(scheme: SecurityScheme) -> ScopeValidateFunc:
-    # importing here because doing it at the top leads to a circular import
-    from asynction.server import load_handler
-
     scope_validate_func = None
     if scheme.x_scope_validate_func:
         scope_validate_func = load_handler(scheme.x_scope_validate_func)
@@ -160,9 +157,6 @@ def load_scope_validate_func(scheme: SecurityScheme) -> ScopeValidateFunc:
 
 
 def load_basic_info_func(scheme: SecurityScheme) -> BasicInfoFunc:
-    # importing here because doing it at the top leads to a circular import
-    from asynction.server import load_handler
-
     if scheme.x_basic_info_func is not None:
         basic_info_func = load_handler(scheme.x_basic_info_func)
         if not basic_info_func:
@@ -173,9 +167,6 @@ def load_basic_info_func(scheme: SecurityScheme) -> BasicInfoFunc:
 
 
 def load_token_info_func(scheme: SecurityScheme) -> TokenInfoFunc:
-    # importing here because doing it at the top leads to a circular import
-    from asynction.server import load_handler
-
     if scheme.x_token_info_func is not None:
         token_info_func = load_handler(scheme.x_token_info_func)
         if not token_info_func:
@@ -186,9 +177,6 @@ def load_token_info_func(scheme: SecurityScheme) -> TokenInfoFunc:
 
 
 def load_api_key_info_func(scheme: SecurityScheme) -> APIKeyInfoFunc:
-    # importing here because doing it at the top leads to a circular import
-    from asynction.server import load_handler
-
     if scheme.x_api_key_info_func is not None:
         token_info_func = load_handler(scheme.x_api_key_info_func)
         if not token_info_func:
@@ -252,7 +240,7 @@ def build_http_security_check(
         return None
 
 
-def get_cookie_value(cookies, name):
+def get_cookie_value(cookies: str, name: str) -> Optional[str]:
     """
     Returns cookie value by its name. None if no such value.
     :param cookies: str: cookies raw data
@@ -260,7 +248,7 @@ def get_cookie_value(cookies, name):
 
     Borrowed from https://github.com/zalando/connexion/blob/main/connexion/security/security_handler_factory.py#L206  # noqa: 501
     """
-    cookie_parser = http.cookies.SimpleCookie()
+    cookie_parser: SimpleCookie = SimpleCookie()
     cookie_parser.load(str(cookies))
     try:
         return cookie_parser[name].value
@@ -293,7 +281,8 @@ def build_http_api_key_security_check(
                 api_key = request.headers.get(api_key_name)
         elif api_key_in == "cookie":
             cookies_list = request.headers.get("Cookie")
-            api_key = get_cookie_value(cookies_list, api_key_name)
+            if cookies_list and api_key_name is not None:
+                api_key = get_cookie_value(cookies_list, api_key_name)
         else:
             return None, None
 

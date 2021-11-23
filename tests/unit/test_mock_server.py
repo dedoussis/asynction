@@ -173,7 +173,7 @@ def test_register_handlers_registers_noop_handler_for_message_with_no_ack(
     )
     server = new_mock_asynction_socket_io(spec)
 
-    server._register_handlers([])
+    server._register_handlers()
     assert len(server.handlers) == 2  # connect handler included as well
     registered_event, registered_handler, registered_namespace = server.handlers[0]
     assert registered_event == event_name
@@ -224,7 +224,7 @@ def test_register_handlers_registers_valid_handler_for_message_with_ack(
     )
     server = new_mock_asynction_socket_io(spec)
 
-    server._register_handlers([])
+    server._register_handlers()
     assert len(server.handlers) == 2  # connect handler included as well
     registered_event, registered_handler, registered_namespace = server.handlers[0]
     assert registered_event == event_name
@@ -262,7 +262,7 @@ def test_register_handlers_adds_payload_validator_if_validation_is_enabled(
     )
     server = new_mock_asynction_socket_io(spec)
 
-    server._register_handlers([])
+    server._register_handlers()
     _, registered_handler, _ = server.handlers[0]
     handler_with_validation = deep_unwrap(registered_handler, depth=1)
     actual_handler = deep_unwrap(handler_with_validation)
@@ -282,7 +282,7 @@ def test_register_handlers_registers_connection_handler(
     )
     server = new_mock_asynction_socket_io(spec)
 
-    server._register_handlers([])
+    server._register_handlers()
 
     assert len(server.handlers) == 1
     registered_event, registered_handler, registered_namespace = server.handlers[0]
@@ -312,7 +312,7 @@ def test_register_handlers_registers_connection_handler_with_bindings_validation
     server = new_mock_asynction_socket_io(spec)
     flask_app = Flask(__name__)
 
-    server._register_handlers([])
+    server._register_handlers()
     _, registered_handler, _ = server.handlers[0]
 
     handler_with_validation = deep_unwrap(registered_handler, depth=1)
@@ -338,7 +338,7 @@ def test_register_handlers_registers_default_error_handler(
         AsyncApiSpec(asyncapi=faker.pystr(), info=server_info, channels={})
     )
 
-    server._register_handlers([], optional_error_handler)
+    server._register_handlers(default_error_handler=optional_error_handler)
     assert server.default_exception_handler == optional_error_handler
 
 
@@ -373,7 +373,7 @@ def test_run_spawns_background_tasks_and_calls_super_run(
     )
     flask_app = Flask(__name__)
     server = new_mock_asynction_socket_io(spec, flask_app)
-    server._register_handlers([])
+    server._register_handlers()
 
     background_tasks: MutableSequence[MockThread] = []
 
@@ -426,7 +426,7 @@ def test_run_respects_maximum_number_of_workers(server_info: Info, faker: Faker)
 
     flask_app = Flask(__name__)
     server = new_mock_asynction_socket_io(spec, flask_app)
-    server._register_handlers([])
+    server._register_handlers()
 
     with patch.object(SocketIO, "run"):
         with patch.object(server, "start_background_task", start_background_task_mock):
@@ -469,7 +469,7 @@ def test_run_spawns_minimum_number_of_workers(server_info: Info, faker: Faker):
 
     flask_app = Flask(__name__)
     server = new_mock_asynction_socket_io(spec, flask_app)
-    server._register_handlers([])
+    server._register_handlers()
 
     with patch.object(SocketIO, "run"):
         with patch.object(server, "start_background_task", start_background_task_mock):

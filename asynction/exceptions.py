@@ -42,7 +42,8 @@ class MessageAckValidationException(ValidationException):
 
 class SecurityException(AsynctionException, ConnectionRefusedError):
     """
-    Base Security Exception type.
+    Raised when an incoming connection fails to meet the requirements of
+    any of the specified security schemes.
     """
 
     pass

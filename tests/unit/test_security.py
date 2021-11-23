@@ -11,6 +11,7 @@ from asynction.types import OAuth2Flows
 from asynction.types import SecurityScheme
 from asynction.types import SecuritySchemesType
 from tests.fixtures import FixturePaths
+from tests.fixtures import handlers
 
 
 def test_load_basic_info_func():
@@ -19,9 +20,7 @@ def test_load_basic_info_func():
         scheme=HTTPAuthenticationScheme.BASIC,
         x_basic_info_func="tests.fixtures.handlers.basic_info",
     )
-    basic_info = load_basic_info_func(scheme)
-    assert basic_info
-    assert callable(basic_info)
+    assert load_basic_info_func(scheme) == handlers.basic_info
 
 
 def test_load_api_key_info_func(fixture_paths: FixturePaths):
@@ -31,9 +30,7 @@ def test_load_api_key_info_func(fixture_paths: FixturePaths):
         in_="query",
         x_api_key_info_func="tests.fixtures.handlers.api_key_info",
     )
-    api_key_info = load_api_key_info_func(scheme)
-    assert api_key_info
-    assert callable(api_key_info)
+    assert load_api_key_info_func(scheme) == handlers.api_key_info
 
 
 def test_load_token_info_func(fixture_paths: FixturePaths):
@@ -42,9 +39,7 @@ def test_load_token_info_func(fixture_paths: FixturePaths):
         flows=OAuth2Flows(implicit=OAuth2Flow(authorization_url="", scopes={"a": "a"})),
         x_token_info_func="tests.fixtures.handlers.token_info",
     )
-    token_info = load_token_info_func(scheme)
-    assert token_info
-    assert callable(token_info)
+    assert load_token_info_func(scheme) == handlers.token_info
 
 
 def test_build_basic_http_security_check():

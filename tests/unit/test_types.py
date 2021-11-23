@@ -216,7 +216,21 @@ def test_async_api_spec_from_and_to_dict(faker: Faker):
             }
         },
         "components": {
-            "securitySchemes": {"test": {"type": "http", "scheme": "basic"}}
+            "securitySchemes": {
+                "test": {"type": "http", "scheme": "basic"},
+                "test2": {"type": "http", "scheme": "bearer", "bearerFormat": "JWT"},
+                "testApiKey": {"type": "httpApiKey", "name": "test", "in": "header"},
+                "oauth2": {
+                    "type": "oauth2",
+                    "flows": {
+                        "implicit": {
+                            "authorizationUrl": "https://localhost:12345",
+                            "refreshUrl": "https://localhost:12345/refresh",
+                            "scopes": {"a": "A", "b": "B"},
+                        }
+                    },
+                },
+            }
         },
     }
 

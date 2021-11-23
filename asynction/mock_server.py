@@ -210,7 +210,7 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
 
     def _register_handlers(
         self,
-        server_security: Sequence[SecurityRequirement],
+        server_security: Sequence[SecurityRequirement] = (),
         default_error_handler: Optional[ErrorHandler] = None,
     ) -> None:
         for namespace, channel in self.spec.channels.items():

@@ -8,8 +8,12 @@ from asynction.types import Channel
 from asynction.types import ChannelBindings
 from asynction.types import ChannelHandlers
 from asynction.types import Message
+from asynction.types import OAuth2Flow
+from asynction.types import OAuth2Flows
 from asynction.types import OneOfMessages
 from asynction.types import Operation
+from asynction.types import SecurityScheme
+from asynction.types import SecuritySchemesType
 
 
 def test_message_deserialisation(faker: Faker):
@@ -237,3 +241,376 @@ def test_async_api_spec_from_and_to_dict(faker: Faker):
     spec = AsyncApiSpec.from_dict(data)
     assert isinstance(spec, AsyncApiSpec)
     assert spec.to_dict() == data
+
+
+def test_oauth2_implicit_flow_validation():
+    scopes = {"a": "A", "b": "B"}
+    # authorization_url is required for implicit flow
+    flow = OAuth2Flow(scopes=scopes, authorization_url=None)
+
+    with pytest.raises(ValueError):
+        OAuth2Flows(implicit=flow)
+
+
+def test_oauth2_password_flow_validation():
+    scopes = {"a": "A", "b": "B"}
+    # token_url is required for password flow
+    flow = OAuth2Flow(scopes=scopes, token_url=None)
+
+    with pytest.raises(ValueError):
+        OAuth2Flows(password=flow)
+
+
+def test_oauth2_client_credentials_flow_validation():
+    scopes = {"a": "A", "b": "B"}
+    # token_url is required for client_credentials flow
+    flow = OAuth2Flow(scopes=scopes, token_url=None)
+
+    with pytest.raises(ValueError):
+        OAuth2Flows(client_credentials=flow)
+
+
+def test_oauth2_authorization_code_flow_validation():
+    scopes = {"a": "A", "b": "B"}
+    # token_url is required for authorization_code flow
+    flow = OAuth2Flow(scopes=scopes, token_url=None)
+
+    with pytest.raises(ValueError):
+        OAuth2Flows(authorization_code=flow)
+
+
+def test_security_scheme_validation():
+    with pytest.raises(ValueError):
+        # missing flows
+        SecurityScheme(type=SecuritySchemesType.OAUTH2)
+
+    with pytest.raises(ValueError):
+        # missing flows
+        SecurityScheme(type=SecuritySchemesType.OPENID_CONNECT)
+
+    with pytest.raises(ValueError):
+        # missing scheme
+        SecurityScheme(type=SecuritySchemesType.HTTP)
+
+    with pytest.raises(ValueError):
+        # missing in
+        SecurityScheme(type=SecuritySchemesType.HTTP_API_KEY)
+    with pytest.raises(ValueError):
+        # invalid in
+        SecurityScheme(type=SecuritySchemesType.HTTP_API_KEY, in_="garbage")
+    with pytest.raises(ValueError):
+        # missing name
+        SecurityScheme(type=SecuritySchemesType.HTTP_API_KEY, in_="header")
+
+
+def test_asyncapi_spec_validation_invalid_security_requirement(faker: Faker):
+    data = {
+        "asyncapi": "2.2.0",
+        "info": {
+            "title": faker.sentence(),
+            "version": faker.pystr(),
+            "description": faker.sentence(),
+        },
+        "channels": {
+            GLOBAL_NAMESPACE: {
+                "description": faker.pystr(),
+                "subscribe": {
+                    "message": {
+                        "oneOf": [
+                            {
+                                "name": faker.pystr(),
+                                "summary": faker.sentence(),
+                                "payload": faker.pydict(value_types=[str, int]),
+                            }
+                            for _ in range(faker.pyint(min_value=2, max_value=10))
+                        ]
+                    }
+                },
+                "publish": {
+                    "message": {
+                        "oneOf": [
+                            {
+                                "title": faker.word(),
+                                "name": faker.pystr(),
+                                "payload": faker.pydict(value_types=[str, int]),
+                                "x-handler": faker.pydict(value_types=[str, int]),
+                                "x-ack": {
+                                    "args": faker.pydict(value_types=[str, int]),
+                                },
+                            }
+                            for _ in range(faker.pyint(min_value=2, max_value=10))
+                        ]
+                    }
+                },
+                "bindings": {
+                    "ws": {
+                        "method": faker.pystr(),
+                        "query": faker.pydict(value_types=[str, int]),
+                    }
+                },
+                "x-handlers": {
+                    "connect": faker.pystr(),
+                    "disconnect": faker.pystr(),
+                    faker.word(): faker.pystr(),
+                },
+            }
+        },
+        "servers": {
+            "development": {
+                "url": "localhost",
+                "protocol": "ws",
+                "security": [{"test": [], "invalid": "A"}],
+            }
+        },
+        "components": {
+            "securitySchemes": {
+                "test": {"type": "http", "scheme": "basic"},
+                "test2": {"type": "http", "scheme": "bearer", "bearerFormat": "JWT"},
+                "testApiKey": {"type": "httpApiKey", "name": "test", "in": "header"},
+                "oauth2": {
+                    "type": "oauth2",
+                    "flows": {
+                        "implicit": {
+                            "authorizationUrl": "https://localhost:12345",
+                            "refreshUrl": "https://localhost:12345/refresh",
+                            "scopes": {"a": "A", "b": "B"},
+                        }
+                    },
+                },
+            }
+        },
+    }
+    with pytest.raises(ValueError):
+        # missing security scheme
+        AsyncApiSpec.from_dict(data)
+
+
+def test_asyncapi_spec_validation_invalid_security_requirement_scopes(faker: Faker):
+    data = {
+        "asyncapi": "2.2.0",
+        "info": {
+            "title": faker.sentence(),
+            "version": faker.pystr(),
+            "description": faker.sentence(),
+        },
+        "channels": {
+            GLOBAL_NAMESPACE: {
+                "description": faker.pystr(),
+                "subscribe": {
+                    "message": {
+                        "oneOf": [
+                            {
+                                "name": faker.pystr(),
+                                "summary": faker.sentence(),
+                                "payload": faker.pydict(value_types=[str, int]),
+                            }
+                            for _ in range(faker.pyint(min_value=2, max_value=10))
+                        ]
+                    }
+                },
+                "publish": {
+                    "message": {
+                        "oneOf": [
+                            {
+                                "title": faker.word(),
+                                "name": faker.pystr(),
+                                "payload": faker.pydict(value_types=[str, int]),
+                                "x-handler": faker.pydict(value_types=[str, int]),
+                                "x-ack": {
+                                    "args": faker.pydict(value_types=[str, int]),
+                                },
+                            }
+                            for _ in range(faker.pyint(min_value=2, max_value=10))
+                        ]
+                    }
+                },
+                "bindings": {
+                    "ws": {
+                        "method": faker.pystr(),
+                        "query": faker.pydict(value_types=[str, int]),
+                    }
+                },
+                "x-handlers": {
+                    "connect": faker.pystr(),
+                    "disconnect": faker.pystr(),
+                    faker.word(): faker.pystr(),
+                },
+            }
+        },
+        "servers": {
+            "development": {
+                "url": "localhost",
+                "protocol": "ws",
+                "security": [{"test": ["a"]}],
+            }
+        },
+        "components": {
+            "securitySchemes": {
+                "test": {"type": "http", "scheme": "basic"},
+                "test2": {"type": "http", "scheme": "bearer", "bearerFormat": "JWT"},
+                "testApiKey": {"type": "httpApiKey", "name": "test", "in": "header"},
+                "oauth2": {
+                    "type": "oauth2",
+                    "flows": {
+                        "implicit": {
+                            "authorizationUrl": "https://localhost:12345",
+                            "refreshUrl": "https://localhost:12345/refresh",
+                            "scopes": {"a": "A", "b": "B"},
+                        }
+                    },
+                },
+            }
+        },
+    }
+    with pytest.raises(ValueError):
+        # missing security scheme
+        AsyncApiSpec.from_dict(data)
+
+
+def test_asyncapi_spec_validation_invalid_security_requirement_undefined_scopes(
+    faker: Faker,
+):
+    data = {
+        "asyncapi": "2.2.0",
+        "info": {
+            "title": faker.sentence(),
+            "version": faker.pystr(),
+            "description": faker.sentence(),
+        },
+        "channels": {
+            GLOBAL_NAMESPACE: {
+                "description": faker.pystr(),
+                "subscribe": {
+                    "message": {
+                        "oneOf": [
+                            {
+                                "name": faker.pystr(),
+                                "summary": faker.sentence(),
+                                "payload": faker.pydict(value_types=[str, int]),
+                            }
+                            for _ in range(faker.pyint(min_value=2, max_value=10))
+                        ]
+                    }
+                },
+                "publish": {
+                    "message": {
+                        "oneOf": [
+                            {
+                                "title": faker.word(),
+                                "name": faker.pystr(),
+                                "payload": faker.pydict(value_types=[str, int]),
+                                "x-handler": faker.pydict(value_types=[str, int]),
+                                "x-ack": {
+                                    "args": faker.pydict(value_types=[str, int]),
+                                },
+                            }
+                            for _ in range(faker.pyint(min_value=2, max_value=10))
+                        ]
+                    }
+                },
+                "bindings": {
+                    "ws": {
+                        "method": faker.pystr(),
+                        "query": faker.pydict(value_types=[str, int]),
+                    }
+                },
+                "x-handlers": {
+                    "connect": faker.pystr(),
+                    "disconnect": faker.pystr(),
+                    faker.word(): faker.pystr(),
+                },
+            }
+        },
+        "servers": {
+            "development": {
+                "url": "localhost",
+                "protocol": "ws",
+                "security": [{"oauth2": ["undefined"]}],
+            }
+        },
+        "components": {
+            "securitySchemes": {
+                "test": {"type": "http", "scheme": "basic"},
+                "test2": {"type": "http", "scheme": "bearer", "bearerFormat": "JWT"},
+                "testApiKey": {"type": "httpApiKey", "name": "test", "in": "header"},
+                "oauth2": {
+                    "type": "oauth2",
+                    "flows": {
+                        "implicit": {
+                            "authorizationUrl": "https://localhost:12345",
+                            "refreshUrl": "https://localhost:12345/refresh",
+                            "scopes": {"a": "A", "b": "B"},
+                        }
+                    },
+                },
+            }
+        },
+    }
+    with pytest.raises(ValueError):
+        # missing security scheme
+        AsyncApiSpec.from_dict(data)
+
+
+def test_asyncapi_spec_validation_missing_security_scheme(faker: Faker):
+    data = {
+        "asyncapi": "2.2.0",
+        "info": {
+            "title": faker.sentence(),
+            "version": faker.pystr(),
+            "description": faker.sentence(),
+        },
+        "channels": {
+            GLOBAL_NAMESPACE: {
+                "description": faker.pystr(),
+                "subscribe": {
+                    "message": {
+                        "oneOf": [
+                            {
+                                "name": faker.pystr(),
+                                "summary": faker.sentence(),
+                                "payload": faker.pydict(value_types=[str, int]),
+                            }
+                            for _ in range(faker.pyint(min_value=2, max_value=10))
+                        ]
+                    }
+                },
+                "publish": {
+                    "message": {
+                        "oneOf": [
+                            {
+                                "title": faker.word(),
+                                "name": faker.pystr(),
+                                "payload": faker.pydict(value_types=[str, int]),
+                                "x-handler": faker.pydict(value_types=[str, int]),
+                                "x-ack": {
+                                    "args": faker.pydict(value_types=[str, int]),
+                                },
+                            }
+                            for _ in range(faker.pyint(min_value=2, max_value=10))
+                        ]
+                    }
+                },
+                "bindings": {
+                    "ws": {
+                        "method": faker.pystr(),
+                        "query": faker.pydict(value_types=[str, int]),
+                    }
+                },
+                "x-handlers": {
+                    "connect": faker.pystr(),
+                    "disconnect": faker.pystr(),
+                    faker.word(): faker.pystr(),
+                },
+            }
+        },
+        "servers": {
+            "development": {
+                "url": "localhost",
+                "protocol": "ws",
+                "security": [{"test": []}],
+            }
+        },
+    }
+    with pytest.raises(ValueError):
+        # missing security scheme
+        AsyncApiSpec.from_dict(data)

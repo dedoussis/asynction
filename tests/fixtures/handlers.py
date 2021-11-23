@@ -68,6 +68,10 @@ def basic_info(
     return dict(user=username, scopes=scopes)
 
 
+def basic_info_bad(*args, **kwargs) -> Optional[Mapping]:
+    return None
+
+
 def bearer_info(
     token: str,
     required_scopes: Optional[Sequence[str]] = None,
@@ -79,6 +83,10 @@ def bearer_info(
 
     scopes = list(required_scopes) if required_scopes else []
     return dict(user=username, scopes=scopes)
+
+
+def bearer_info_bad(*args, **kwargs) -> Optional[Mapping]:
+    return None
 
 
 def api_key_info(
@@ -95,9 +103,17 @@ def api_key_info(
     return dict(user=username, scopes=scopes)
 
 
+def api_key_info_bad(*args, **kwargs) -> Optional[Mapping]:
+    return None
+
+
 def token_info(token: str) -> Mapping:
     username, password = base64.b64decode(token).decode().split(":")
     if username != "username" or password != "password":
         raise ConnectionRefusedError("Invalid username or password")
 
     return dict(user=username, scopes=["a", "b"])
+
+
+def token_info_bad(*args, **kwargs) -> Optional[Mapping]:
+    return None

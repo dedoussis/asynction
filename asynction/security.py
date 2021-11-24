@@ -160,43 +160,39 @@ def load_scope_validate_func(scheme: SecurityScheme) -> ScopeValidateFunc:
 
 
 def load_basic_info_func(scheme: SecurityScheme) -> BasicInfoFunc:
-    if scheme.x_basic_info_func:
-        basic_info_func = load_handler(scheme.x_basic_info_func)
-        if not basic_info_func:
-            raise SecurityException("Missing basic info func")
-        return basic_info_func
-    else:
+    if not scheme.x_basic_info_func:
         raise SecurityException("Missing basic info func")
+    try:
+        return load_handler(scheme.x_basic_info_func)
+    except ValueError as err:
+        raise SecurityException from err
 
 
 def load_token_info_func(scheme: SecurityScheme) -> TokenInfoFunc:
-    if scheme.x_token_info_func is not None:
-        token_info_func = load_handler(scheme.x_token_info_func)
-        if not token_info_func:
-            raise SecurityException("Missing token info function")
-        return token_info_func
-    else:
+    if not scheme.x_token_info_func:
         raise SecurityException("Missing token info function")
+    try:
+        return load_handler(scheme.x_token_info_func)
+    except ValueError as err:
+        raise SecurityException from err
 
 
 def load_api_key_info_func(scheme: SecurityScheme) -> APIKeyInfoFunc:
-    if scheme.x_api_key_info_func:
-        token_info_func = load_handler(scheme.x_api_key_info_func)
-        if not token_info_func:
-            raise SecurityException("Missing API Key info function")
-        return token_info_func
-    else:
+    if not scheme.x_api_key_info_func:
         raise SecurityException("Missing API Key info function")
+    try:
+        return load_handler(scheme.x_api_key_info_func)
+    except ValueError as err:
+        raise SecurityException from err
 
 
 def load_bearer_info_func(scheme: SecurityScheme) -> BearerInfoFunc:
-    if scheme.x_bearer_info_func:
-        bearer_info_func = load_handler(scheme.x_bearer_info_func)
-        if not bearer_info_func:
-            raise SecurityException("Missing Bearer info function")
-        return bearer_info_func
-    else:
+    if not scheme.x_bearer_info_func:
         raise SecurityException("Missing Bearer info function")
+    try:
+        return load_handler(scheme.x_bearer_info_func)
+    except ValueError as err:
+        raise SecurityException from err
 
 
 def validate_token_info(

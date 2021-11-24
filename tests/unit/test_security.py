@@ -2,12 +2,14 @@ import base64
 
 import pytest
 from flask import Flask
+from flask import request as current_flask_request
 
 from asynction.exceptions import SecurityException
 from asynction.security import build_http_api_key_security_check
 from asynction.security import build_http_security_check
 from asynction.security import build_oauth2_security_check
 from asynction.security import build_security_handler
+from asynction.security import extract_auth_header
 from asynction.security import load_api_key_info_func
 from asynction.security import load_basic_info_func
 from asynction.security import load_token_info_func
@@ -20,6 +22,28 @@ from asynction.types import SecurityScheme
 from asynction.types import SecuritySchemesType
 from tests.fixtures import FixturePaths
 from tests.fixtures import handlers
+
+
+def test_extract_auth_header():
+    with Flask(__name__).test_client() as c:
+        basic_auth = base64.b64encode("username:password".encode()).decode()
+        headers = {"Authorization": f"basic {basic_auth}"}
+        c.post(headers=headers)
+        extract_auth_header(current_flask_request)
+
+
+def test_extract_auth_header_fails_missing_header():
+    with Flask(__name__).test_client() as c:
+        c.post()
+        assert extract_auth_header(current_flask_request) is None
+
+
+def test_extract_auth_header_fails_invalid_header():
+    with Flask(__name__).test_client() as c:
+        headers = {"Authorization": "invalid"}
+        c.post(headers=headers)
+        with pytest.raises(SecurityException):
+            extract_auth_header(current_flask_request)
 
 
 def test_load_basic_info_func():

@@ -52,6 +52,12 @@ def extract_auth_header(request: Request) -> Optional[Tuple[str, str]]:
         return None
     try:
         lhs, rhs = authorization.split(None, 1)
+        if not lhs or not rhs:
+            raise SecurityException(
+                "invalid Authorization header"
+                " expected: <format> <value>"
+                f" found {authorization}"
+            )
         return lhs, rhs
     except ValueError as err:
         raise SecurityException from err
@@ -63,9 +69,8 @@ def validate_basic(
     auth = extract_auth_header(request)
     if not auth:
         return None
+
     auth_type, user_pass = auth
-    if not auth_type or not user_pass:
-        raise SecurityException
 
     if HTTPAuthenticationScheme(auth_type.lower()) != HTTPAuthenticationScheme.BASIC:
         return None
@@ -94,9 +99,8 @@ def validate_authorization_header(
     auth = extract_auth_header(request)
     if not auth:
         return None
+
     auth_type, token = auth
-    if not auth_type or not token:
-        raise SecurityException
 
     if auth_type.lower() != "bearer":
         return None
@@ -120,10 +124,8 @@ def validate_bearer(
     auth = extract_auth_header(request)
     if not auth:
         return None
-    auth_type, token = auth
 
-    if not auth_type or not token:
-        raise SecurityException
+    auth_type, token = auth
 
     if auth_type.lower() != "bearer":
         return None

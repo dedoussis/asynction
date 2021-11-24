@@ -197,6 +197,35 @@ def load_bearer_info_func(scheme: SecurityScheme) -> BearerInfoFunc:
         raise SecurityException("Missing Bearer info function")
 
 
+def validate_token_info(
+    token_info: InternalSecurityCheckResponse,
+    scope_validate_func: ScopeValidateFunc,
+    required_scopes: Sequence[str],
+) -> InternalSecurityCheckResponse:
+    scopes: Optional[Sequence[str]] = None
+    if not token_info:
+        return None
+
+    if "scopes" in token_info:
+        scopes = token_info.get("scopes")
+    elif "scope" in token_info:
+        scope = token_info.get("scope")
+        if isinstance(scope, str):
+            scopes = scope.split()
+        else:
+            raise ValueError("'scope' should be a string")
+
+    if not scopes:
+        raise ValueError("missing scopes in token info")
+
+    if not scope_validate_func(required_scopes, scopes):
+        raise SecurityException(
+            f"Invalid scopes: required: {required_scopes}, provided: {scopes}"
+        )
+
+    return token_info
+
+
 def build_http_security_check(
     requirement: InternalSecurityRequirement, scheme: SecurityScheme
 ) -> Optional[InternalSecurityCheck]:
@@ -204,47 +233,21 @@ def build_http_security_check(
 
     if scheme.scheme == HTTPAuthenticationScheme.BASIC:
         basic_info_func = load_basic_info_func(scheme)
-        scope_validate_func = load_scope_validate_func(scheme)
 
         def http_security_check(request: Request) -> InternalSecurityCheckResponse:
-            token_info = validate_basic(request, basic_info_func, required_scopes)
-            if token_info is None:
-                return None
-
-            token_scopes = token_info.get("scope", token_info.get("scopes", ""))
-
-            if not scope_validate_func(required_scopes, token_scopes):
-                raise SecurityException(
-                    f"Invalid scopes: required: "
-                    f"{required_scopes}, provided: {token_scopes}"
-                )
-
-            return token_info
+            return validate_basic(request, basic_info_func, required_scopes)
 
         return http_security_check
     elif scheme.scheme == HTTPAuthenticationScheme.BEARER:
         bearer_info_func = load_bearer_info_func(scheme)
-        scope_validate_func = load_scope_validate_func(scheme)
         bearer_format = scheme.bearer_format
 
         def http_bearer_security_check(
             request: Request,
         ) -> InternalSecurityCheckResponse:
-            token_info = validate_bearer(
+            return validate_bearer(
                 request, bearer_info_func, required_scopes, bearer_format
             )
-            if token_info is None:
-                return None
-
-            token_scopes = token_info.get("scope", token_info.get("scopes", ""))
-
-            if not scope_validate_func(required_scopes, token_scopes):
-                raise SecurityException(
-                    f"Invalid scopes: required: {required_scopes},"
-                    f" provided: {token_scopes}"
-                )
-
-            return token_info
 
         return http_bearer_security_check
     else:
@@ -255,7 +258,6 @@ def build_http_api_key_security_check(
     requirement: InternalSecurityRequirement, scheme: SecurityScheme
 ) -> Optional[InternalSecurityCheck]:
     api_key_info_func = load_api_key_info_func(scheme)
-    scope_validate_func = load_scope_validate_func(scheme)
     _, required_scopes = requirement
 
     def http_api_key_security_check(request: Request) -> InternalSecurityCheckResponse:
@@ -278,19 +280,7 @@ def build_http_api_key_security_check(
         if api_key is None:
             return None
 
-        token_info = api_key_info_func(api_key, required_scopes)
-        if token_info is None:
-            return None
-
-        token_scopes = token_info.get("scope", token_info.get("scopes", ""))
-
-        if not scope_validate_func(required_scopes, token_scopes):
-            raise SecurityException(
-                f"Invalid scopes: required: {required_scopes},"
-                f" provided: {token_scopes}",
-            )
-
-        return token_info
+        return api_key_info_func(api_key, required_scopes)
 
     return http_api_key_security_check
 
@@ -306,18 +296,7 @@ def build_oauth2_security_check(
     def oauth2_security_check(request: Request) -> InternalSecurityCheckResponse:
         token_info = validate_authorization_header(request, token_info_func)
 
-        if token_info is None:
-            return None
-
-        token_scopes = token_info.get("scope", token_info.get("scopes", ""))
-
-        if not scope_validate_func(required_scopes, token_scopes):
-            raise SecurityException(
-                f"Invalid scopes: required: {required_scopes},"
-                f" provided: {token_scopes}",
-            )
-
-        return token_info
+        return validate_token_info(token_info, scope_validate_func, required_scopes)
 
     return oauth2_security_check
 

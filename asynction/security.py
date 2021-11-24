@@ -23,7 +23,7 @@ BasicInfoFunc = Callable[[str, str, Optional[Sequence[str]]], Mapping]
 BearerInfoFunc = Callable[[str, Optional[Sequence[str]], Optional[str]], Mapping]
 APIKeyInfoFunc = Callable[[str, Optional[Sequence[str]]], Mapping]
 ScopeValidateFunc = Callable[[Sequence[str], Sequence[str]], bool]
-InternalSecurityCheckResponse = Tuple[Optional[Mapping], Optional[str]]
+InternalSecurityCheckResponse = Optional[Mapping]
 InternalSecurityCheck = Callable[[Request], InternalSecurityCheckResponse]
 SecurityCheck = Callable[[Request], Mapping]
 
@@ -209,17 +209,17 @@ def build_http_security_check(
         def http_security_check(request: Request) -> InternalSecurityCheckResponse:
             token_info = validate_basic(request, basic_info_func, required_scopes)
             if token_info is None:
-                return None, None
+                return None
 
             token_scopes = token_info.get("scope", token_info.get("scopes", ""))
 
             if not scope_validate_func(required_scopes, token_scopes):
-                return (
-                    None,
-                    f"Invalid scopes: required: {required_scopes}, provided: {token_scopes}",  # noqa: 501
+                raise SecurityException(
+                    f"Invalid scopes: required: "
+                    f"{required_scopes}, provided: {token_scopes}"
                 )
 
-            return token_info, None
+            return token_info
 
         return http_security_check
     elif scheme.scheme == HTTPAuthenticationScheme.BEARER:
@@ -234,17 +234,17 @@ def build_http_security_check(
                 request, bearer_info_func, required_scopes, bearer_format
             )
             if token_info is None:
-                return None, None
+                return None
 
             token_scopes = token_info.get("scope", token_info.get("scopes", ""))
 
             if not scope_validate_func(required_scopes, token_scopes):
-                return (
-                    None,
-                    f"Invalid scopes: required: {required_scopes}, provided: {token_scopes}",  # noqa: 501
+                raise SecurityException(
+                    f"Invalid scopes: required: {required_scopes},"
+                    f" provided: {token_scopes}"
                 )
 
-            return token_info, None
+            return token_info
 
         return http_bearer_security_check
     else:
@@ -276,22 +276,21 @@ def build_http_api_key_security_check(
         )
 
         if api_key is None:
-            return None, None
+            return None
 
         token_info = api_key_info_func(api_key, required_scopes)
         if token_info is None:
-            return None, None
+            return None
 
         token_scopes = token_info.get("scope", token_info.get("scopes", ""))
 
         if not scope_validate_func(required_scopes, token_scopes):
-            return (
-                None,
+            raise SecurityException(
                 f"Invalid scopes: required: {required_scopes},"
                 f" provided: {token_scopes}",
             )
 
-        return token_info, None
+        return token_info
 
     return http_api_key_security_check
 
@@ -308,18 +307,17 @@ def build_oauth2_security_check(
         token_info = validate_authorization_header(request, token_info_func)
 
         if token_info is None:
-            return None, None
+            return None
 
         token_scopes = token_info.get("scope", token_info.get("scopes", ""))
 
         if not scope_validate_func(required_scopes, token_scopes):
-            return (
-                None,
+            raise SecurityException(
                 f"Invalid scopes: required: {required_scopes},"
                 f" provided: {token_scopes}",
             )
 
-        return token_info, None
+        return token_info
 
     return oauth2_security_check
 
@@ -359,13 +357,11 @@ def build_security_handler(
             # if the security check passes it will return a dict of kwargs to pass to the handler   # noqa: 501
             # if the check is not applicable based on lack provided argument the check will return None indicating   # noqa: 501
             # that the next (if any) check should be run.
-            security_args, err = check(request)
-            if err:
-                raise SecurityException(err)
+            security_args = check(request)
             if security_args:
                 return security_args
-        else:
-            raise SecurityException("No checks passed")
+
+        raise SecurityException("No checks passed")
 
     return security_handler
 

@@ -21,6 +21,7 @@ from hypothesis_jsonschema._from_schema import STRING_FORMATS
 
 from asynction import PayloadValidationException
 from asynction.exceptions import BindingsValidationException
+from asynction.exceptions import SecurityException
 from asynction.mock_server import MockAsynctionSocketIO
 from asynction.mock_server import generate_fake_data_from_schema
 from asynction.mock_server import make_faker_formats
@@ -28,15 +29,23 @@ from asynction.mock_server import task_runner
 from asynction.mock_server import task_scheduler
 from asynction.server import AsynctionSocketIO
 from asynction.server import _noop_handler
+from asynction.types import GLOBAL_NAMESPACE
 from asynction.types import AsyncApiSpec
 from asynction.types import Channel
 from asynction.types import ChannelBindings
+from asynction.types import ChannelHandlers
+from asynction.types import Components
 from asynction.types import ErrorHandler
+from asynction.types import HTTPAuthenticationScheme
 from asynction.types import Info
 from asynction.types import Message
 from asynction.types import MessageAck
 from asynction.types import OneOfMessages
 from asynction.types import Operation
+from asynction.types import SecurityScheme
+from asynction.types import SecuritySchemesType
+from asynction.types import Server
+from asynction.types import ServerProtocol
 from asynction.types import WebSocketsChannelBindings
 from tests.fixtures import FixturePaths
 from tests.utils import deep_unwrap
@@ -324,6 +333,46 @@ def test_register_handlers_registers_connection_handler_with_bindings_validation
             actual_handler()  # actual handler does not raise validation errors
             with pytest.raises(BindingsValidationException):
                 handler_with_validation()
+
+
+def test_register_namespace_handlers_emits_security_validator_if_security_enabled():
+    channel_handlers = ChannelHandlers(connect="tests.fixtures.handlers.connect")
+    spec = AsyncApiSpec(
+        asyncapi="2.2.0",
+        info=Info("test", "1.0.0"),
+        servers={
+            "test": Server("https://localhost/", ServerProtocol.WSS, [{"basic": []}])
+        },
+        channels={GLOBAL_NAMESPACE: Channel(x_handlers=channel_handlers)},
+        components=Components(
+            security_schemes={
+                "basic": SecurityScheme(
+                    type=SecuritySchemesType.HTTP,
+                    scheme=HTTPAuthenticationScheme.BASIC,
+                    x_basic_info_func="tests.fixtures.handlers.basic_info",
+                )
+            }
+        ),
+    )
+
+    server = new_mock_asynction_socket_io(spec)
+    server._register_namespace_handlers(
+        GLOBAL_NAMESPACE,
+        channel_handlers,
+        None,
+        server.spec.servers.get("test").security,
+    )
+    event_name, registered_handler, _ = server.handlers[0]
+    assert event_name == "connect"
+    handler_with_security = deep_unwrap(registered_handler, depth=1)
+    actual_handler = deep_unwrap(handler_with_security)
+
+    with Flask(__name__).test_client() as c:
+        c.post()  # Inject invalid POST request
+        actual_handler()
+        with pytest.raises(SecurityException):
+            handler_with_security()  # handler raises security exception
+            assert True
 
 
 @pytest.mark.parametrize(

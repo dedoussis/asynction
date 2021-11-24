@@ -144,6 +144,18 @@ class SecuritySchemesType(Enum):
     GSSAPI = "gssapi"
 
 
+class ApiKeyLocation(Enum):
+    """
+    https://www.asyncapi.com/docs/specifications/v2.2.0#securitySchemeObject
+    """
+
+    USER = "user"
+    PASSWORD = "password"
+    QUERY = "query"
+    HEADER = "header"
+    COOKIE = "cookie"
+
+
 @dataclass
 class SecurityScheme:
     """
@@ -153,13 +165,14 @@ class SecurityScheme:
     type: SecuritySchemesType
     description: Optional[str] = None
     name: Optional[str] = None  # Required for httpApiKey
-    in_: Optional[str] = None  # Required for httpApiKey | apiKey
+    in_: Optional[ApiKeyLocation] = None  # Required for httpApiKey | apiKey
     scheme: Optional[HTTPAuthenticationScheme] = None  # Required for http
     bearer_format: Optional[str] = None  # Optional for http ("bearer")
     flows: Optional[OAuth2Flows] = None  # Required for oauth2
     open_id_connect_url: Optional[str] = None  # Required for openIdConnect
 
     x_basic_info_func: Optional[str] = None  # Required for http(basic)
+    x_bearer_info_func: Optional[str] = None  # Required for http(bearer)
     x_token_info_func: Optional[str] = None  # Required for oauth2
     x_api_key_info_func: Optional[str] = None  # Required for apiKey
     x_scope_validate_func: Optional[str] = None  # Optional for oauth2
@@ -179,7 +192,11 @@ class SecurityScheme:
                 raise ValueError(f"scheme is required for {self.type} security schemes")
 
         if self.type is SecuritySchemesType.HTTP_API_KEY:
-            options = ["query", "header", "cookie"]
+            options = [
+                ApiKeyLocation.QUERY,
+                ApiKeyLocation.HEADER,
+                ApiKeyLocation.COOKIE,
+            ]
             if not self.in_ or self.in_ not in options:
                 raise ValueError(
                     f'"in" field must be one of {options} '
@@ -212,6 +229,10 @@ class SecurityScheme:
             ),
             x_basic_info_func=forge(
                 type_.__annotations__["x_basic_info_func"], data.get("x-basicInfoFunc")
+            ),
+            x_bearer_info_func=forge(
+                type_.__annotations__["x_bearer_info_func"],
+                data.get("x-bearerInfoFunc"),
             ),
             x_token_info_func=forge(
                 type_.__annotations__["x_token_info_func"], data.get("x-tokenInfoFunc")
@@ -450,8 +471,8 @@ class AsyncApiSpec:
                 )
                 if security_scheme is None:
                     raise ValueError(
-                        f"{security_scheme_name} referenced within {server_name} server"
-                        "does not exist in components/securitySchemes"
+                        f"{security_scheme_name} referenced within '{server_name}'"
+                        " server does not exist in components/securitySchemes"
                     )
 
                 if scopes:
@@ -470,7 +491,7 @@ class AsyncApiSpec:
                         for scope in scopes:
                             if scope not in supported_scopes:
                                 raise ValueError(
-                                    f"OAuth {scope} is not defined within "
+                                    f"OAuth2 scope {scope} is not defined within "
                                     f"the {security_scheme_name} security scheme"
                                 )
 

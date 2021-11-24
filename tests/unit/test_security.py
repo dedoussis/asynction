@@ -12,6 +12,7 @@ from asynction.security import load_api_key_info_func
 from asynction.security import load_basic_info_func
 from asynction.security import load_token_info_func
 from asynction.security import security_handler_factory
+from asynction.types import ApiKeyLocation
 from asynction.types import HTTPAuthenticationScheme
 from asynction.types import OAuth2Flow
 from asynction.types import OAuth2Flows
@@ -34,7 +35,7 @@ def test_load_api_key_info_func(fixture_paths: FixturePaths):
     scheme = SecurityScheme(
         SecuritySchemesType.HTTP_API_KEY,
         name="api_key",
-        in_="query",
+        in_=ApiKeyLocation.QUERY,
         x_api_key_info_func="tests.fixtures.handlers.api_key_info",
     )
     assert load_api_key_info_func(scheme) == handlers.api_key_info
@@ -65,7 +66,7 @@ def test_build_bearer_http_security_check():
     scheme = SecurityScheme(
         SecuritySchemesType.HTTP,
         scheme=HTTPAuthenticationScheme.BEARER,
-        x_api_key_info_func="tests.fixtures.handlers.bearer_info",
+        x_bearer_info_func="tests.fixtures.handlers.bearer_info",
     )
     check = build_http_security_check(requirement, scheme)
     assert callable(check)
@@ -76,11 +77,20 @@ def test_build_http_api_key_security_check():
     scheme = SecurityScheme(
         SecuritySchemesType.HTTP_API_KEY,
         name="api_key",
-        in_="query",
+        in_=ApiKeyLocation.QUERY,
         x_api_key_info_func="tests.fixtures.handlers.api_key_info",
     )
     check = build_http_api_key_security_check(requirement, scheme)
     assert callable(check)
+
+
+def test_build_http_api_key_security_scheme_fails_without_name():
+    with pytest.raises(ValueError):
+        SecurityScheme(
+            SecuritySchemesType.HTTP_API_KEY,
+            in_=ApiKeyLocation.QUERY,
+            x_api_key_info_func="tests.fixtures.handlers.api_key_info",
+        )
 
 
 def test_build_oauth2_security_check():
@@ -110,12 +120,12 @@ def test_build_security_check_list():
         bearer=SecurityScheme(
             SecuritySchemesType.HTTP,
             scheme=HTTPAuthenticationScheme.BEARER,
-            x_api_key_info_func="tests.fixtures.handlers.bearer_info",
+            x_bearer_info_func="tests.fixtures.handlers.bearer_info",
         ),
         api_key=SecurityScheme(
             SecuritySchemesType.HTTP_API_KEY,
             name="api_key",
-            in_="query",
+            in_=ApiKeyLocation.QUERY,
             x_api_key_info_func="tests.fixtures.handlers.api_key_info",
         ),
         oauth2=SecurityScheme(
@@ -239,7 +249,7 @@ def test_http_bearer_works():
             SecuritySchemesType.HTTP,
             scheme=HTTPAuthenticationScheme.BEARER,
             bearer_format="test",
-            x_api_key_info_func="tests.fixtures.handlers.bearer_info",
+            x_bearer_info_func="tests.fixtures.handlers.bearer_info",
         )
     )
 
@@ -262,7 +272,7 @@ def test_http_bearer_fails_with_no_auth_header():
             SecuritySchemesType.HTTP,
             scheme=HTTPAuthenticationScheme.BEARER,
             bearer_format="test",
-            x_api_key_info_func="tests.fixtures.handlers.bearer_info",
+            x_bearer_info_func="tests.fixtures.handlers.bearer_info",
         )
     )
 
@@ -284,7 +294,7 @@ def test_http_bearer_fails_with_not_bearer():
             SecuritySchemesType.HTTP,
             scheme=HTTPAuthenticationScheme.BEARER,
             bearer_format="test",
-            x_api_key_info_func="tests.fixtures.handlers.bearer_info",
+            x_bearer_info_func="tests.fixtures.handlers.bearer_info",
         )
     )
 
@@ -308,7 +318,7 @@ def test_http_bearer_fails_with_invalid_header_format():
             SecuritySchemesType.HTTP,
             scheme=HTTPAuthenticationScheme.BEARER,
             bearer_format="test",
-            x_api_key_info_func="tests.fixtures.handlers.bearer_info",
+            x_bearer_info_func="tests.fixtures.handlers.bearer_info",
         )
     )
 
@@ -332,7 +342,7 @@ def test_http_bearer_fails_bad_bearer_info_func():
             SecuritySchemesType.HTTP,
             scheme=HTTPAuthenticationScheme.BEARER,
             bearer_format="test",
-            x_api_key_info_func="tests.fixtures.handlers.bearer_info_bad",
+            x_bearer_info_func="tests.fixtures.handlers.bearer_info_bad",
         )
     )
 
@@ -355,7 +365,7 @@ def test_http_api_key_works_header():
         basic=SecurityScheme(
             SecuritySchemesType.HTTP_API_KEY,
             name="api_key",
-            in_="header",
+            in_=ApiKeyLocation.HEADER,
             x_api_key_info_func="tests.fixtures.handlers.api_key_info",
         )
     )
@@ -378,7 +388,7 @@ def test_http_api_key_works_query():
         basic=SecurityScheme(
             SecuritySchemesType.HTTP_API_KEY,
             name="api_key",
-            in_="query",
+            in_=ApiKeyLocation.QUERY,
             x_api_key_info_func="tests.fixtures.handlers.api_key_info",
         )
     )
@@ -400,7 +410,7 @@ def test_http_api_key_works_cookie():
         basic=SecurityScheme(
             SecuritySchemesType.HTTP_API_KEY,
             name="api_key",
-            in_="cookie",
+            in_=ApiKeyLocation.COOKIE,
             x_api_key_info_func="tests.fixtures.handlers.api_key_info",
         )
     )
@@ -423,7 +433,7 @@ def test_http_api_key_fails_missing_api_key_info_func():
         basic=SecurityScheme(
             SecuritySchemesType.HTTP_API_KEY,
             name="api_key",
-            in_="cookie",
+            in_=ApiKeyLocation.COOKIE,
             x_api_key_info_func="tests.fixtures.handlers.api_key_info_fake",
         )
     )
@@ -442,7 +452,7 @@ def test_http_api_key_fails_missing_cookie():
         basic=SecurityScheme(
             SecuritySchemesType.HTTP_API_KEY,
             name="api_key",
-            in_="cookie",
+            in_=ApiKeyLocation.COOKIE,
             x_api_key_info_func="tests.fixtures.handlers.api_key_info",
         )
     )
@@ -466,7 +476,7 @@ def test_http_api_fails_bad_api_key_info_func():
         basic=SecurityScheme(
             SecuritySchemesType.HTTP_API_KEY,
             name="api_key",
-            in_="header",
+            in_=ApiKeyLocation.HEADER,
             x_api_key_info_func="tests.fixtures.handlers.api_key_info_bad",
         )
     )

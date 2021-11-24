@@ -90,9 +90,7 @@ def bearer_info_bad(*args, **kwargs) -> Optional[Mapping]:
 
 
 def api_key_info(
-    token: str,
-    required_scopes: Optional[Sequence[str]] = None,
-    bearer_format: Optional[str] = None,
+    token: str, required_scopes: Optional[Sequence[str]] = None
 ) -> Mapping:
     username, password = base64.b64decode(token).decode().split(":")
     if username != "username" or password != "password":

@@ -1,6 +1,5 @@
 import base64
 from functools import wraps
-from http.cookies import SimpleCookie
 from typing import Callable
 from typing import List
 from typing import Mapping
@@ -12,6 +11,7 @@ from flask import Request
 from flask import request as current_flask_request
 
 from asynction.exceptions import SecurityException
+from asynction.types import ApiKeyLocation
 from asynction.types import HTTPAuthenticationScheme
 from asynction.types import SecurityRequirement
 from asynction.types import SecurityScheme
@@ -20,7 +20,8 @@ from asynction.utils import load_handler
 
 TokenInfoFunc = Callable[[str], Mapping]
 BasicInfoFunc = Callable[[str, str, Optional[Sequence[str]]], Mapping]
-APIKeyInfoFunc = Callable[[str, Optional[Sequence[str]], Optional[str]], Mapping]
+BearerInfoFunc = Callable[[str, Optional[Sequence[str]], Optional[str]], Mapping]
+APIKeyInfoFunc = Callable[[str, Optional[Sequence[str]]], Mapping]
 ScopeValidateFunc = Callable[[Sequence[str], Sequence[str]], bool]
 InternalSecurityCheckResponse = Tuple[Optional[Mapping], Optional[str]]
 InternalSecurityCheck = Callable[[Request], InternalSecurityCheckResponse]
@@ -107,9 +108,9 @@ def validate_authorization_header(
     return token_info
 
 
-def validate_api_key(
+def validate_bearer(
     request: Request,
-    api_key_info_func: APIKeyInfoFunc,
+    bearer_info_func: BearerInfoFunc,
     required_scopes: Sequence[str],
     bearer_format: Optional[str] = None,
 ) -> Optional[Mapping]:
@@ -127,7 +128,7 @@ def validate_api_key(
     if auth_type.lower() != "bearer":
         return None
 
-    token_info = api_key_info_func(token, required_scopes, bearer_format)
+    token_info = bearer_info_func(token, required_scopes, bearer_format)
     if token_info is None:
         raise SecurityException
 
@@ -157,7 +158,7 @@ def load_scope_validate_func(scheme: SecurityScheme) -> ScopeValidateFunc:
 
 
 def load_basic_info_func(scheme: SecurityScheme) -> BasicInfoFunc:
-    if scheme.x_basic_info_func is not None:
+    if scheme.x_basic_info_func:
         basic_info_func = load_handler(scheme.x_basic_info_func)
         if not basic_info_func:
             raise SecurityException("Missing basic info func")
@@ -177,7 +178,7 @@ def load_token_info_func(scheme: SecurityScheme) -> TokenInfoFunc:
 
 
 def load_api_key_info_func(scheme: SecurityScheme) -> APIKeyInfoFunc:
-    if scheme.x_api_key_info_func is not None:
+    if scheme.x_api_key_info_func:
         token_info_func = load_handler(scheme.x_api_key_info_func)
         if not token_info_func:
             raise SecurityException("Missing API Key info function")
@@ -186,10 +187,21 @@ def load_api_key_info_func(scheme: SecurityScheme) -> APIKeyInfoFunc:
         raise SecurityException("Missing API Key info function")
 
 
+def load_bearer_info_func(scheme: SecurityScheme) -> BearerInfoFunc:
+    if scheme.x_bearer_info_func:
+        bearer_info_func = load_handler(scheme.x_bearer_info_func)
+        if not bearer_info_func:
+            raise SecurityException("Missing Bearer info function")
+        return bearer_info_func
+    else:
+        raise SecurityException("Missing Bearer info function")
+
+
 def build_http_security_check(
     requirement: InternalSecurityRequirement, scheme: SecurityScheme
 ) -> Optional[InternalSecurityCheck]:
     _, required_scopes = requirement
+
     if scheme.scheme == HTTPAuthenticationScheme.BASIC:
         basic_info_func = load_basic_info_func(scheme)
         scope_validate_func = load_scope_validate_func(scheme)
@@ -211,16 +223,15 @@ def build_http_security_check(
 
         return http_security_check
     elif scheme.scheme == HTTPAuthenticationScheme.BEARER:
-        api_key_info_func = load_api_key_info_func(scheme)
+        bearer_info_func = load_bearer_info_func(scheme)
         scope_validate_func = load_scope_validate_func(scheme)
-
         bearer_format = scheme.bearer_format
 
         def http_bearer_security_check(
             request: Request,
         ) -> InternalSecurityCheckResponse:
-            token_info = validate_api_key(
-                request, api_key_info_func, required_scopes, bearer_format
+            token_info = validate_bearer(
+                request, bearer_info_func, required_scopes, bearer_format
             )
             if token_info is None:
                 return None, None
@@ -240,56 +251,34 @@ def build_http_security_check(
         return None
 
 
-def get_cookie_value(cookies: str, name: str) -> Optional[str]:
-    """
-    Returns cookie value by its name. None if no such value.
-    :param cookies: str: cookies raw data
-    :param name: str: cookies key
-
-    Borrowed from https://github.com/zalando/connexion/blob/main/connexion/security/security_handler_factory.py#L206  # noqa: 501
-    """
-    cookie_parser: SimpleCookie = SimpleCookie()
-    cookie_parser.load(str(cookies))
-    try:
-        return cookie_parser[name].value
-    except KeyError:
-        return None
-
-
 def build_http_api_key_security_check(
     requirement: InternalSecurityRequirement, scheme: SecurityScheme
 ) -> Optional[InternalSecurityCheck]:
     api_key_info_func = load_api_key_info_func(scheme)
     scope_validate_func = load_scope_validate_func(scheme)
-
     _, required_scopes = requirement
-    api_key_in = scheme.in_
-    api_key_name = scheme.name
-    if api_key_name is None:
-        raise SecurityException("invalid api key name specified")
-    if api_key_in not in ["query", "header", "cookie"]:
-        raise SecurityException("invalid api key location specified")
 
     def http_api_key_security_check(request: Request) -> InternalSecurityCheckResponse:
-        api_key = None
-
-        if api_key_in == "query":
-            if api_key_name is not None:
-                api_key = request.args.get(api_key_name)
-        elif api_key_in == "header":
-            if api_key_name is not None:
-                api_key = request.headers.get(api_key_name)
-        elif api_key_in == "cookie":
-            cookies_list = request.headers.get("Cookie")
-            if cookies_list and api_key_name is not None:
-                api_key = get_cookie_value(cookies_list, api_key_name)
-        else:
-            return None, None
+        api_key = (
+            (
+                {
+                    ApiKeyLocation.QUERY: request.args,
+                    ApiKeyLocation.HEADER: request.headers,
+                    ApiKeyLocation.COOKIE: request.cookies,
+                }
+                .get(scheme.in_, {})
+                .get(scheme.name)
+            )
+            # NOTE: this is technically not needed, but mypy insists it is checked
+            # because if is unaware that we have validated it previously
+            if scheme.in_ and scheme.name
+            else None
+        )
 
         if api_key is None:
             return None, None
 
-        token_info = api_key_info_func(api_key, required_scopes, None)
+        token_info = api_key_info_func(api_key, required_scopes)
         if token_info is None:
             return None, None
 
@@ -298,7 +287,8 @@ def build_http_api_key_security_check(
         if not scope_validate_func(required_scopes, token_scopes):
             return (
                 None,
-                f"Invalid scopes: required: {required_scopes}, provided: {token_scopes}",  # noqa: 501
+                f"Invalid scopes: required: {required_scopes},"
+                f" provided: {token_scopes}",
             )
 
         return token_info, None
@@ -310,11 +300,12 @@ def build_oauth2_security_check(
     requirement: InternalSecurityRequirement, scheme: SecurityScheme
 ) -> Optional[InternalSecurityCheck]:
     token_info_func = load_token_info_func(scheme)
+    scope_validate_func = load_scope_validate_func(scheme)
+
     _, required_scopes = requirement
 
     def oauth2_security_check(request: Request) -> InternalSecurityCheckResponse:
         token_info = validate_authorization_header(request, token_info_func)
-        scope_validate_func = load_scope_validate_func(scheme)
 
         if token_info is None:
             return None, None
@@ -322,8 +313,10 @@ def build_oauth2_security_check(
         token_scopes = token_info.get("scope", token_info.get("scopes", ""))
 
         if not scope_validate_func(required_scopes, token_scopes):
-            raise SecurityException(
-                f"Invalid scopes: required: {required_scopes}, provided: {token_scopes}"  # noqa: 501
+            return (
+                None,
+                f"Invalid scopes: required: {required_scopes},"
+                f" provided: {token_scopes}",
             )
 
         return token_info, None

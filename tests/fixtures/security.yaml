@@ -31,7 +31,7 @@ components:
       type: http
       scheme: bearer
       bearerFormat: test
-      x-apiKeyInfoFunc: tests.fixtures.handlers.bearer_info
+      x-bearerInfoFunc: tests.fixtures.handlers.bearer_info
     apiKey:
       type: httpApiKey
       in: query

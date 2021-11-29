@@ -1,6 +1,7 @@
 import base64
 from functools import partial
 from functools import wraps
+from typing import Any
 from typing import Callable
 from typing import List
 from typing import Mapping
@@ -10,15 +11,30 @@ from typing import Tuple
 
 from flask import Request
 from flask import request as current_flask_request
+from typing_extensions import TypedDict
 
 from asynction.exceptions import SecurityException
 from asynction.types import ApiKeyLocation
 from asynction.types import HTTPAuthenticationScheme
-from asynction.types import SecurityInfo
 from asynction.types import SecurityRequirement
 from asynction.types import SecurityScheme
 from asynction.types import SecuritySchemesType
 from asynction.utils import load_handler
+
+
+class SecurityInfo(TypedDict):
+    """Security handler function response type.
+
+    One of scopes, scope and one of sub, uid must be present
+
+    Subclass this type to add extra fields to a security handler response
+    """
+
+    scopes: Sequence[str]
+    scope: str
+    sub: Any
+    uid: Any
+
 
 TokenInfoFunc = Callable[[str], SecurityInfo]
 BasicInfoFunc = Callable[[str, str, Optional[Sequence[str]]], SecurityInfo]

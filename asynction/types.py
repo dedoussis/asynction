@@ -14,27 +14,12 @@ from typing import Type
 from svarog import forge
 from svarog import register_forge
 from svarog.types import Forge
-from typing_extensions import TypedDict
 
 GLOBAL_NAMESPACE = "/"
 
 JSONMappingValue = Any
 JSONMapping = Mapping[str, JSONMappingValue]
 JSONSchema = JSONMapping
-
-
-class SecurityInfo(TypedDict):
-    """Security handler function response type.
-
-    One of scopes, scope and one of sub, uid must be present
-
-    Subclass this type to add extra fields to a security handler resoponse
-    """
-
-    scopes: Sequence[str]
-    scope: str
-    sub: Any
-    uid: Any
 
 
 class HTTPAuthenticationScheme(Enum):

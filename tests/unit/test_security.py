@@ -1,4 +1,5 @@
 import base64
+from unittest.mock import Mock
 
 import pytest
 from flask import Flask
@@ -190,8 +191,10 @@ def test_http_basic_works():
         )
     )
 
+    mock_ack = Mock()
+
     def on_connect(*args, **kwargs):
-        print(args, kwargs)
+        mock_ack()
 
     factory = security_handler_factory(requirements, schemes)
     handler_with_security = factory(on_connect)
@@ -200,6 +203,7 @@ def test_http_basic_works():
         headers = {"Authorization": f"basic {basic_auth}"}
         c.post(headers=headers)
         handler_with_security()
+        mock_ack.assert_called_once()
 
 
 def test_http_basic_fails():
@@ -212,8 +216,10 @@ def test_http_basic_fails():
         )
     )
 
+    mock_ack = Mock()
+
     def on_connect(*args, **kwargs):
-        print(args, kwargs)
+        mock_ack()
 
     factory = security_handler_factory(requirements, schemes)
     handler_with_security = factory(on_connect)
@@ -223,6 +229,8 @@ def test_http_basic_fails():
         c.post(headers=headers)
         with pytest.raises(ConnectionRefusedError):
             handler_with_security()
+
+        mock_ack.assert_not_called()
 
 
 def test_http_basic_fails_missing_basic_info():
@@ -235,12 +243,15 @@ def test_http_basic_fails_missing_basic_info():
         )
     )
 
+    mock_ack = Mock()
+
     def on_connect(*args, **kwargs):
-        print(args, kwargs)
+        mock_ack()
 
     with pytest.raises(AttributeError):
         factory = security_handler_factory(requirements, schemes)
         factory(on_connect)
+    mock_ack.assert_not_called()
 
 
 def test_http_basic_fails_because_basic_info_returns_none():
@@ -253,8 +264,10 @@ def test_http_basic_fails_because_basic_info_returns_none():
         )
     )
 
+    mock_ack = Mock()
+
     def on_connect(*args, **kwargs):
-        print(args, kwargs)
+        mock_ack()
 
     factory = security_handler_factory(requirements, schemes)
     handler_with_security = factory(on_connect)
@@ -264,6 +277,8 @@ def test_http_basic_fails_because_basic_info_returns_none():
         c.post(headers=headers)
         with pytest.raises(ConnectionRefusedError):
             handler_with_security()
+
+        mock_ack.assert_not_called()
 
 
 def test_http_bearer_works():
@@ -277,8 +292,10 @@ def test_http_bearer_works():
         )
     )
 
+    mock_ack = Mock()
+
     def on_connect(*args, **kwargs):
-        print(args, kwargs)
+        mock_ack()
 
     factory = security_handler_factory(requirements, schemes)
     handler_with_security = factory(on_connect)
@@ -287,6 +304,8 @@ def test_http_bearer_works():
         headers = {"Authorization": f"bearer {basic_auth}"}
         c.post(headers=headers)
         handler_with_security()
+
+    mock_ack.assert_called_once()
 
 
 def test_http_bearer_fails_with_no_auth_header():
@@ -300,8 +319,10 @@ def test_http_bearer_fails_with_no_auth_header():
         )
     )
 
+    mock_ack = Mock()
+
     def on_connect(*args, **kwargs):
-        print(args, kwargs)
+        mock_ack()
 
     factory = security_handler_factory(requirements, schemes)
     handler_with_security = factory(on_connect)
@@ -309,6 +330,8 @@ def test_http_bearer_fails_with_no_auth_header():
         c.post()
         with pytest.raises(SecurityException):
             handler_with_security()
+
+        mock_ack.assert_not_called()
 
 
 def test_http_bearer_fails_with_not_bearer():
@@ -322,8 +345,10 @@ def test_http_bearer_fails_with_not_bearer():
         )
     )
 
+    mock_ack = Mock()
+
     def on_connect(*args, **kwargs):
-        print(args, kwargs)
+        mock_ack()
 
     factory = security_handler_factory(requirements, schemes)
     handler_with_security = factory(on_connect)
@@ -331,8 +356,10 @@ def test_http_bearer_fails_with_not_bearer():
         basic_auth = base64.b64encode("username:password".encode()).decode()
         headers = {"Authorization": f"not_bearer {basic_auth}"}
         c.post(headers=headers)
-        with pytest.raises(SecurityException):
+        with pytest.raises(ValueError):
             handler_with_security()
+
+        mock_ack.assert_not_called()
 
 
 def test_http_bearer_fails_with_invalid_header_format():
@@ -346,8 +373,10 @@ def test_http_bearer_fails_with_invalid_header_format():
         )
     )
 
+    mock_ack = Mock()
+
     def on_connect(*args, **kwargs):
-        print(args, kwargs)
+        mock_ack()
 
     factory = security_handler_factory(requirements, schemes)
     handler_with_security = factory(on_connect)
@@ -357,6 +386,8 @@ def test_http_bearer_fails_with_invalid_header_format():
         c.post(headers=headers)
         with pytest.raises(SecurityException):
             handler_with_security()
+
+        mock_ack.assert_not_called()
 
 
 def test_http_bearer_fails_bad_bearer_info_func():
@@ -370,8 +401,10 @@ def test_http_bearer_fails_bad_bearer_info_func():
         )
     )
 
+    mock_ack = Mock()
+
     def on_connect(*args, **kwargs):
-        print(args, kwargs)
+        mock_ack()
 
     factory = security_handler_factory(requirements, schemes)
     handler_with_security = factory(on_connect)
@@ -381,6 +414,8 @@ def test_http_bearer_fails_bad_bearer_info_func():
         c.post(headers=headers)
         with pytest.raises(SecurityException):
             handler_with_security()
+
+        mock_ack.assert_not_called()
 
 
 def test_http_api_key_works_header():
@@ -394,8 +429,10 @@ def test_http_api_key_works_header():
         )
     )
 
+    mock_ack = Mock()
+
     def on_connect(*args, **kwargs):
-        print(args, kwargs)
+        mock_ack()
 
     factory = security_handler_factory(requirements, schemes)
     handler_with_security = factory(on_connect)
@@ -404,6 +441,8 @@ def test_http_api_key_works_header():
         headers = {"api_key": f"{basic_auth}"}
         c.post(headers=headers)
         handler_with_security()
+
+    mock_ack.assert_called_once()
 
 
 def test_http_api_key_works_query():
@@ -417,8 +456,10 @@ def test_http_api_key_works_query():
         )
     )
 
+    mock_ack = Mock()
+
     def on_connect(*args, **kwargs):
-        print(args, kwargs)
+        mock_ack()
 
     factory = security_handler_factory(requirements, schemes)
     handler_with_security = factory(on_connect)
@@ -426,6 +467,8 @@ def test_http_api_key_works_query():
         basic_auth = base64.b64encode("username:password".encode()).decode()
         c.post(f"/?api_key={basic_auth}")
         handler_with_security()
+
+    mock_ack.assert_called_once()
 
 
 def test_http_api_key_works_cookie():
@@ -439,8 +482,10 @@ def test_http_api_key_works_cookie():
         )
     )
 
+    mock_ack = Mock()
+
     def on_connect(*args, **kwargs):
-        print(args, kwargs)
+        mock_ack()
 
     factory = security_handler_factory(requirements, schemes)
     handler_with_security = factory(on_connect)
@@ -449,6 +494,8 @@ def test_http_api_key_works_cookie():
         c.set_cookie("test", "api_key", basic_auth)
         c.post()
         handler_with_security()
+
+    mock_ack.assert_called_once()
 
 
 def test_http_api_key_fails_missing_api_key_info_func():
@@ -462,12 +509,16 @@ def test_http_api_key_fails_missing_api_key_info_func():
         )
     )
 
+    mock_ack = Mock()
+
     def on_connect(*args, **kwargs):
-        print(args, kwargs)
+        mock_ack()
 
     with pytest.raises(AttributeError):
         factory = security_handler_factory(requirements, schemes)
         factory(on_connect)
+
+    mock_ack.assert_not_called()
 
 
 def test_http_api_key_fails_missing_cookie():
@@ -481,8 +532,10 @@ def test_http_api_key_fails_missing_cookie():
         )
     )
 
+    mock_ack = Mock()
+
     def on_connect(*args, **kwargs):
-        print(args, kwargs)
+        mock_ack()
 
     factory = security_handler_factory(requirements, schemes)
     handler_with_security = factory(on_connect)
@@ -492,6 +545,8 @@ def test_http_api_key_fails_missing_cookie():
         c.post()
         with pytest.raises(SecurityException):
             handler_with_security()
+
+        mock_ack.assert_not_called()
 
 
 def test_http_api_fails_bad_api_key_info_func():
@@ -505,8 +560,10 @@ def test_http_api_fails_bad_api_key_info_func():
         )
     )
 
+    mock_ack = Mock()
+
     def on_connect(*args, **kwargs):
-        print(args, kwargs)
+        mock_ack()
 
     factory = security_handler_factory(requirements, schemes)
     handler_with_security = factory(on_connect)
@@ -516,6 +573,8 @@ def test_http_api_fails_bad_api_key_info_func():
         c.post(headers=headers)
         with pytest.raises(SecurityException):
             handler_with_security()
+
+    mock_ack.assert_not_called()
 
 
 def test_oauth2_works():
@@ -531,8 +590,10 @@ def test_oauth2_works():
         )
     )
 
+    mock_ack = Mock()
+
     def on_connect(*args, **kwargs):
-        print(args, kwargs)
+        mock_ack()
 
     factory = security_handler_factory(requirements, schemes)
     handler_with_security = factory(on_connect)
@@ -541,6 +602,8 @@ def test_oauth2_works():
         headers = {"Authorization": f"bearer {basic_auth}"}
         c.post(headers=headers)
         handler_with_security()
+
+    mock_ack.assert_called_once()
 
 
 def test_oauth2_fails_missing_token_info_func():
@@ -556,12 +619,16 @@ def test_oauth2_fails_missing_token_info_func():
         )
     )
 
+    mock_ack = Mock()
+
     def on_connect(*args, **kwargs):
-        print(args, kwargs)
+        mock_ack()
 
     with pytest.raises(AttributeError):
         factory = security_handler_factory(requirements, schemes)
         factory(on_connect)
+
+    mock_ack.assert_not_called()
 
 
 def test_oauth2_fails_missing_scopes():
@@ -576,8 +643,10 @@ def test_oauth2_fails_missing_scopes():
         )
     )
 
+    mock_ack = Mock()
+
     def on_connect(*args, **kwargs):
-        print(args, kwargs)
+        mock_ack()
 
     factory = security_handler_factory(requirements, schemes)
     handler_with_security = factory(on_connect)
@@ -587,6 +656,8 @@ def test_oauth2_fails_missing_scopes():
         c.post(headers=headers)
         with pytest.raises(SecurityException):
             handler_with_security()
+
+    mock_ack.assert_not_called()
 
 
 def test_oauth2_fails_bad_token_info_func():
@@ -601,8 +672,10 @@ def test_oauth2_fails_bad_token_info_func():
         )
     )
 
+    mock_ack = Mock()
+
     def on_connect(*args, **kwargs):
-        print(args, kwargs)
+        mock_ack()
 
     factory = security_handler_factory(requirements, schemes)
     handler_with_security = factory(on_connect)
@@ -612,6 +685,8 @@ def test_oauth2_fails_bad_token_info_func():
         c.post(headers=headers)
         with pytest.raises(SecurityException):
             handler_with_security()
+
+    mock_ack.assert_not_called()
 
 
 def test_oauth2_fails_missing_auth_header():
@@ -626,8 +701,10 @@ def test_oauth2_fails_missing_auth_header():
         )
     )
 
+    mock_ack = Mock()
+
     def on_connect(*args, **kwargs):
-        print(args, kwargs)
+        mock_ack()
 
     factory = security_handler_factory(requirements, schemes)
     handler_with_security = factory(on_connect)
@@ -635,6 +712,8 @@ def test_oauth2_fails_missing_auth_header():
         c.post()
         with pytest.raises(SecurityException):
             handler_with_security()
+
+    mock_ack.assert_not_called()
 
 
 def test_oauth2_fails_invalid_header_format():
@@ -649,8 +728,10 @@ def test_oauth2_fails_invalid_header_format():
         )
     )
 
+    mock_ack = Mock()
+
     def on_connect(*args, **kwargs):
-        print(args, kwargs)
+        mock_ack()
 
     factory = security_handler_factory(requirements, schemes)
     handler_with_security = factory(on_connect)
@@ -660,6 +741,8 @@ def test_oauth2_fails_invalid_header_format():
         c.post(headers=headers)
         with pytest.raises(SecurityException):
             handler_with_security()
+
+    mock_ack.assert_not_called()
 
 
 def test_http_basic_missing_auth_header():
@@ -672,8 +755,10 @@ def test_http_basic_missing_auth_header():
         )
     )
 
+    mock_ack = Mock()
+
     def on_connect(*args, **kwargs):
-        print(args, kwargs)
+        mock_ack()
 
     factory = security_handler_factory(requirements, schemes)
     handler_with_security = factory(on_connect)
@@ -681,6 +766,8 @@ def test_http_basic_missing_auth_header():
         c.post()
         with pytest.raises(SecurityException):
             handler_with_security()
+
+    mock_ack.assert_not_called()
 
 
 def test_http_basic_invalid_auth_header():
@@ -693,8 +780,10 @@ def test_http_basic_invalid_auth_header():
         )
     )
 
+    mock_ack = Mock()
+
     def on_connect(*args, **kwargs):
-        print(args, kwargs)
+        mock_ack()
 
     factory = security_handler_factory(requirements, schemes)
     handler_with_security = factory(on_connect)
@@ -704,6 +793,8 @@ def test_http_basic_invalid_auth_header():
         c.post(headers=headers)
         with pytest.raises(SecurityException):
             handler_with_security()
+
+    mock_ack.assert_not_called()
 
 
 def test_http_basic_invalid_basic_auth_format():
@@ -716,8 +807,10 @@ def test_http_basic_invalid_basic_auth_format():
         )
     )
 
+    mock_ack = Mock()
+
     def on_connect(*args, **kwargs):
-        print(args, kwargs)
+        mock_ack()
 
     factory = security_handler_factory(requirements, schemes)
     handler_with_security = factory(on_connect)
@@ -727,6 +820,8 @@ def test_http_basic_invalid_basic_auth_format():
         c.post(headers=headers)
         with pytest.raises(SecurityException):
             handler_with_security()
+
+    mock_ack.assert_not_called()
 
 
 def test_http_basic_invalid_basic_auth_scheme():
@@ -739,8 +834,10 @@ def test_http_basic_invalid_basic_auth_scheme():
         )
     )
 
+    mock_ack = Mock()
+
     def on_connect(*args, **kwargs):
-        print(args, kwargs)
+        mock_ack()
 
     factory = security_handler_factory(requirements, schemes)
     handler_with_security = factory(on_connect)
@@ -750,3 +847,5 @@ def test_http_basic_invalid_basic_auth_scheme():
         c.post(headers=headers)
         with pytest.raises(SecurityException):
             handler_with_security()
+
+    mock_ack.assert_not_called()

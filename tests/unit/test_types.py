@@ -3,6 +3,7 @@ from faker import Faker
 from svarog import forge
 
 from asynction.types import GLOBAL_NAMESPACE
+from asynction.types import ApiKeyLocation
 from asynction.types import AsyncApiSpec
 from asynction.types import Channel
 from asynction.types import ChannelBindings
@@ -296,11 +297,8 @@ def test_security_scheme_validation():
         # missing in
         SecurityScheme(type=SecuritySchemesType.HTTP_API_KEY)
     with pytest.raises(ValueError):
-        # invalid in
-        SecurityScheme(type=SecuritySchemesType.HTTP_API_KEY, in_="garbage")
-    with pytest.raises(ValueError):
         # missing name
-        SecurityScheme(type=SecuritySchemesType.HTTP_API_KEY, in_="header")
+        SecurityScheme(type=SecuritySchemesType.HTTP_API_KEY, in_=ApiKeyLocation.HEADER)
 
 
 def test_asyncapi_spec_validation_invalid_security_requirement(faker: Faker):
@@ -311,50 +309,7 @@ def test_asyncapi_spec_validation_invalid_security_requirement(faker: Faker):
             "version": faker.pystr(),
             "description": faker.sentence(),
         },
-        "channels": {
-            GLOBAL_NAMESPACE: {
-                "description": faker.pystr(),
-                "subscribe": {
-                    "message": {
-                        "oneOf": [
-                            {
-                                "name": faker.pystr(),
-                                "summary": faker.sentence(),
-                                "payload": faker.pydict(value_types=[str, int]),
-                            }
-                            for _ in range(faker.pyint(min_value=2, max_value=10))
-                        ]
-                    }
-                },
-                "publish": {
-                    "message": {
-                        "oneOf": [
-                            {
-                                "title": faker.word(),
-                                "name": faker.pystr(),
-                                "payload": faker.pydict(value_types=[str, int]),
-                                "x-handler": faker.pydict(value_types=[str, int]),
-                                "x-ack": {
-                                    "args": faker.pydict(value_types=[str, int]),
-                                },
-                            }
-                            for _ in range(faker.pyint(min_value=2, max_value=10))
-                        ]
-                    }
-                },
-                "bindings": {
-                    "ws": {
-                        "method": faker.pystr(),
-                        "query": faker.pydict(value_types=[str, int]),
-                    }
-                },
-                "x-handlers": {
-                    "connect": faker.pystr(),
-                    "disconnect": faker.pystr(),
-                    faker.word(): faker.pystr(),
-                },
-            }
-        },
+        "channels": {},
         "servers": {
             "development": {
                 "url": "localhost",
@@ -393,50 +348,7 @@ def test_asyncapi_spec_validation_invalid_security_requirement_scopes(faker: Fak
             "version": faker.pystr(),
             "description": faker.sentence(),
         },
-        "channels": {
-            GLOBAL_NAMESPACE: {
-                "description": faker.pystr(),
-                "subscribe": {
-                    "message": {
-                        "oneOf": [
-                            {
-                                "name": faker.pystr(),
-                                "summary": faker.sentence(),
-                                "payload": faker.pydict(value_types=[str, int]),
-                            }
-                            for _ in range(faker.pyint(min_value=2, max_value=10))
-                        ]
-                    }
-                },
-                "publish": {
-                    "message": {
-                        "oneOf": [
-                            {
-                                "title": faker.word(),
-                                "name": faker.pystr(),
-                                "payload": faker.pydict(value_types=[str, int]),
-                                "x-handler": faker.pydict(value_types=[str, int]),
-                                "x-ack": {
-                                    "args": faker.pydict(value_types=[str, int]),
-                                },
-                            }
-                            for _ in range(faker.pyint(min_value=2, max_value=10))
-                        ]
-                    }
-                },
-                "bindings": {
-                    "ws": {
-                        "method": faker.pystr(),
-                        "query": faker.pydict(value_types=[str, int]),
-                    }
-                },
-                "x-handlers": {
-                    "connect": faker.pystr(),
-                    "disconnect": faker.pystr(),
-                    faker.word(): faker.pystr(),
-                },
-            }
-        },
+        "channels": {},
         "servers": {
             "development": {
                 "url": "localhost",
@@ -477,50 +389,7 @@ def test_asyncapi_spec_validation_invalid_security_requirement_undefined_scopes(
             "version": faker.pystr(),
             "description": faker.sentence(),
         },
-        "channels": {
-            GLOBAL_NAMESPACE: {
-                "description": faker.pystr(),
-                "subscribe": {
-                    "message": {
-                        "oneOf": [
-                            {
-                                "name": faker.pystr(),
-                                "summary": faker.sentence(),
-                                "payload": faker.pydict(value_types=[str, int]),
-                            }
-                            for _ in range(faker.pyint(min_value=2, max_value=10))
-                        ]
-                    }
-                },
-                "publish": {
-                    "message": {
-                        "oneOf": [
-                            {
-                                "title": faker.word(),
-                                "name": faker.pystr(),
-                                "payload": faker.pydict(value_types=[str, int]),
-                                "x-handler": faker.pydict(value_types=[str, int]),
-                                "x-ack": {
-                                    "args": faker.pydict(value_types=[str, int]),
-                                },
-                            }
-                            for _ in range(faker.pyint(min_value=2, max_value=10))
-                        ]
-                    }
-                },
-                "bindings": {
-                    "ws": {
-                        "method": faker.pystr(),
-                        "query": faker.pydict(value_types=[str, int]),
-                    }
-                },
-                "x-handlers": {
-                    "connect": faker.pystr(),
-                    "disconnect": faker.pystr(),
-                    faker.word(): faker.pystr(),
-                },
-            }
-        },
+        "channels": {},
         "servers": {
             "development": {
                 "url": "localhost",
@@ -559,50 +428,7 @@ def test_asyncapi_spec_validation_missing_security_scheme(faker: Faker):
             "version": faker.pystr(),
             "description": faker.sentence(),
         },
-        "channels": {
-            GLOBAL_NAMESPACE: {
-                "description": faker.pystr(),
-                "subscribe": {
-                    "message": {
-                        "oneOf": [
-                            {
-                                "name": faker.pystr(),
-                                "summary": faker.sentence(),
-                                "payload": faker.pydict(value_types=[str, int]),
-                            }
-                            for _ in range(faker.pyint(min_value=2, max_value=10))
-                        ]
-                    }
-                },
-                "publish": {
-                    "message": {
-                        "oneOf": [
-                            {
-                                "title": faker.word(),
-                                "name": faker.pystr(),
-                                "payload": faker.pydict(value_types=[str, int]),
-                                "x-handler": faker.pydict(value_types=[str, int]),
-                                "x-ack": {
-                                    "args": faker.pydict(value_types=[str, int]),
-                                },
-                            }
-                            for _ in range(faker.pyint(min_value=2, max_value=10))
-                        ]
-                    }
-                },
-                "bindings": {
-                    "ws": {
-                        "method": faker.pystr(),
-                        "query": faker.pydict(value_types=[str, int]),
-                    }
-                },
-                "x-handlers": {
-                    "connect": faker.pystr(),
-                    "disconnect": faker.pystr(),
-                    faker.word(): faker.pystr(),
-                },
-            }
-        },
+        "channels": {},
         "servers": {
             "development": {
                 "url": "localhost",

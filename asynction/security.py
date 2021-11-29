@@ -1,4 +1,5 @@
 import base64
+from functools import partial
 from functools import wraps
 from typing import Callable
 from typing import List
@@ -90,7 +91,7 @@ def validate_basic(
     return token_info
 
 
-def validate_authorization_header(
+def validate_oauth2_authorization_header(
     request: Request, token_info_func: TokenInfoFunc
 ) -> Optional[Mapping]:
     """Check that the provided request contains a properly formatted Authorization
@@ -127,7 +128,7 @@ def validate_bearer(
 
     auth_type, token = auth
 
-    if auth_type.lower() != "bearer":
+    if HTTPAuthenticationScheme(auth_type.lower()) != HTTPAuthenticationScheme.BEARER:
         return None
 
     token_info = bearer_info_func(token, required_scopes, bearer_format)
@@ -232,22 +233,21 @@ def build_http_security_check(
     if scheme.scheme == HTTPAuthenticationScheme.BASIC:
         basic_info_func = load_basic_info_func(scheme)
 
-        def http_security_check(request: Request) -> InternalSecurityCheckResponse:
-            return validate_basic(request, basic_info_func, required_scopes)
-
-        return http_security_check
+        return partial(
+            validate_basic,
+            basic_info_func=basic_info_func,
+            required_scopes=required_scopes,
+        )
     elif scheme.scheme == HTTPAuthenticationScheme.BEARER:
         bearer_info_func = load_bearer_info_func(scheme)
         bearer_format = scheme.bearer_format
 
-        def http_bearer_security_check(
-            request: Request,
-        ) -> InternalSecurityCheckResponse:
-            return validate_bearer(
-                request, bearer_info_func, required_scopes, bearer_format
-            )
-
-        return http_bearer_security_check
+        return partial(
+            validate_bearer,
+            bearer_info_func=bearer_info_func,
+            required_scopes=required_scopes,
+            bearer_format=bearer_format,
+        )
     else:
         return None
 
@@ -259,21 +259,18 @@ def build_http_api_key_security_check(
     _, required_scopes = requirement
 
     def http_api_key_security_check(request: Request) -> InternalSecurityCheckResponse:
-        api_key = (
-            (
-                {
-                    ApiKeyLocation.QUERY: request.args,
-                    ApiKeyLocation.HEADER: request.headers,
-                    ApiKeyLocation.COOKIE: request.cookies,
-                }
-                .get(scheme.in_, {})
-                .get(scheme.name)
-            )
-            # NOTE: this is technically not needed, but mypy insists it is checked
-            # because if is unaware that we have validated it previously
-            if scheme.in_ and scheme.name
-            else None
-        )
+        api_key = None
+        requests_dict = {
+            ApiKeyLocation.QUERY: request.args,
+            ApiKeyLocation.HEADER: request.headers,
+            ApiKeyLocation.COOKIE: request.cookies,
+        }
+        try:
+            # mypy insists this is checked
+            if scheme.in_ is not None and scheme.name is not None:
+                api_key = requests_dict[scheme.in_][scheme.name]
+        except KeyError:
+            return None
 
         if api_key is None:
             return None
@@ -292,7 +289,7 @@ def build_oauth2_security_check(
     _, required_scopes = requirement
 
     def oauth2_security_check(request: Request) -> InternalSecurityCheckResponse:
-        token_info = validate_authorization_header(request, token_info_func)
+        token_info = validate_oauth2_authorization_header(request, token_info_func)
 
         return validate_token_info(token_info, scope_validate_func, required_scopes)
 

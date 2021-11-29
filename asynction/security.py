@@ -14,19 +14,20 @@ from flask import request as current_flask_request
 from asynction.exceptions import SecurityException
 from asynction.types import ApiKeyLocation
 from asynction.types import HTTPAuthenticationScheme
+from asynction.types import SecurityInfo
 from asynction.types import SecurityRequirement
 from asynction.types import SecurityScheme
 from asynction.types import SecuritySchemesType
 from asynction.utils import load_handler
 
-TokenInfoFunc = Callable[[str], Mapping]
-BasicInfoFunc = Callable[[str, str, Optional[Sequence[str]]], Mapping]
-BearerInfoFunc = Callable[[str, Optional[Sequence[str]], Optional[str]], Mapping]
-APIKeyInfoFunc = Callable[[str, Optional[Sequence[str]]], Mapping]
+TokenInfoFunc = Callable[[str], SecurityInfo]
+BasicInfoFunc = Callable[[str, str, Optional[Sequence[str]]], SecurityInfo]
+BearerInfoFunc = Callable[[str, Optional[Sequence[str]], Optional[str]], SecurityInfo]
+APIKeyInfoFunc = Callable[[str, Optional[Sequence[str]]], SecurityInfo]
 ScopeValidateFunc = Callable[[Sequence[str], Sequence[str]], bool]
-InternalSecurityCheckResponse = Optional[Mapping]
+InternalSecurityCheckResponse = Optional[SecurityInfo]
 InternalSecurityCheck = Callable[[Request], InternalSecurityCheckResponse]
-SecurityCheck = Callable[[Request], Mapping]
+SecurityCheck = Callable[[Request], SecurityInfo]
 
 InternalSecurityRequirement = Tuple[str, Sequence[str]]
 SecurityCheckFactory = Callable[
@@ -66,7 +67,7 @@ def extract_auth_header(request: Request) -> Optional[Tuple[str, str]]:
 
 def validate_basic(
     request: Request, basic_info_func: BasicInfoFunc, required_scopes: Sequence[str]
-) -> Optional[Mapping]:
+) -> Optional[SecurityInfo]:
     auth = extract_auth_header(request)
     if not auth:
         return None
@@ -93,7 +94,7 @@ def validate_basic(
 
 def validate_oauth2_authorization_header(
     request: Request, token_info_func: TokenInfoFunc
-) -> Optional[Mapping]:
+) -> Optional[SecurityInfo]:
     """Check that the provided request contains a properly formatted Authorization
     header and invokes the token_info_func on the token inside of the header.
     """
@@ -118,7 +119,7 @@ def validate_bearer(
     bearer_info_func: BearerInfoFunc,
     required_scopes: Sequence[str],
     bearer_format: Optional[str] = None,
-) -> Optional[Mapping]:
+) -> Optional[SecurityInfo]:
     """
     Adapted from: https://github.com/zalando/connexion/blob/main/connexion/security/security_handler_factory.py#L221  # noqa: 501
     """
@@ -325,7 +326,7 @@ def build_security_handler(
             continue
         security_checks.append(check)
 
-    def security_handler(request: Request) -> Mapping:
+    def security_handler(request: Request) -> SecurityInfo:
 
         # apply the security schemes in the order listed in the API file
         for check in security_checks:

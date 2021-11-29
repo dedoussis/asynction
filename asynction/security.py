@@ -152,7 +152,10 @@ def validate_scopes(
 def load_scope_validate_func(scheme: SecurityScheme) -> ScopeValidateFunc:
     scope_validate_func = None
     if scheme.x_scope_validate_func:
-        scope_validate_func = load_handler(scheme.x_scope_validate_func)
+        try:
+            scope_validate_func = load_handler(scheme.x_scope_validate_func)
+        except (AttributeError, ValueError) as err:
+            raise SecurityException from err
 
     if not scope_validate_func:
         scope_validate_func = validate_scopes
@@ -165,7 +168,7 @@ def load_basic_info_func(scheme: SecurityScheme) -> BasicInfoFunc:
         raise SecurityException("Missing basic info func")
     try:
         return load_handler(scheme.x_basic_info_func)
-    except ValueError as err:
+    except (AttributeError, ValueError) as err:
         raise SecurityException from err
 
 
@@ -174,7 +177,7 @@ def load_token_info_func(scheme: SecurityScheme) -> TokenInfoFunc:
         raise SecurityException("Missing token info function")
     try:
         return load_handler(scheme.x_token_info_func)
-    except ValueError as err:
+    except (AttributeError, ValueError) as err:
         raise SecurityException from err
 
 
@@ -183,7 +186,7 @@ def load_api_key_info_func(scheme: SecurityScheme) -> APIKeyInfoFunc:
         raise SecurityException("Missing API Key info function")
     try:
         return load_handler(scheme.x_api_key_info_func)
-    except ValueError as err:
+    except (AttributeError, ValueError) as err:
         raise SecurityException from err
 
 
@@ -192,7 +195,7 @@ def load_bearer_info_func(scheme: SecurityScheme) -> BearerInfoFunc:
         raise SecurityException("Missing Bearer info function")
     try:
         return load_handler(scheme.x_bearer_info_func)
-    except ValueError as err:
+    except (AttributeError, ValueError) as err:
         raise SecurityException from err
 
 

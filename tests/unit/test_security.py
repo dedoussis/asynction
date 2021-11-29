@@ -13,6 +13,8 @@ from asynction.security import build_security_handler
 from asynction.security import extract_auth_header
 from asynction.security import load_api_key_info_func
 from asynction.security import load_basic_info_func
+from asynction.security import load_bearer_info_func
+from asynction.security import load_scope_validate_func
 from asynction.security import load_token_info_func
 from asynction.security import security_handler_factory
 from asynction.types import ApiKeyLocation
@@ -21,7 +23,6 @@ from asynction.types import OAuth2Flow
 from asynction.types import OAuth2Flows
 from asynction.types import SecurityScheme
 from asynction.types import SecuritySchemesType
-from tests.fixtures import FixturePaths
 from tests.fixtures import handlers
 
 
@@ -56,7 +57,39 @@ def test_load_basic_info_func():
     assert load_basic_info_func(scheme) == handlers.basic_info
 
 
-def test_load_api_key_info_func(fixture_paths: FixturePaths):
+def test_load_bearer_info_func():
+    scheme = SecurityScheme(
+        SecuritySchemesType.HTTP,
+        scheme=HTTPAuthenticationScheme.BEARER,
+        x_bearer_info_func="tests.fixtures.handlers.bearer_info",
+    )
+    assert load_bearer_info_func(scheme) == handlers.bearer_info
+
+
+def test_load_bearer_info_func_fails():
+    scheme = SecurityScheme(
+        SecuritySchemesType.HTTP,
+        scheme=HTTPAuthenticationScheme.BEARER,
+        x_basic_info_func="tests.fixtures.handlers.bearer_info",
+    )
+    scheme.x_bearer_info_func = ""
+    with pytest.raises(SecurityException):
+        load_bearer_info_func(scheme)
+
+
+def test_load_basic_info_func_fails():
+    scheme = SecurityScheme(
+        SecuritySchemesType.HTTP,
+        scheme=HTTPAuthenticationScheme.BASIC,
+        x_basic_info_func="tests.fixtures.handlers.basic_info",
+    )
+    # set to empty string after validations
+    scheme.x_basic_info_func = ""
+    with pytest.raises(SecurityException):
+        load_basic_info_func(scheme)
+
+
+def test_load_api_key_info_func():
     scheme = SecurityScheme(
         SecuritySchemesType.HTTP_API_KEY,
         name="api_key",
@@ -66,13 +99,47 @@ def test_load_api_key_info_func(fixture_paths: FixturePaths):
     assert load_api_key_info_func(scheme) == handlers.api_key_info
 
 
-def test_load_token_info_func(fixture_paths: FixturePaths):
+def test_load_api_key_info_func_fails():
+    scheme = SecurityScheme(
+        SecuritySchemesType.HTTP_API_KEY,
+        name="api_key",
+        in_=ApiKeyLocation.QUERY,
+        x_api_key_info_func="tests.fixtures.handlers.api_key_info",
+    )
+    scheme.x_api_key_info_func = ""
+    with pytest.raises(SecurityException):
+        load_api_key_info_func(scheme)
+
+
+def test_load_token_info_func():
     scheme = SecurityScheme(
         SecuritySchemesType.OAUTH2,
         flows=OAuth2Flows(implicit=OAuth2Flow(authorization_url="", scopes={"a": "a"})),
         x_token_info_func="tests.fixtures.handlers.token_info",
     )
     assert load_token_info_func(scheme) == handlers.token_info
+
+
+def test_load_token_info_func_fails():
+    scheme = SecurityScheme(
+        SecuritySchemesType.OAUTH2,
+        flows=OAuth2Flows(implicit=OAuth2Flow(authorization_url="", scopes={"a": "a"})),
+        x_token_info_func="tests.fixtures.handlers.token_info",
+    )
+    scheme.x_token_info_func = ""
+    with pytest.raises(SecurityException):
+        load_token_info_func(scheme)
+
+
+def test_load_scope_validate_func_fails():
+    scheme = SecurityScheme(
+        SecuritySchemesType.OAUTH2,
+        flows=OAuth2Flows(implicit=OAuth2Flow(authorization_url="", scopes={"a": "a"})),
+        x_token_info_func="tests.fixtures.handlers.token_info",
+        x_scope_validate_func="invalid",
+    )
+    with pytest.raises(SecurityException):
+        load_scope_validate_func(scheme)
 
 
 def test_build_basic_http_security_check():
@@ -248,7 +315,7 @@ def test_http_basic_fails_missing_basic_info():
     def on_connect(*args, **kwargs):
         mock_ack()
 
-    with pytest.raises(AttributeError):
+    with pytest.raises(SecurityException):
         factory = security_handler_factory(requirements, schemes)
         factory(on_connect)
     mock_ack.assert_not_called()
@@ -362,6 +429,34 @@ def test_http_bearer_fails_with_not_bearer():
         mock_ack.assert_not_called()
 
 
+def test_http_bearer_fails_with_basic():
+    requirements = [{"basic": []}]
+    schemes = dict(
+        basic=SecurityScheme(
+            SecuritySchemesType.HTTP,
+            scheme=HTTPAuthenticationScheme.BEARER,
+            bearer_format="test",
+            x_bearer_info_func="tests.fixtures.handlers.bearer_info",
+        )
+    )
+
+    mock_ack = Mock()
+
+    def on_connect(*args, **kwargs):
+        mock_ack()
+
+    factory = security_handler_factory(requirements, schemes)
+    handler_with_security = factory(on_connect)
+    with Flask(__name__).test_client() as c:
+        basic_auth = base64.b64encode("username:password".encode()).decode()
+        headers = {"Authorization": f"basic {basic_auth}"}
+        c.post(headers=headers)
+        with pytest.raises(SecurityException):
+            handler_with_security()
+
+        mock_ack.assert_not_called()
+
+
 def test_http_bearer_fails_with_invalid_header_format():
     requirements = [{"basic": []}]
     schemes = dict(
@@ -416,6 +511,29 @@ def test_http_bearer_fails_bad_bearer_info_func():
             handler_with_security()
 
         mock_ack.assert_not_called()
+
+
+def test_http_bearer_fails_bearer_info_func_not_found():
+    requirements = [{"basic": []}]
+    schemes = dict(
+        basic=SecurityScheme(
+            SecuritySchemesType.HTTP,
+            scheme=HTTPAuthenticationScheme.BEARER,
+            bearer_format="test",
+            x_bearer_info_func="tests.fixtures.handlers.bearer_not_found",
+        )
+    )
+
+    mock_ack = Mock()
+
+    def on_connect(*args, **kwargs):
+        mock_ack()
+
+    with pytest.raises(SecurityException):
+        factory = security_handler_factory(requirements, schemes)
+        factory(on_connect)
+
+    mock_ack.assert_not_called()
 
 
 def test_http_api_key_works_header():
@@ -514,7 +632,7 @@ def test_http_api_key_fails_missing_api_key_info_func():
     def on_connect(*args, **kwargs):
         mock_ack()
 
-    with pytest.raises(AttributeError):
+    with pytest.raises(SecurityException):
         factory = security_handler_factory(requirements, schemes)
         factory(on_connect)
 
@@ -653,7 +771,7 @@ def test_oauth2_fails_missing_token_info_func():
     def on_connect(*args, **kwargs):
         mock_ack()
 
-    with pytest.raises(AttributeError):
+    with pytest.raises(SecurityException):
         factory = security_handler_factory(requirements, schemes)
         factory(on_connect)
 
@@ -713,6 +831,64 @@ def test_oauth2_fails_bad_token_info_func():
         headers = {"Authorization": f"bearer {basic_auth}"}
         c.post(headers=headers)
         with pytest.raises(SecurityException):
+            handler_with_security()
+
+    mock_ack.assert_not_called()
+
+
+def test_oauth2_fails_bad_scope_type():
+    requirements = [{"basic": ["a"]}]
+    schemes = dict(
+        basic=SecurityScheme(
+            SecuritySchemesType.OAUTH2,
+            flows=OAuth2Flows(
+                implicit=OAuth2Flow(authorization_url="https://test", scopes={"a": "A"})
+            ),
+            x_token_info_func="tests.fixtures.handlers.token_info_alternate_invalid",
+        )
+    )
+
+    mock_ack = Mock()
+
+    def on_connect(*args, **kwargs):
+        mock_ack()
+
+    factory = security_handler_factory(requirements, schemes)
+    handler_with_security = factory(on_connect)
+    with Flask(__name__).test_client() as c:
+        basic_auth = base64.b64encode("username:password".encode()).decode()
+        headers = {"Authorization": f"bearer {basic_auth}"}
+        c.post(headers=headers)
+        with pytest.raises(ValueError):
+            handler_with_security()
+
+    mock_ack.assert_not_called()
+
+
+def test_oauth2_fails_token_info_missing_required():
+    requirements = [{"basic": ["a"]}]
+    schemes = dict(
+        basic=SecurityScheme(
+            SecuritySchemesType.OAUTH2,
+            flows=OAuth2Flows(
+                implicit=OAuth2Flow(authorization_url="https://test", scopes={"a": "A"})
+            ),
+            x_token_info_func="tests.fixtures.handlers.token_info_missing_required",
+        )
+    )
+
+    mock_ack = Mock()
+
+    def on_connect(*args, **kwargs):
+        mock_ack()
+
+    factory = security_handler_factory(requirements, schemes)
+    handler_with_security = factory(on_connect)
+    with Flask(__name__).test_client() as c:
+        basic_auth = base64.b64encode("username:password".encode()).decode()
+        headers = {"Authorization": f"bearer {basic_auth}"}
+        c.post(headers=headers)
+        with pytest.raises(ValueError):
             handler_with_security()
 
     mock_ack.assert_not_called()

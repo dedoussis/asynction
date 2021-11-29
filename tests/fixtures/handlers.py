@@ -120,5 +120,17 @@ def token_info_alternate(token: str) -> Mapping:
     return dict(uid=username, scope="a b")
 
 
+def token_info_alternate_invalid(token: str) -> Mapping:
+    username, password = base64.b64decode(token).decode().split(":")
+    if username != "username" or password != "password":
+        raise ConnectionRefusedError("Invalid username or password")
+
+    return dict(uid=username, scope=1)
+
+
 def token_info_bad(*args, **kwargs) -> Optional[Mapping]:
     return None
+
+
+def token_info_missing_required(*args, **kwargs) -> Optional[Mapping]:
+    return dict(something="")

@@ -356,12 +356,7 @@ def test_register_namespace_handlers_emits_security_validator_if_security_enable
     )
 
     server = new_mock_asynction_socket_io(spec)
-    server._register_namespace_handlers(
-        GLOBAL_NAMESPACE,
-        channel_handlers,
-        None,
-        server.spec.servers.get("test").security,
-    )
+    server._register_handlers(server_security=server.spec.servers.get("test").security)
     event_name, registered_handler, _ = server.handlers[0]
     assert event_name == "connect"
     handler_with_security = deep_unwrap(registered_handler, depth=1)

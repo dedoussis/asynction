@@ -356,8 +356,10 @@ def security_handler_factory(
 
         @wraps(handler)
         def handler_with_security(*args, **kwargs):
-            security_args = security_handler(current_flask_request)
-            return handler(*args, **security_args, **kwargs)
+            # match the args that connexion passes to handlers after a security check
+            token_info = security_handler(current_flask_request)
+            user = token_info.get("sub", token_info.get("uid"))
+            return handler(*args, user=user, token_info=token_info, **kwargs)
 
         return handler_with_security
 

@@ -606,6 +606,35 @@ def test_oauth2_works():
     mock_ack.assert_called_once()
 
 
+def test_oauth2_works_alternate():
+    requirements = [{"basic": ["a"]}]
+    schemes = dict(
+        basic=SecurityScheme(
+            SecuritySchemesType.OAUTH2,
+            flows=OAuth2Flows(
+                implicit=OAuth2Flow(authorization_url="https://test", scopes={"a": "A"})
+            ),
+            x_token_info_func="tests.fixtures.handlers.token_info_alternate",
+            x_scope_validate_func="asynction.security.validate_scopes",
+        )
+    )
+
+    mock_ack = Mock()
+
+    def on_connect(*args, **kwargs):
+        mock_ack()
+
+    factory = security_handler_factory(requirements, schemes)
+    handler_with_security = factory(on_connect)
+    with Flask(__name__).test_client() as c:
+        basic_auth = base64.b64encode("username:password".encode()).decode()
+        headers = {"Authorization": f"bearer {basic_auth}"}
+        c.post(headers=headers)
+        handler_with_security()
+
+    mock_ack.assert_called_once()
+
+
 def test_oauth2_fails_missing_token_info_func():
     requirements = [{"basic": ["a"]}]
     schemes = dict(

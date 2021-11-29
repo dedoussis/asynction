@@ -65,7 +65,7 @@ def basic_info(
         raise ConnectionRefusedError("Invalid username or password")
 
     scopes = list(required_scopes) if required_scopes else []
-    return dict(user=username, scopes=scopes)
+    return dict(sub=username, scopes=scopes)
 
 
 def basic_info_bad(*args, **kwargs) -> Optional[Mapping]:
@@ -82,7 +82,7 @@ def bearer_info(
         raise ConnectionRefusedError("Invalid username or password")
 
     scopes = list(required_scopes) if required_scopes else []
-    return dict(user=username, scopes=scopes)
+    return dict(uid=username, scopes=scopes)
 
 
 def bearer_info_bad(*args, **kwargs) -> Optional[Mapping]:
@@ -97,8 +97,7 @@ def api_key_info(
         raise ConnectionRefusedError("Invalid username or password")
 
     scopes = list(required_scopes) if required_scopes else []
-    print(scopes, required_scopes)
-    return dict(user=username, scopes=scopes)
+    return dict(sub=username, scopes=scopes)
 
 
 def api_key_info_bad(*args, **kwargs) -> Optional[Mapping]:
@@ -110,7 +109,15 @@ def token_info(token: str) -> Mapping:
     if username != "username" or password != "password":
         raise ConnectionRefusedError("Invalid username or password")
 
-    return dict(user=username, scopes=["a", "b"])
+    return dict(sub=username, scopes=["a", "b"])
+
+
+def token_info_alternate(token: str) -> Mapping:
+    username, password = base64.b64decode(token).decode().split(":")
+    if username != "username" or password != "password":
+        raise ConnectionRefusedError("Invalid username or password")
+
+    return dict(uid=username, scope="a b")
 
 
 def token_info_bad(*args, **kwargs) -> Optional[Mapping]:

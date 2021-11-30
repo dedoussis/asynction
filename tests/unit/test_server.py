@@ -7,6 +7,7 @@ from flask import Flask
 
 from asynction.exceptions import MessageAckValidationException
 from asynction.exceptions import PayloadValidationException
+from asynction.exceptions import SecurityException
 from asynction.exceptions import ValidationException
 from asynction.server import AsynctionSocketIO
 from asynction.server import SocketIO
@@ -18,12 +19,18 @@ from asynction.types import AsyncApiSpec
 from asynction.types import Channel
 from asynction.types import ChannelBindings
 from asynction.types import ChannelHandlers
+from asynction.types import Components
 from asynction.types import ErrorHandler
+from asynction.types import HTTPAuthenticationScheme
 from asynction.types import Info
 from asynction.types import Message
 from asynction.types import MessageAck
 from asynction.types import OneOfMessages
 from asynction.types import Operation
+from asynction.types import SecurityScheme
+from asynction.types import SecuritySchemesType
+from asynction.types import Server
+from asynction.types import ServerProtocol
 from asynction.types import WebSocketsChannelBindings
 from tests.fixtures import FixturePaths
 from tests.fixtures.handlers import connect
@@ -431,7 +438,7 @@ def test_register_handlers_registers_default_error_handler(
         None,
     )
 
-    server._register_handlers(optional_error_handler)
+    server._register_handlers(default_error_handler=optional_error_handler)
     assert server.default_exception_handler == optional_error_handler
 
 
@@ -445,7 +452,7 @@ def test_register_namespace_handlers_wraps_bindings_validator_if_validation_enab
     server = AsynctionSocketIO(mock.Mock(), True, True, None)
 
     server._register_namespace_handlers(
-        GLOBAL_NAMESPACE, channel_handlers, channel_bindings
+        GLOBAL_NAMESPACE, channel_handlers, channel_bindings, []
     )
     event_name, registered_handler, _ = server.handlers[0]
     assert event_name == "connect"
@@ -469,7 +476,7 @@ def test_register_namespace_handlers_omits_bindings_validator_if_validation_disa
     server = AsynctionSocketIO(mock.Mock(), False, True, None)
 
     server._register_namespace_handlers(
-        GLOBAL_NAMESPACE, channel_handlers, channel_bindings
+        GLOBAL_NAMESPACE, channel_handlers, channel_bindings, []
     )
     event_name, registered_handler, _ = server.handlers[0]
     assert event_name == "connect"
@@ -481,6 +488,46 @@ def test_register_namespace_handlers_omits_bindings_validator_if_validation_disa
         assert handler_with_validation == actual_handler
         handler_with_validation()  # handler does not raise validation errors
         assert True
+
+
+def test_register_namespace_handlers_emits_security_validator_if_security_enabled():
+    channel_handlers = ChannelHandlers(connect="tests.fixtures.handlers.connect")
+    spec = AsyncApiSpec(
+        asyncapi="2.2.0",
+        info=Info("test", "1.0.0"),
+        servers={
+            "test": Server("https://localhost/", ServerProtocol.WSS, [{"basic": []}])
+        },
+        channels={GLOBAL_NAMESPACE: Channel(x_handlers=channel_handlers)},
+        components=Components(
+            security_schemes={
+                "basic": SecurityScheme(
+                    type=SecuritySchemesType.HTTP,
+                    scheme=HTTPAuthenticationScheme.BASIC,
+                    x_basic_info_func="tests.fixtures.handlers.basic_info",
+                )
+            }
+        ),
+    )
+
+    server = AsynctionSocketIO(spec, False, True, None)
+    server._register_namespace_handlers(
+        GLOBAL_NAMESPACE,
+        channel_handlers,
+        None,
+        server.spec.servers.get("test").security,
+    )
+    event_name, registered_handler, _ = server.handlers[0]
+    assert event_name == "connect"
+    handler_with_security = deep_unwrap(registered_handler, depth=1)
+    actual_handler = deep_unwrap(handler_with_security)
+
+    with Flask(__name__).test_client() as c:
+        c.post()  # Inject invalid POST request
+        actual_handler()
+        with pytest.raises(SecurityException):
+            handler_with_security()  # handler raises security exception
+            assert True
 
 
 def test_emit_event_with_non_existent_namespace_raises_validation_exc(

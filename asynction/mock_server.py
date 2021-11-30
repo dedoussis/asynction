@@ -31,12 +31,15 @@ from hypothesis.strategies import sampled_from
 from hypothesis_jsonschema import from_schema
 from hypothesis_jsonschema._from_schema import STRING_FORMATS
 
+from asynction.security import security_handler_factory
 from asynction.server import AsynctionSocketIO
+from asynction.server import _noop_handler
 from asynction.types import AsyncApiSpec
 from asynction.types import ErrorHandler
 from asynction.types import JSONMapping
 from asynction.types import JSONSchema
 from asynction.types import Message
+from asynction.types import SecurityRequirement
 from asynction.validation import bindings_validator_factory
 from asynction.validation import publish_message_validator_factory
 
@@ -110,10 +113,6 @@ def task_scheduler(
         for task in tasks:
             queue.put(task)
             sleep()
-
-
-def _noop_handler(*args, **kwargs) -> None:
-    return None
 
 
 class MockAsynctionSocketIO(AsynctionSocketIO):
@@ -210,7 +209,9 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
         )
 
     def _register_handlers(
-        self, default_error_handler: Optional[ErrorHandler] = None
+        self,
+        server_security: Sequence[SecurityRequirement] = (),
+        default_error_handler: Optional[ErrorHandler] = None,
     ) -> None:
         for namespace, channel in self.spec.channels.items():
             if channel.publish is not None:
@@ -240,7 +241,16 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
                 with_bindings_validation = bindings_validator_factory(channel.bindings)
                 connect_handler = with_bindings_validation(connect_handler)
 
-            self.on_event("connect", connect_handler, namespace)
+            if server_security:
+                # create a security handler wrapper
+                with_security = security_handler_factory(
+                    server_security, self.spec.components.security_schemes
+                )
+                # apply security
+                connect_handler = with_security(connect_handler)
+
+            if connect_handler is not _noop_handler:
+                self.on_event("connect", connect_handler, namespace)
 
         if default_error_handler is not None:
             self.on_error_default(default_error_handler)

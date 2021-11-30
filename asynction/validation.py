@@ -93,10 +93,10 @@ def publish_message_validator_factory(message: Message) -> Callable:
 
     def decorator(handler: Callable):
         @wraps(handler)
-        def handler_with_validation(*args):
+        def handler_with_validation(*args, **kwargs):
             validate_payload(args, message.payload)
 
-            ack = handler(*args)
+            ack = handler(*args, **kwargs)
 
             if ack is not None and message.x_ack is not None:
                 jsonschema_validate_ack(ack, message.x_ack.args)
@@ -147,9 +147,9 @@ def validate_request_bindings(
 def bindings_validator_factory(bindings: Optional[ChannelBindings]) -> Callable:
     def decorator(handler: Callable):
         @wraps(handler)
-        def handler_with_validation(*args):
+        def handler_with_validation(*args, **kwargs):
             validate_request_bindings(current_flask_request, bindings)
-            return handler(*args)
+            return handler(*args, **kwargs)
 
         return handler_with_validation
 

@@ -39,6 +39,7 @@ Exceptions
 .. autoexception:: asynction.PayloadValidationException
 .. autoexception:: asynction.BindingsValidationException
 .. autoexception:: asynction.MessageAckValidationException
+.. autoexception:: asynction.SecurityException
 
 Indices and tables
 ==================

@@ -1,0 +1,32 @@
+asyncapi: 2.2.0
+info:
+  title: Test
+  version: 1.0.0
+servers:
+  test:
+    protocol: wss
+    url: 127.0.0.1/socket.io
+    security:
+      - oauth2: ["a"]
+channels:
+  /:
+    subscribe:
+      message:
+        $ref: "#/components/messages/Test"
+components:
+  messages:
+    Test:
+      name: test
+      payload:
+        type: string
+
+  securitySchemes:
+    oauth2:
+      type: oauth2
+      flows:
+        implicit:
+          authorizationUrl: test
+          scopes:
+            a: "Test A"
+            b: "Test B"
+      x-tokenInfoFunc: tests.fixtures.handlers.token_info

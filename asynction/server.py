@@ -2,12 +2,9 @@
 The :class:`AsynctionSocketIO` server is essentially a ``flask_socketio.SocketIO``
 server with an additional factory classmethod.
 """
-
 from functools import singledispatch
-from importlib import import_module
 from pathlib import Path
 from typing import Any
-from typing import Callable
 from typing import Optional
 from typing import Sequence
 from urllib.parse import urlparse
@@ -19,12 +16,15 @@ from flask_socketio import SocketIO
 
 from asynction.exceptions import ValidationException
 from asynction.playground_docs import make_docs_blueprint
+from asynction.security import security_handler_factory
 from asynction.types import GLOBAL_NAMESPACE
 from asynction.types import AsyncApiSpec
 from asynction.types import ChannelBindings
 from asynction.types import ChannelHandlers
 from asynction.types import ErrorHandler
 from asynction.types import JSONMapping
+from asynction.types import SecurityRequirement
+from asynction.utils import load_handler
 from asynction.validation import bindings_validator_factory
 from asynction.validation import callback_validator_factory
 from asynction.validation import publish_message_validator_factory
@@ -77,11 +77,8 @@ def load_spec(spec_path: Path) -> AsyncApiSpec:
     return AsyncApiSpec.from_dict(raw_resolved)
 
 
-def load_handler(handler_id: str) -> Callable:
-    *module_path_elements, object_name = handler_id.split(".")
-    module = import_module(".".join(module_path_elements))
-
-    return getattr(module, object_name)
+def _noop_handler(*args, **kwargs) -> None:
+    return None
 
 
 class AsynctionSocketIO(SocketIO):
@@ -159,7 +156,7 @@ class AsynctionSocketIO(SocketIO):
 
         """
         spec = load_spec(spec_path=spec_path)
-
+        server_security: Sequence[SecurityRequirement] = []
         if (
             server_name is not None
             and kwargs.get("path") is None
@@ -176,35 +173,55 @@ class AsynctionSocketIO(SocketIO):
             if url_parse_result.path:
                 kwargs["path"] = url_parse_result.path
 
+            server_security = server.security
+
         asio = cls(spec, validation, docs, app, **kwargs)
-        asio._register_handlers(default_error_handler)
+        asio._register_handlers(server_security, default_error_handler)
         return asio
 
     def _register_namespace_handlers(
         self,
         namespace: str,
-        channel_handlers: ChannelHandlers,
+        channel_handlers: Optional[ChannelHandlers],
         channel_bindings: Optional[ChannelBindings],
+        server_security: Sequence[SecurityRequirement],
     ) -> None:
-        if channel_handlers.connect is not None:
-            handler = load_handler(channel_handlers.connect)
+        on_connect = _noop_handler
+
+        # if a connection handler is defined then load it
+        if channel_handlers and channel_handlers.connect is not None:
+            on_connect = load_handler(channel_handlers.connect)
 
             if self.validation:
                 with_bindings_validation = bindings_validator_factory(channel_bindings)
-                handler = with_bindings_validation(handler)
+                on_connect = with_bindings_validation(on_connect)
 
-            self.on_event("connect", handler, namespace)
+        if server_security:
+            # create a security handler wrapper
+            with_security = security_handler_factory(
+                server_security, self.spec.components.security_schemes
+            )
+            # apply security
+            on_connect = with_security(on_connect)
 
-        if channel_handlers.disconnect is not None:
-            handler = load_handler(channel_handlers.disconnect)
-            self.on_event("disconnect", handler, namespace)
+        # if no user defined connection handler was specified
+        # or no security scheme was required then on_connect should still be None
+        if on_connect is not _noop_handler:
+            self.on_event("connect", on_connect, namespace)
 
-        if channel_handlers.error is not None:
-            handler = load_handler(channel_handlers.error)
-            self.on_error(namespace)(handler)
+        if channel_handlers:
+            if channel_handlers.disconnect is not None:
+                handler = load_handler(channel_handlers.disconnect)
+                self.on_event("disconnect", handler, namespace)
+
+            if channel_handlers.error is not None:
+                handler = load_handler(channel_handlers.error)
+                self.on_error(namespace)(handler)
 
     def _register_handlers(
-        self, default_error_handler: Optional[ErrorHandler] = None
+        self,
+        server_security: Sequence[SecurityRequirement] = (),
+        default_error_handler: Optional[ErrorHandler] = None,
     ) -> None:
         for namespace, channel in self.spec.channels.items():
             if channel.publish is not None:
@@ -220,10 +237,12 @@ class AsynctionSocketIO(SocketIO):
 
                     self.on_event(message.name, handler, namespace)
 
-            if channel.x_handlers is not None:
-                self._register_namespace_handlers(
-                    namespace, channel.x_handlers, channel.bindings
-                )
+            self._register_namespace_handlers(
+                namespace,
+                channel.x_handlers,
+                channel.bindings,
+                server_security=server_security,
+            )
 
         if default_error_handler is not None:
             self.on_error_default(default_error_handler)

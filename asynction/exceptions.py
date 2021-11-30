@@ -38,3 +38,12 @@ class MessageAckValidationException(ValidationException):
     """
 
     pass
+
+
+class SecurityException(AsynctionException, ConnectionRefusedError):
+    """
+    Raised when an incoming connection fails to meet the requirements of
+    any of the specified security schemes.
+    """
+
+    pass

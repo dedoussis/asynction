@@ -7,9 +7,11 @@ __all__ = [
     "PayloadValidationException",
     "BindingsValidationException",
     "MessageAckValidationException",
+    "SecurityInfo",
 ]
 
 from asynction.exceptions import *
+from asynction.security import SecurityInfo
 from asynction.server import AsynctionSocketIO
 
 try:

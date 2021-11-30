@@ -15,7 +15,7 @@ _Disclaimer: Asynction is still at a beta stage. Extensive testing is recommende
   - Event validation (for both ingress and egress events), based on the specified message schemata
   - HTTP request validation, upon connection, based on the channel binding schemata of each namespace
   - Callback validation, upon the ACK of a message, based on the message `x-ack` schemata
-- [Security](#security-authentication-and-authorization) à la [Connexion](https://connexion.readthedocs.io/en/latest/security.html). Handles OAuth2, basic, bearer and API Key based authentication.
+- [Security](#security-authentication-and-authorization) à la [Connexion](https://connexion.readthedocs.io/en/latest/security.html). Handles OAuth2, HTTP (basic & bearer) and API key based authentication.
 - Generates HTML rendered docs, similar to the AsyncAPI [playground](https://playground.asyncapi.io/?load=https://raw.githubusercontent.com/asyncapi/asyncapi/master/examples/2.0.0/simple.yml). The docs get served through the `GET {base_path}/docs` route of the app.
 - [Mock server support](#mock-server)
 - [CLI](#cli)
@@ -334,10 +334,10 @@ In the future, the Message Ack Object may be extended with extra fields to enabl
 
 In order to support the [AuthN/AuthZ functionality](#security-authentication-and-authorization) of asynction, the [Security Scheme Object](https://www.asyncapi.com/docs/specifications/v2.2.0#securitySchemeObject) needs to be extended as follows:
 
-- A Security Scheme Object of `oauth2` type MAY include the `x-tokenInfoFunc` field.
+- A Security Scheme Object of `oauth2` type MUST include the `x-tokenInfoFunc` field.
 - A Security Scheme Object of `oauth2` type MAY include the `x-scopeValidateFunc` field.
-- A Security Scheme Object of basic `http` type MAY include the `x-basicInfoFunc` field.
-- A Security Scheme Object of bearer `http` type MAY include the `x-basicBearerInfoFunc` field.
-- A Security Scheme Object of bearer `apiKey` type MAY include the `x-apiKeyInfoFunc` field.
+- A Security Scheme Object of basic `http` type MUST include the `x-basicInfoFunc` field.
+- A Security Scheme Object of bearer `http` type MUST include the `x-basicBearerInfoFunc` field.
+- A Security Scheme Object of bearer `apiKey` type MUST include the `x-apiKeyInfoFunc` field.
 
 The value of all these fields MUST be of `string` type, expressing a dot joint path to a python callable (the security handler).

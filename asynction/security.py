@@ -22,7 +22,7 @@ from asynction.types import SecuritySchemesType
 from asynction.utils import load_handler
 
 
-class SecurityInfo(TypedDict):
+class SecurityInfo(TypedDict, total=False):
     """Security handler function response type.
 
     One of scopes, scope and one of sub, uid must be present

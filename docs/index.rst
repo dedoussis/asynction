@@ -28,6 +28,12 @@ Mock Asynction Server
 
    .. automethod:: run
 
+Types
+-----
+
+.. autoclass:: asynction.SecurityInfo
+   :members:
+   :undoc-members:
 
 Exceptions
 ----------

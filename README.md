@@ -15,7 +15,7 @@ _Disclaimer: Asynction is still at a beta stage. Extensive testing is recommende
   - Event validation (for both ingress and egress events), based on the specified message schemata
   - HTTP request validation, upon connection, based on the channel binding schemata of each namespace
   - Callback validation, upon the ACK of a message, based on the message `x-ack` schemata
-- [Security](#security-authentication-and-authorization) à la [Connexion](https://connexion.readthedocs.io/en/latest/security.html). Handles OAuth2, HTTP (basic & bearer) and API key based authentication.
+- [Security](#security-authentication-and-authorization) à la [Connexion](https://connexion.readthedocs.io/en/latest/security.html). Handles OAuth2 and HTTP based authentication.
 - Generates HTML rendered docs, similar to the AsyncAPI [playground](https://playground.asyncapi.io/?load=https://raw.githubusercontent.com/asyncapi/asyncapi/master/examples/2.0.0/simple.yml). The docs get served through the `GET {base_path}/docs` route of the app.
 - [Mock server support](#mock-server)
 - [CLI](#cli)

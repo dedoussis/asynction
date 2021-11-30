@@ -370,6 +370,43 @@ def test_register_namespace_handlers_emits_security_validator_if_security_enable
             assert True
 
 
+def test_register_namespace_handlers_emits_security_if_security_enabled_on_namespace():
+    channel_handlers = ChannelHandlers(connect="tests.fixtures.handlers.connect")
+    spec = AsyncApiSpec(
+        asyncapi="2.2.0",
+        info=Info("test", "1.0.0"),
+        servers={"test": Server("https://localhost/", ServerProtocol.WSS, [])},
+        channels={
+            GLOBAL_NAMESPACE: Channel(
+                x_handlers=channel_handlers, x_security=[{"basic": []}]
+            )
+        },
+        components=Components(
+            security_schemes={
+                "basic": SecurityScheme(
+                    type=SecuritySchemesType.HTTP,
+                    scheme=HTTPAuthenticationScheme.BASIC,
+                    x_basic_info_func="tests.fixtures.handlers.basic_info",
+                )
+            }
+        ),
+    )
+
+    server = new_mock_asynction_socket_io(spec)
+    server._register_handlers(server_security=server.spec.servers.get("test").security)
+    event_name, registered_handler, _ = server.handlers[0]
+    assert event_name == "connect"
+    handler_with_security = deep_unwrap(registered_handler, depth=1)
+    actual_handler = deep_unwrap(handler_with_security)
+
+    with Flask(__name__).test_client() as c:
+        c.post()  # Inject invalid POST request
+        actual_handler()
+        with pytest.raises(SecurityException):
+            handler_with_security()  # handler raises security exception
+            assert True
+
+
 @pytest.mark.parametrize(
     argnames=["optional_error_handler"],
     argvalues=[[lambda _: None], [None]],

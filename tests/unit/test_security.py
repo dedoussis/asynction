@@ -243,7 +243,7 @@ def test_build_security_handler_with_invalid_handler():
             x_basic_info_func="tests.fixtures.handlers.basic_info",
         )
     )
-    factory = security_handler_factory(requirements, schemes)
+    factory = security_handler_factory([], requirements, schemes)
     with pytest.raises(SecurityException):
         factory(None)
 
@@ -263,7 +263,7 @@ def test_http_basic_works():
     def on_connect(*args, **kwargs):
         mock_ack()
 
-    factory = security_handler_factory(requirements, schemes)
+    factory = security_handler_factory([], requirements, schemes)
     handler_with_security = factory(on_connect)
     with Flask(__name__).test_client() as c:
         basic_auth = base64.b64encode("username:password".encode()).decode()
@@ -288,7 +288,7 @@ def test_http_basic_fails():
     def on_connect(*args, **kwargs):
         mock_ack()
 
-    factory = security_handler_factory(requirements, schemes)
+    factory = security_handler_factory([], requirements, schemes)
     handler_with_security = factory(on_connect)
     with Flask(__name__).test_client() as c:
         basic_auth = base64.b64encode("username:wrong".encode()).decode()
@@ -316,7 +316,7 @@ def test_http_basic_fails_missing_basic_info():
         mock_ack()
 
     with pytest.raises(SecurityException):
-        factory = security_handler_factory(requirements, schemes)
+        factory = security_handler_factory([], requirements, schemes)
         factory(on_connect)
     mock_ack.assert_not_called()
 
@@ -336,7 +336,7 @@ def test_http_basic_fails_because_basic_info_returns_none():
     def on_connect(*args, **kwargs):
         mock_ack()
 
-    factory = security_handler_factory(requirements, schemes)
+    factory = security_handler_factory([], requirements, schemes)
     handler_with_security = factory(on_connect)
     with Flask(__name__).test_client() as c:
         basic_auth = base64.b64encode("username:password".encode()).decode()
@@ -364,7 +364,7 @@ def test_http_bearer_works():
     def on_connect(*args, **kwargs):
         mock_ack()
 
-    factory = security_handler_factory(requirements, schemes)
+    factory = security_handler_factory([], requirements, schemes)
     handler_with_security = factory(on_connect)
     with Flask(__name__).test_client() as c:
         basic_auth = base64.b64encode("username:password".encode()).decode()
@@ -391,7 +391,7 @@ def test_http_bearer_fails_with_no_auth_header():
     def on_connect(*args, **kwargs):
         mock_ack()
 
-    factory = security_handler_factory(requirements, schemes)
+    factory = security_handler_factory([], requirements, schemes)
     handler_with_security = factory(on_connect)
     with Flask(__name__).test_client() as c:
         c.post()
@@ -417,7 +417,7 @@ def test_http_bearer_fails_with_not_bearer():
     def on_connect(*args, **kwargs):
         mock_ack()
 
-    factory = security_handler_factory(requirements, schemes)
+    factory = security_handler_factory([], requirements, schemes)
     handler_with_security = factory(on_connect)
     with Flask(__name__).test_client() as c:
         basic_auth = base64.b64encode("username:password".encode()).decode()
@@ -445,7 +445,7 @@ def test_http_bearer_fails_with_basic():
     def on_connect(*args, **kwargs):
         mock_ack()
 
-    factory = security_handler_factory(requirements, schemes)
+    factory = security_handler_factory([], requirements, schemes)
     handler_with_security = factory(on_connect)
     with Flask(__name__).test_client() as c:
         basic_auth = base64.b64encode("username:password".encode()).decode()
@@ -473,7 +473,7 @@ def test_http_bearer_fails_with_invalid_header_format():
     def on_connect(*args, **kwargs):
         mock_ack()
 
-    factory = security_handler_factory(requirements, schemes)
+    factory = security_handler_factory([], requirements, schemes)
     handler_with_security = factory(on_connect)
     with Flask(__name__).test_client() as c:
         basic_auth = base64.b64encode("username:password".encode()).decode()
@@ -501,7 +501,7 @@ def test_http_bearer_fails_bad_bearer_info_func():
     def on_connect(*args, **kwargs):
         mock_ack()
 
-    factory = security_handler_factory(requirements, schemes)
+    factory = security_handler_factory([], requirements, schemes)
     handler_with_security = factory(on_connect)
     with Flask(__name__).test_client() as c:
         basic_auth = base64.b64encode("username:password".encode()).decode()
@@ -530,7 +530,7 @@ def test_http_bearer_fails_bearer_info_func_not_found():
         mock_ack()
 
     with pytest.raises(SecurityException):
-        factory = security_handler_factory(requirements, schemes)
+        factory = security_handler_factory([], requirements, schemes)
         factory(on_connect)
 
     mock_ack.assert_not_called()
@@ -552,7 +552,7 @@ def test_http_api_key_works_header():
     def on_connect(*args, **kwargs):
         mock_ack()
 
-    factory = security_handler_factory(requirements, schemes)
+    factory = security_handler_factory([], requirements, schemes)
     handler_with_security = factory(on_connect)
     with Flask(__name__).test_client() as c:
         basic_auth = base64.b64encode("username:password".encode()).decode()
@@ -579,7 +579,7 @@ def test_http_api_key_works_query():
     def on_connect(*args, **kwargs):
         mock_ack()
 
-    factory = security_handler_factory(requirements, schemes)
+    factory = security_handler_factory([], requirements, schemes)
     handler_with_security = factory(on_connect)
     with Flask(__name__).test_client() as c:
         basic_auth = base64.b64encode("username:password".encode()).decode()
@@ -605,7 +605,7 @@ def test_http_api_key_works_cookie():
     def on_connect(*args, **kwargs):
         mock_ack()
 
-    factory = security_handler_factory(requirements, schemes)
+    factory = security_handler_factory([], requirements, schemes)
     handler_with_security = factory(on_connect)
     with Flask(__name__).test_client() as c:
         basic_auth = base64.b64encode("username:password".encode()).decode()
@@ -633,7 +633,7 @@ def test_http_api_key_fails_missing_api_key_info_func():
         mock_ack()
 
     with pytest.raises(SecurityException):
-        factory = security_handler_factory(requirements, schemes)
+        factory = security_handler_factory([], requirements, schemes)
         factory(on_connect)
 
     mock_ack.assert_not_called()
@@ -655,7 +655,7 @@ def test_http_api_key_fails_missing_cookie():
     def on_connect(*args, **kwargs):
         mock_ack()
 
-    factory = security_handler_factory(requirements, schemes)
+    factory = security_handler_factory([], requirements, schemes)
     handler_with_security = factory(on_connect)
     with Flask(__name__).test_client() as c:
         c.set_cookie("test", "wrong", "value")
@@ -683,7 +683,7 @@ def test_http_api_fails_bad_api_key_info_func():
     def on_connect(*args, **kwargs):
         mock_ack()
 
-    factory = security_handler_factory(requirements, schemes)
+    factory = security_handler_factory([], requirements, schemes)
     handler_with_security = factory(on_connect)
     with Flask(__name__).test_client() as c:
         basic_auth = base64.b64encode("username:password".encode()).decode()
@@ -713,7 +713,7 @@ def test_oauth2_works():
     def on_connect(*args, **kwargs):
         mock_ack()
 
-    factory = security_handler_factory(requirements, schemes)
+    factory = security_handler_factory([], requirements, schemes)
     handler_with_security = factory(on_connect)
     with Flask(__name__).test_client() as c:
         basic_auth = base64.b64encode("username:password".encode()).decode()
@@ -742,7 +742,7 @@ def test_oauth2_works_alternate():
     def on_connect(*args, **kwargs):
         mock_ack()
 
-    factory = security_handler_factory(requirements, schemes)
+    factory = security_handler_factory([], requirements, schemes)
     handler_with_security = factory(on_connect)
     with Flask(__name__).test_client() as c:
         basic_auth = base64.b64encode("username:password".encode()).decode()
@@ -772,7 +772,7 @@ def test_oauth2_fails_missing_token_info_func():
         mock_ack()
 
     with pytest.raises(SecurityException):
-        factory = security_handler_factory(requirements, schemes)
+        factory = security_handler_factory([], requirements, schemes)
         factory(on_connect)
 
     mock_ack.assert_not_called()
@@ -795,7 +795,7 @@ def test_oauth2_fails_missing_scopes():
     def on_connect(*args, **kwargs):
         mock_ack()
 
-    factory = security_handler_factory(requirements, schemes)
+    factory = security_handler_factory([], requirements, schemes)
     handler_with_security = factory(on_connect)
     with Flask(__name__).test_client() as c:
         basic_auth = base64.b64encode("username:password".encode()).decode()
@@ -824,7 +824,7 @@ def test_oauth2_fails_bad_token_info_func():
     def on_connect(*args, **kwargs):
         mock_ack()
 
-    factory = security_handler_factory(requirements, schemes)
+    factory = security_handler_factory([], requirements, schemes)
     handler_with_security = factory(on_connect)
     with Flask(__name__).test_client() as c:
         basic_auth = base64.b64encode("username:password".encode()).decode()
@@ -853,7 +853,7 @@ def test_oauth2_fails_bad_scope_type():
     def on_connect(*args, **kwargs):
         mock_ack()
 
-    factory = security_handler_factory(requirements, schemes)
+    factory = security_handler_factory([], requirements, schemes)
     handler_with_security = factory(on_connect)
     with Flask(__name__).test_client() as c:
         basic_auth = base64.b64encode("username:password".encode()).decode()
@@ -882,7 +882,7 @@ def test_oauth2_fails_token_info_missing_required():
     def on_connect(*args, **kwargs):
         mock_ack()
 
-    factory = security_handler_factory(requirements, schemes)
+    factory = security_handler_factory([], requirements, schemes)
     handler_with_security = factory(on_connect)
     with Flask(__name__).test_client() as c:
         basic_auth = base64.b64encode("username:password".encode()).decode()
@@ -911,7 +911,7 @@ def test_oauth2_fails_missing_auth_header():
     def on_connect(*args, **kwargs):
         mock_ack()
 
-    factory = security_handler_factory(requirements, schemes)
+    factory = security_handler_factory([], requirements, schemes)
     handler_with_security = factory(on_connect)
     with Flask(__name__).test_client() as c:
         c.post()
@@ -938,7 +938,7 @@ def test_oauth2_fails_invalid_header_format():
     def on_connect(*args, **kwargs):
         mock_ack()
 
-    factory = security_handler_factory(requirements, schemes)
+    factory = security_handler_factory([], requirements, schemes)
     handler_with_security = factory(on_connect)
     with Flask(__name__).test_client() as c:
         basic_auth = base64.b64encode("username:password".encode()).decode()
@@ -965,7 +965,7 @@ def test_http_basic_missing_auth_header():
     def on_connect(*args, **kwargs):
         mock_ack()
 
-    factory = security_handler_factory(requirements, schemes)
+    factory = security_handler_factory([], requirements, schemes)
     handler_with_security = factory(on_connect)
     with Flask(__name__).test_client() as c:
         c.post()
@@ -990,7 +990,7 @@ def test_http_basic_invalid_auth_header():
     def on_connect(*args, **kwargs):
         mock_ack()
 
-    factory = security_handler_factory(requirements, schemes)
+    factory = security_handler_factory([], requirements, schemes)
     handler_with_security = factory(on_connect)
     with Flask(__name__).test_client() as c:
         basic_auth = base64.b64encode("username:password".encode()).decode()
@@ -1017,7 +1017,7 @@ def test_http_basic_invalid_basic_auth_format():
     def on_connect(*args, **kwargs):
         mock_ack()
 
-    factory = security_handler_factory(requirements, schemes)
+    factory = security_handler_factory([], requirements, schemes)
     handler_with_security = factory(on_connect)
     with Flask(__name__).test_client() as c:
         basic_auth = base64.b64encode("username:".encode()).decode()
@@ -1044,7 +1044,7 @@ def test_http_basic_invalid_basic_auth_scheme():
     def on_connect(*args, **kwargs):
         mock_ack()
 
-    factory = security_handler_factory(requirements, schemes)
+    factory = security_handler_factory([], requirements, schemes)
     handler_with_security = factory(on_connect)
     with Flask(__name__).test_client() as c:
         basic_auth = base64.b64encode("username:password".encode()).decode()

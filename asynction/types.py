@@ -373,6 +373,7 @@ class Channel:
     publish: Optional[Operation] = None
     bindings: Optional[ChannelBindings] = None
     x_handlers: Optional[ChannelHandlers] = None
+    x_security: Sequence[SecurityRequirement] = field(default_factory=list)
 
     def __post_init__(self):
         if self.publish is not None:
@@ -392,6 +393,9 @@ class Channel:
             bindings=forge(type_.__annotations__["bindings"], data.get("bindings")),
             x_handlers=forge(
                 type_.__annotations__["x_handlers"], data.get("x-handlers")
+            ),
+            x_security=forge(
+                type_.__annotations__["x_security"], data.get("x-security", [])
             ),
         )
 

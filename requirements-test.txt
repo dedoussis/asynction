@@ -1,5 +1,5 @@
 black==21.9b0
-Faker==9.5.2
+Faker==9.9.0
 flake8==4.0.1
 isort==5.9.3
 mypy==0.812

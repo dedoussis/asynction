@@ -178,7 +178,7 @@ Without Asynction, one would need to add additional boilerplate to register the 
 
 Asynction supports authentication of incoming connections through the security mechanisms specified in the AsyncAPI spec of an application. See [this guide](https://www.asyncapi.com/docs/getting-started/security) on how to add security as part of an API specification. To take advantage of this feature, a security handler callable should be attached to each security scheme definition under the [components](https://www.asyncapi.com/docs/specifications/v2.2.0#componentsObjectSecuritySchemes) section. To attach a security handler(s), see the [security specification extention](#security-handers) section below.
 
-The security handler callable(s) will be called upon every new client connection and MUST return a [`SecurityInfo`](https://asynction.dedouss.is/#asynction.SecurityInfo) typed dictionary (which allows extra keys). Asynction then validates this returned dictionary, refusing the connection to any unauthenticated/unauthorised requests. Finally, the validated `SecurityInfo` dictionaty is passed to the connection handler as an extra `token_info` kwarg, to allow further/custom processing if needed.
+The security handler callable(s) will be called upon every new client connection and MUST return a [`SecurityInfo`](https://asynction.dedouss.is/#asynction.SecurityInfo) typed dictionary (which allows extra keys). Asynction then validates this returned dictionary, refusing the connection to any unauthenticated/unauthorised requests. Finally, the validated `SecurityInfo` dictionary is passed to the connection handler as an extra `token_info` kwarg, to allow further/custom processing if needed.
 
 ## Docs
 

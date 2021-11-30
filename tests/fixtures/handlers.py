@@ -8,6 +8,7 @@ from flask import request
 from flask_socketio import emit
 from typing_extensions import TypedDict
 
+from asynction import SecurityInfo
 from asynction.exceptions import ValidationException
 
 
@@ -60,15 +61,15 @@ def echo_failed_validation(e: Exception) -> None:
 
 def basic_info(
     username: str, password: str, required_scopes: Optional[Sequence[str]] = None
-) -> Mapping:
+) -> SecurityInfo:
     if username != "username" or password != "password":
         raise ConnectionRefusedError("Invalid username or password")
 
     scopes = list(required_scopes) if required_scopes else []
-    return dict(sub=username, scopes=scopes)
+    return SecurityInfo(sub=username, scopes=scopes)
 
 
-def basic_info_bad(*args, **kwargs) -> Optional[Mapping]:
+def basic_info_bad(*args, **kwargs) -> Optional[SecurityInfo]:
     return None
 
 
@@ -76,48 +77,48 @@ def bearer_info(
     token: str,
     required_scopes: Optional[Sequence[str]] = None,
     bearer_format: Optional[str] = None,
-) -> Mapping:
+) -> SecurityInfo:
     username, password = base64.b64decode(token).decode().split(":")
     if username != "username" or password != "password" or bearer_format != "test":
         raise ConnectionRefusedError("Invalid username or password")
 
     scopes = list(required_scopes) if required_scopes else []
-    return dict(uid=username, scopes=scopes)
+    return SecurityInfo(uid=username, scopes=scopes)
 
 
-def bearer_info_bad(*args, **kwargs) -> Optional[Mapping]:
+def bearer_info_bad(*args, **kwargs) -> Optional[SecurityInfo]:
     return None
 
 
 def api_key_info(
     token: str, required_scopes: Optional[Sequence[str]] = None
-) -> Mapping:
+) -> SecurityInfo:
     username, password = base64.b64decode(token).decode().split(":")
     if username != "username" or password != "password":
         raise ConnectionRefusedError("Invalid username or password")
 
     scopes = list(required_scopes) if required_scopes else []
-    return dict(sub=username, scopes=scopes)
+    return SecurityInfo(sub=username, scopes=scopes)
 
 
-def api_key_info_bad(*args, **kwargs) -> Optional[Mapping]:
+def api_key_info_bad(*args, **kwargs) -> Optional[SecurityInfo]:
     return None
 
 
-def token_info(token: str) -> Mapping:
+def token_info(token: str) -> SecurityInfo:
     username, password = base64.b64decode(token).decode().split(":")
     if username != "username" or password != "password":
         raise ConnectionRefusedError("Invalid username or password")
 
-    return dict(sub=username, scopes=["a", "b"])
+    return SecurityInfo(sub=username, scopes=["a", "b"])
 
 
-def token_info_alternate(token: str) -> Mapping:
+def token_info_alternate(token: str) -> SecurityInfo:
     username, password = base64.b64decode(token).decode().split(":")
     if username != "username" or password != "password":
         raise ConnectionRefusedError("Invalid username or password")
 
-    return dict(uid=username, scope="a b")
+    return SecurityInfo(uid=username, scope="a b")
 
 
 def token_info_alternate_invalid(token: str) -> Mapping:
@@ -125,12 +126,14 @@ def token_info_alternate_invalid(token: str) -> Mapping:
     if username != "username" or password != "password":
         raise ConnectionRefusedError("Invalid username or password")
 
+    # using a dict instead of the SecurityInfo to force bad values through for the tests
     return dict(uid=username, scope=1)
 
 
-def token_info_bad(*args, **kwargs) -> Optional[Mapping]:
+def token_info_bad(*args, **kwargs) -> Optional[SecurityInfo]:
     return None
 
 
 def token_info_missing_required(*args, **kwargs) -> Optional[Mapping]:
+    # using a dict instead of the SecurityInfo to force bad values through for the tests
     return dict(something="")

@@ -490,7 +490,7 @@ def test_register_namespace_handlers_omits_bindings_validator_if_validation_disa
         assert True
 
 
-def test_register_namespace_handlers_includes_security_validator_if_security_specified():
+def test_register_namespace_handlers_includes_security_validator_if_security_needed():
     channel_handlers = ChannelHandlers(connect="tests.fixtures.handlers.connect")
     spec = AsyncApiSpec(
         asyncapi="2.2.0",

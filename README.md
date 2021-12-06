@@ -290,6 +290,8 @@ $ docker run -v ${PWD}/docs/asyncapi.yml:/opt/asynction/asyncapi.yml dedoussis/a
 
 Asynction has extended the AsyncAPI 2.x.x specification to provide support for coupling SocketIO semantical entities (such as namespaces, events and acks) to python objects (such as handler callabes or other `flask_socketio.SocketIO` methods). Some of the extentions below are necessary to express the Socket.IO protocol semantics, while others are solely needed for the programmatic purposes of Asynction. The extentions introduced adhere to the [Specification Extention guidelines](https://www.asyncapi.com/docs/specifications/2.0.0#specificationExtensions) of the AsyncAPI spec.
 
+Asynction has extended the AsyncAPI 2.x.x specification to provide support for customizing security schemes on a per namespace bases. The extentions introduced adhere to the [Specification Extention guidelines](https://www.asyncapi.com/docs/specifications/2.0.0#specificationExtensions) of the AsyncAPI spec.
+
 For further guidance on how to generally express a SocketIO API using AsyncAPI, refer to this article: <https://dedouss.is/posts/2021-07-14-documenting-socketio-part-2.html>
 
 ### Event handler
@@ -341,3 +343,8 @@ In order to support the [AuthN/AuthZ functionality](#security-authentication-and
 - A Security Scheme Object of bearer `apiKey` type MUST include the `x-apiKeyInfoFunc` field.
 
 The value of all these fields MUST be of `string` type, expressing a dot joint path to a python callable (the security handler).
+
+### Per Namespace Security
+The `x-security` field MAY be defined as an additional property of the [Channel Item Object](https://www.asyncapi.com/docs/specifications/v2.0.0#channelItemObject).
+The value of this field SHOULD be an `array` of [Security Requirement Objects](https://www.asyncapi.com/docs/specifications/v2.0.0#securityRequirementObject) which is the same format used to specify [Server Security Requirements](https://www.asyncapi.com/docs/specifications/v2.0.0#serverObject).
+If a namespace specifies `x-security` the security requirements specified for that namespace will overwrite any security requirements specified in the [Server Object](https://www.asyncapi.com/docs/specifications/v2.0.0#serverObject).

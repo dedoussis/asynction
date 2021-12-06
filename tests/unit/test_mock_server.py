@@ -335,7 +335,7 @@ def test_register_handlers_registers_connection_handler_with_bindings_validation
                 handler_with_validation()
 
 
-def test_register_namespace_handlers_emits_security_validator_if_security_enabled():
+def test_register_namespace_handlers_includes_security_validator_if_security_needed():
     channel_handlers = ChannelHandlers(connect="tests.fixtures.handlers.connect")
     spec = AsyncApiSpec(
         asyncapi="2.2.0",

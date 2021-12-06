@@ -452,7 +452,7 @@ def test_register_namespace_handlers_wraps_bindings_validator_if_validation_enab
     server = AsynctionSocketIO(mock.Mock(), True, True, None)
 
     server._register_namespace_handlers(
-        GLOBAL_NAMESPACE, channel_handlers, channel_bindings, [], []
+        GLOBAL_NAMESPACE, channel_handlers, channel_bindings, []
     )
     event_name, registered_handler, _ = server.handlers[0]
     assert event_name == "connect"
@@ -476,7 +476,7 @@ def test_register_namespace_handlers_omits_bindings_validator_if_validation_disa
     server = AsynctionSocketIO(mock.Mock(), False, True, None)
 
     server._register_namespace_handlers(
-        GLOBAL_NAMESPACE, channel_handlers, channel_bindings, [], []
+        GLOBAL_NAMESPACE, channel_handlers, channel_bindings, []
     )
     event_name, registered_handler, _ = server.handlers[0]
     assert event_name == "connect"
@@ -515,7 +515,6 @@ def test_register_namespace_handlers_includes_security_validator_if_security_nee
         GLOBAL_NAMESPACE,
         channel_handlers,
         None,
-        [],
         server.spec.servers.get("test").security,
     )
     event_name, registered_handler, _ = server.handlers[0]
@@ -555,12 +554,10 @@ def test_register_namespace_handlers_emits_security_if_security_enabled_on_names
     )
 
     server = AsynctionSocketIO(spec, False, True, None)
+    security = channel_security or server.spec.servers.get("test").security
+
     server._register_namespace_handlers(
-        GLOBAL_NAMESPACE,
-        channel_handlers,
-        None,
-        channel_security,
-        server.spec.servers.get("test").security,
+        GLOBAL_NAMESPACE, channel_handlers, None, security
     )
     event_name, registered_handler, _ = server.handlers[0]
     assert event_name == "connect"

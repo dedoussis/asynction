@@ -360,25 +360,14 @@ def build_security_handler(
     return security_handler
 
 
-def resolve_security(
-    channel_security: Sequence[SecurityRequirement],
-    server_security: Sequence[SecurityRequirement],
-) -> Sequence[InternalSecurityRequirement]:
-    unpacked_channel_security = unpack_security_requirements(channel_security)
-    unpacked_server_security = unpack_security_requirements(server_security)
-
-    return [*unpacked_channel_security, *unpacked_server_security]
-
-
 def security_handler_factory(
-    channel_security: Sequence[SecurityRequirement],
-    server_security: Sequence[SecurityRequirement],
+    security_requirements: Sequence[SecurityRequirement],
     security_schemes: Mapping[str, SecurityScheme],
 ) -> Callable:
     """
     Build a security handler decorator based on security object and securitySchemes provided in the API file.  # noqa: 501
     """
-    unpacked_security = resolve_security(channel_security, server_security)
+    unpacked_security = unpack_security_requirements(security_requirements)
     security_handler = build_security_handler(unpacked_security, security_schemes)
 
     def decorator(handler: Callable):

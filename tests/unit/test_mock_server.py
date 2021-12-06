@@ -370,7 +370,7 @@ def test_register_namespace_handlers_includes_security_validator_if_security_nee
             assert True
 
 
-def test_register_namespace_handlers_emits_security_if_security_enabled_on_namespace():
+def test_register_namespace_handlers_includes_namespace_specific_security_validator():
     channel_handlers = ChannelHandlers(connect="tests.fixtures.handlers.connect")
     spec = AsyncApiSpec(
         asyncapi="2.2.0",

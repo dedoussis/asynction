@@ -462,42 +462,52 @@ class AsyncApiSpec:
     def __post_init__(self):
         for server_name, server in self.servers.items():
             for security_req in server.security:
-                (security_scheme_name, scopes), *other = security_req.items()
+                self._validate_security_requirement(security_req, server_name)
 
-                if other:
-                    raise ValueError(
-                        f"{server_name} contains invalid "
-                        f"security requirement: {security_req}"
-                    )
+        for channel_name, channel in self.channels.items():
+            for security_req in channel.x_security:
+                self._validate_security_requirement(security_req, channel_name)
 
-                security_scheme = self.components.security_schemes.get(
-                    security_scheme_name
+    def _validate_security_requirement(
+        self, requirement: SecurityRequirement, required_by: str
+    ) -> None:
+        (security_scheme_name, scopes), *other = requirement.items()
+
+        if other:
+            raise ValueError(
+                f"{required_by} contains invalid "
+                f"security requirement: {requirement}"
+            )
+
+        security_scheme = self.components.security_schemes.get(security_scheme_name)
+        if security_scheme is None:
+            raise ValueError(
+                f"{security_scheme_name} referenced within '{requirement}'"
+                " server does not exist in components/securitySchemes"
+            )
+
+        if scopes:
+            if security_scheme.type not in [
+                SecuritySchemesType.OAUTH2,
+                SecuritySchemesType.OPENID_CONNECT,
+            ]:
+                raise ValueError(
+                    "Scopes MUST be an empty array for "
+                    f"{security_scheme.type} security requirements"
                 )
-                if security_scheme is None:
-                    raise ValueError(
-                        f"{security_scheme_name} referenced within '{server_name}'"
-                        " server does not exist in components/securitySchemes"
-                    )
 
-                if scopes:
-                    if security_scheme.type not in [
-                        SecuritySchemesType.OAUTH2,
-                        SecuritySchemesType.OPENID_CONNECT,
-                    ]:
+            if security_scheme.type is SecuritySchemesType.OAUTH2:
+                if security_scheme.flows:
+                    supported_scopes = security_scheme.flows.supported_scopes()
+                else:
+                    raise ValueError("'flows' MUST be provided for OAUTH2")
+
+                for scope in scopes:
+                    if scope not in supported_scopes:
                         raise ValueError(
-                            "Scopes MUST be an empty array for "
-                            f"{security_scheme.type} security requirements"
+                            f"OAuth2 scope {scope} is not defined within "
+                            f"the {security_scheme_name} security scheme"
                         )
-
-                    if security_scheme.type is SecuritySchemesType.OAUTH2:
-                        supported_scopes = security_scheme.flows.supported_scopes()
-
-                        for scope in scopes:
-                            if scope not in supported_scopes:
-                                raise ValueError(
-                                    f"OAuth2 scope {scope} is not defined within "
-                                    f"the {security_scheme_name} security scheme"
-                                )
 
     @staticmethod
     def from_dict(data: JSONMapping) -> "AsyncApiSpec":

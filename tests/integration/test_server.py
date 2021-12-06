@@ -8,6 +8,7 @@ from faker import Faker
 from flask import Flask
 from flask_socketio import SocketIO
 
+import asynction
 from asynction.exceptions import BindingsValidationException
 from asynction.exceptions import MessageAckValidationException
 from asynction.exceptions import PayloadValidationException
@@ -463,3 +464,60 @@ def test_client_connects_with_oauth2(
     )
 
     assert socketio_test_client.is_connected() is True
+
+
+@pytest.mark.parametrize(
+    argnames="factory_fixture",
+    argvalues=[
+        FactoryFixture.ASYNCTION_SOCKET_IO,
+        FactoryFixture.MOCK_ASYNCTION_SOCKET_IO,
+    ],
+    ids=["server", "mock_server"],
+)
+def test_client_connects_with_namespace_security(
+    factory_fixture: FactoryFixture,
+    flask_app: Flask,
+    fixture_paths: FixturePaths,
+    request: pytest.FixtureRequest,
+):
+    server_factory: AsynctionFactory = request.getfixturevalue(factory_fixture.value)
+
+    socketio_server = server_factory(
+        spec_path=fixture_paths.namespace_security, server_name="test"
+    )
+    flask_test_client = flask_app.test_client()
+
+    # connect to default namespace which is secured with basic auth
+    basic_auth = base64.b64encode("username:password".encode()).decode()
+    headers = {"Authorization": f"basic {basic_auth}"}
+    socketio_test_client = socketio_server.test_client(
+        flask_app, flask_test_client=flask_test_client, headers=headers
+    )
+
+    assert socketio_test_client.is_connected() is True
+
+    socketio_test_client.disconnect()
+
+    secure_namespace = "/bearer_secured"
+
+    # now try to use basic auth on the bearer_secured namespace
+    # this should fail because the namespace security should have
+    # overwritten the server security scheme
+    with pytest.raises(asynction.SecurityException):
+        socketio_server.test_client(
+            flask_app,
+            namespace=secure_namespace,
+            flask_test_client=flask_test_client,
+            headers=headers,
+        )
+
+    # now try to connect to the bearer_secured namespace with bearer auth
+    headers = {"Authorization": f"bearer {basic_auth}"}
+    socketio_test_client = socketio_server.test_client(
+        flask_app,
+        namespace=secure_namespace,
+        flask_test_client=flask_test_client,
+        headers=headers,
+    )
+
+    assert socketio_test_client.is_connected(secure_namespace) is True

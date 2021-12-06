@@ -184,8 +184,7 @@ class AsynctionSocketIO(SocketIO):
         namespace: str,
         channel_handlers: Optional[ChannelHandlers],
         channel_bindings: Optional[ChannelBindings],
-        channel_security: Sequence[SecurityRequirement],
-        server_security: Sequence[SecurityRequirement],
+        security: Sequence[SecurityRequirement],
     ) -> None:
         on_connect = _noop_handler
 
@@ -197,10 +196,10 @@ class AsynctionSocketIO(SocketIO):
                 with_bindings_validation = bindings_validator_factory(channel_bindings)
                 on_connect = with_bindings_validation(on_connect)
 
-        if server_security or channel_security:
+        if security:
             # create a security handler wrapper
             with_security = security_handler_factory(
-                channel_security, server_security, self.spec.components.security_schemes
+                security, self.spec.components.security_schemes
             )
             # apply security
             on_connect = with_security(on_connect)
@@ -239,13 +238,10 @@ class AsynctionSocketIO(SocketIO):
                     self.on_event(message.name, handler, namespace)
 
             channel_security = channel.x_security or ()
-
+            security = channel_security or server_security
+            # print(namespace, security, channel)
             self._register_namespace_handlers(
-                namespace,
-                channel.x_handlers,
-                channel.bindings,
-                channel_security,
-                server_security=server_security,
+                namespace, channel.x_handlers, channel.bindings, security
             )
 
         if default_error_handler is not None:

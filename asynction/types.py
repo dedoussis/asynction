@@ -497,16 +497,15 @@ class AsyncApiSpec:
                 )
 
             if security_scheme.type is SecuritySchemesType.OAUTH2:
-                supported_scopes = []
                 if security_scheme.flows:
                     supported_scopes = security_scheme.flows.supported_scopes()
 
-                for scope in scopes:
-                    if scope not in supported_scopes:
-                        raise ValueError(
-                            f"OAuth2 scope {scope} is not defined within "
-                            f"the {security_scheme_name} security scheme"
-                        )
+                    for scope in scopes:
+                        if scope not in supported_scopes:
+                            raise ValueError(
+                                f"OAuth2 scope {scope} is not defined within "
+                                f"the {security_scheme_name} security scheme"
+                            )
 
     @staticmethod
     def from_dict(data: JSONMapping) -> "AsyncApiSpec":

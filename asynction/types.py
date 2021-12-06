@@ -497,10 +497,9 @@ class AsyncApiSpec:
                 )
 
             if security_scheme.type is SecuritySchemesType.OAUTH2:
+                supported_scopes = []
                 if security_scheme.flows:
                     supported_scopes = security_scheme.flows.supported_scopes()
-                else:
-                    raise ValueError("'flows' MUST be provided for OAUTH2")
 
                 for scope in scopes:
                     if scope not in supported_scopes:

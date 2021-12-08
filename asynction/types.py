@@ -373,7 +373,7 @@ class Channel:
     publish: Optional[Operation] = None
     bindings: Optional[ChannelBindings] = None
     x_handlers: Optional[ChannelHandlers] = None
-    x_security: Sequence[SecurityRequirement] = field(default_factory=list)
+    x_security: Optional[Sequence[SecurityRequirement]] = None
 
     def __post_init__(self):
         if self.publish is not None:
@@ -465,8 +465,9 @@ class AsyncApiSpec:
                 self._validate_security_requirement(security_req, server_name)
 
         for channel_name, channel in self.channels.items():
-            for security_req in channel.x_security:
-                self._validate_security_requirement(security_req, channel_name)
+            if channel.x_security is not None:
+                for security_req in channel.x_security:
+                    self._validate_security_requirement(security_req, channel_name)
 
     def _validate_security_requirement(
         self, requirement: SecurityRequirement, required_by: str

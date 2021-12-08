@@ -554,7 +554,11 @@ def test_register_namespace_handlers_emits_security_if_security_enabled_on_names
     )
 
     server = AsynctionSocketIO(spec, False, True, None)
-    security = channel_security or server.spec.servers.get("test").security
+    security = (
+        channel_security
+        if channel_security is not None
+        else server.spec.servers.get("test").security
+    )
 
     server._register_namespace_handlers(
         GLOBAL_NAMESPACE, channel_handlers, None, security

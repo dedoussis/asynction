@@ -118,6 +118,7 @@ def test_channel_deserialization(faker: Faker):
             "connect": faker.pystr(),
             "disconnect": faker.pystr(),
         },
+        "x-security": [{"basic": []}],
     }
 
     channel = forge(Channel, data)
@@ -125,6 +126,11 @@ def test_channel_deserialization(faker: Faker):
     assert isinstance(channel.subscribe, Operation)
     assert isinstance(channel.bindings, ChannelBindings)
     assert isinstance(channel.x_handlers, ChannelHandlers)
+    assert isinstance(channel.x_security, list)
+    assert len(channel.x_security) == 1
+    assert "basic" in channel.x_security[0]
+    assert isinstance(channel.x_security[0]["basic"], list)
+    assert len(channel.x_security[0]["basic"]) == 0
 
 
 def test_channel_raises_value_error_if_publish_messages_miss_handler(faker: Faker):
@@ -395,6 +401,50 @@ def test_asyncapi_spec_validation_invalid_security_requirement_undefined_scopes(
                 "url": "localhost",
                 "protocol": "ws",
                 "security": [{"oauth2": ["undefined"]}],
+            }
+        },
+        "components": {
+            "securitySchemes": {
+                "test": {"type": "http", "scheme": "basic"},
+                "test2": {"type": "http", "scheme": "bearer", "bearerFormat": "JWT"},
+                "testApiKey": {"type": "httpApiKey", "name": "test", "in": "header"},
+                "oauth2": {
+                    "type": "oauth2",
+                    "flows": {
+                        "implicit": {
+                            "authorizationUrl": "https://localhost:12345",
+                            "refreshUrl": "https://localhost:12345/refresh",
+                            "scopes": {"a": "A", "b": "B"},
+                        }
+                    },
+                },
+            }
+        },
+    }
+    with pytest.raises(ValueError):
+        # missing security scheme
+        AsyncApiSpec.from_dict(data)
+
+
+def test_asyncapi_spec_validation_invalid_security_requirement_on_namespace(
+    faker: Faker,
+):
+    data = {
+        "asyncapi": "2.2.0",
+        "info": {
+            "title": faker.sentence(),
+            "version": faker.pystr(),
+            "description": faker.sentence(),
+        },
+        "channels": {
+            GLOBAL_NAMESPACE: {
+                "x-security": [{"oauth2": ["undefined"]}],
+            }
+        },
+        "servers": {
+            "development": {
+                "url": "localhost",
+                "protocol": "ws",
             }
         },
         "components": {

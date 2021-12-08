@@ -237,9 +237,12 @@ class AsynctionSocketIO(SocketIO):
 
                     self.on_event(message.name, handler, namespace)
 
-            channel_security = channel.x_security or ()
-            security = channel_security or server_security
-            # print(namespace, security, channel)
+            security = (
+                channel.x_security
+                if channel.x_security is not None
+                else server_security
+            )
+
             self._register_namespace_handlers(
                 namespace, channel.x_handlers, channel.bindings, security
             )

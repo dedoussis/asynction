@@ -395,7 +395,7 @@ class Channel:
                 type_.__annotations__["x_handlers"], data.get("x-handlers")
             ),
             x_security=forge(
-                type_.__annotations__["x_security"], data.get("x-security", [])
+                type_.__annotations__["x_security"], data.get("x-security")
             ),
         )
 

@@ -3,4 +3,4 @@ Flask>=0.9
 jsonschema~=4.0
 PyYAML~=6.0
 svarog>=0.1.6,<2.0.0
-typing-extensions~=4.0.1
+typing-extensions~=4.0.0

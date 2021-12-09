@@ -2,9 +2,11 @@
 The :class:`AsynctionSocketIO` server is essentially a ``flask_socketio.SocketIO``
 server with an additional factory classmethod.
 """
+from collections import defaultdict
 from functools import singledispatch
 from pathlib import Path
 from typing import Any
+from typing import Mapping
 from typing import Optional
 from typing import Sequence
 from urllib.parse import urlparse
@@ -81,12 +83,23 @@ def _noop_handler(*args, **kwargs) -> None:
     return None
 
 
+def build_namespace_channel_mapping(specs: Sequence[AsyncApiSpec]) -> Mapping:
+    mapping = {}
+    for spec in specs:
+        for namespace, channel in spec.channels.items():
+            if namespace in mapping:
+                raise ValueError(f"Duplicate namespace {namespace} in specs")
+            mapping[namespace] = (channel, spec)
+
+    return mapping
+
+
 class AsynctionSocketIO(SocketIO):
     """Inherits the :class:`flask_socketio.SocketIO` class."""
 
     def __init__(
         self,
-        spec: AsyncApiSpec,
+        specs: Sequence[AsyncApiSpec],
         validation: bool,
         docs: bool,
         app: Optional[Flask],
@@ -95,9 +108,10 @@ class AsynctionSocketIO(SocketIO):
         """This is a private constructor.
         Use the :meth:`AsynctionSocketIO.from_spec` factory instead.
         """
-        self.spec = spec
+        self.specs = specs
         self.validation = validation
         self.docs = docs
+        self.namespace_map = build_namespace_channel_mapping(specs)
 
         super().__init__(app=app, **kwargs)
 
@@ -105,10 +119,13 @@ class AsynctionSocketIO(SocketIO):
         super().init_app(app, **kwargs)
 
         if self.docs and app is not None:
-            docs_bp = make_docs_blueprint(
-                spec=self.spec, url_prefix=Path(self.sockio_mw.engineio_path).parent
-            )
-            app.register_blueprint(docs_bp)
+            for spec in self.specs:
+                docs_bp = make_docs_blueprint(
+                    spec=spec,
+                    url_prefix=Path(self.sockio_mw.engineio_path).parent,
+                    name=spec.info.title,
+                )
+                app.register_blueprint(docs_bp)
 
     @classmethod
     def from_spec(
@@ -175,8 +192,87 @@ class AsynctionSocketIO(SocketIO):
 
             server_security = server.security
 
-        asio = cls(spec, validation, docs, app, **kwargs)
-        asio._register_handlers(server_security, default_error_handler)
+        asio = cls([spec], validation, docs, app, **kwargs)
+        asio._register_handlers(spec, server_security, default_error_handler)
+        return asio
+
+    @classmethod
+    def from_specs(
+        cls,
+        spec_paths: Sequence[Path],
+        validation: bool = True,
+        server_name: Optional[str] = None,
+        docs: bool = True,
+        default_error_handler: Optional[ErrorHandler] = None,
+        app: Optional[Flask] = None,
+        **kwargs,
+    ) -> SocketIO:
+        """Create a Flask-SocketIO server from multiple AsyncAPI spec.
+
+        :param spec_paths: The paths where the AsyncAPI YAML specifications are located.
+        :param validation: When set to ``False``, message payloads, channel
+                           bindings and ack callbacks are NOT validated.
+                           Defaults to ``True``.
+        :param server_name: The server to pick from the AsyncAPI ``servers`` object.
+                            The server object is then used to configure
+                            the path ``kwarg`` of the SocketIO server.
+        :param docs: When set to ``True``, HTML rendered documentation is generated
+                     and served through the ``GET {base_path}/docs`` route of the app.
+                     The ``GET {base_path}/docs/asyncapi.json`` route is also exposed,
+                     returning the raw specification data for programmatic retrieval.
+                     Defaults to ``True``.
+        :param default_error_handler: The error handler that handles any namespace
+                                      without an explicit error handler.
+                                      Equivelant of ``@socketio.on_error_default``
+        :param app: The flask application instance. Defaults to ``None``.
+        :param kwargs: Flask-SocketIO, Socket.IO and Engine.IO server options.
+
+        :returns: A Flask-SocketIO server.
+                  The server has all the event and error handlers registered.
+
+        Example::
+
+            asio = AsynctionSocketIO.from_spec(
+                spec_paths=["./docs/asyncapi.yaml","./docs/asyncapi2.yaml"],
+                app=flask_app,
+                message_queue="redis://localhost:6379",
+                # any other kwarg that the flask_socketio.SocketIO constructor accepts
+            )
+
+        """
+        specs = list(map(load_spec, spec_paths))
+        securities = []
+        if (
+            server_name is not None
+            and kwargs.get("path") is None
+            and kwargs.get("resource") is None
+        ):
+
+            paths = defaultdict(set)
+            for spec, spec_path in zip(specs, spec_paths):
+                server = spec.servers.get(server_name)
+                if server is None:
+                    raise ValueError(
+                        f"Server {server_name} is not defined in spec {spec_path}."
+                    )
+
+                url_parse_result = urlparse(
+                    url=f"//{server.url}", scheme=server.protocol.value
+                )
+                paths[url_parse_result.path].add(spec_path)
+                securities.append(server.security or [])
+
+            if len(paths) == 1:
+                kwargs["path"] = next(iter(paths.keys()))
+            else:
+                raise ValueError(
+                    f"Multiple conflicting server paths provided in specs: {paths}"
+                )
+
+        asio = cls(specs, validation, docs, app, **kwargs)
+        for spec, security in zip(specs, securities):
+            asio._register_handlers(spec, security, default_error_handler)
+
         return asio
 
     def _register_namespace_handlers(
@@ -197,9 +293,10 @@ class AsynctionSocketIO(SocketIO):
                 on_connect = with_bindings_validation(on_connect)
 
         if security:
+            _, spec = self.namespace_map[namespace]
             # create a security handler wrapper
             with_security = security_handler_factory(
-                security, self.spec.components.security_schemes
+                security, spec.components.security_schemes
             )
             # apply security
             on_connect = with_security(on_connect)
@@ -220,10 +317,11 @@ class AsynctionSocketIO(SocketIO):
 
     def _register_handlers(
         self,
+        spec: AsyncApiSpec,
         server_security: Sequence[SecurityRequirement] = (),
         default_error_handler: Optional[ErrorHandler] = None,
     ) -> None:
-        for namespace, channel in self.spec.channels.items():
+        for namespace, channel in spec.channels.items():
             if channel.publish is not None:
                 for message in channel.publish.message.oneOf:
                     assert message.x_handler is not None
@@ -253,7 +351,7 @@ class AsynctionSocketIO(SocketIO):
     def emit(self, event: str, *args, **kwargs) -> None:
         if self.validation:
             namespace = kwargs.get("namespace", GLOBAL_NAMESPACE)
-            channel = self.spec.channels.get(namespace)
+            channel, _ = self.namespace_map.get(namespace, (None, None))
 
             if channel is None:
                 raise ValidationException(

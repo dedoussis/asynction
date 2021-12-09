@@ -9,6 +9,8 @@ class FixturePaths(NamedTuple):
     security: Path
     security_oauth2: Path
     namespace_security: Path
+    multi1: Path
+    multi2: Path
 
 
 paths = FixturePaths(
@@ -18,4 +20,6 @@ paths = FixturePaths(
     security=Path(__file__).parent.joinpath("security.yaml"),
     security_oauth2=Path(__file__).parent.joinpath("security_oauth2.yaml"),
     namespace_security=Path(__file__).parent.joinpath("namespace_security.yaml"),
+    multi1=Path(__file__).parent.joinpath("multi1.yaml"),
+    multi2=Path(__file__).parent.joinpath("multi2.yaml"),
 )

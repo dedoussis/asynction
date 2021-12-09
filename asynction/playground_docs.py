@@ -29,8 +29,10 @@ def make_raw_spec_view(spec: AsyncApiSpec) -> View:
     return lambda: jsonify(spec.to_dict())
 
 
-def make_docs_blueprint(spec: AsyncApiSpec, url_prefix: Path) -> Blueprint:
-    bp = Blueprint("asynction_docs", __name__, url_prefix=str(url_prefix))
+def make_docs_blueprint(
+    spec: AsyncApiSpec, url_prefix: Path, name: str = "asynction_docs"
+) -> Blueprint:
+    bp = Blueprint(name, __name__, url_prefix=str(url_prefix))
     bp.add_url_rule("/docs", "html_rendered_docs", make_html_rendered_docs_view(spec))
     bp.add_url_rule(
         "/docs/asyncapi.json", "raw_specification", make_raw_spec_view(spec)

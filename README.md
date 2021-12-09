@@ -341,3 +341,9 @@ In order to support the [AuthN/AuthZ functionality](#security-authentication-and
 - A Security Scheme Object of bearer `apiKey` type MUST include the `x-apiKeyInfoFunc` field.
 
 The value of all these fields MUST be of `string` type, expressing a dot joint path to a python callable (the security handler).
+
+### Per Namespace Security
+
+The `x-security` field MAY be defined as an additional property of the [Channel Item Object](https://www.asyncapi.com/docs/specifications/v2.0.0#channelItemObject).
+The value of this field MUST be an `array` of [Security Requirement Objects](https://www.asyncapi.com/docs/specifications/v2.0.0#securityRequirementObject) which is the same format used to specify [Server Security Requirements](https://www.asyncapi.com/docs/specifications/v2.0.0#serverObject).
+If a namespace specifies `x-security` the security requirements specified for that namespace will overwrite any security requirements specified in the [Server Object](https://www.asyncapi.com/docs/specifications/v2.0.0#serverObject).

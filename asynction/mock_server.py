@@ -241,10 +241,16 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
                 with_bindings_validation = bindings_validator_factory(channel.bindings)
                 connect_handler = with_bindings_validation(connect_handler)
 
-            if server_security:
+            security = (
+                channel.x_security
+                if channel.x_security is not None
+                else server_security
+            )
+            if security:
                 # create a security handler wrapper
                 with_security = security_handler_factory(
-                    server_security, self.spec.components.security_schemes
+                    security,
+                    self.spec.components.security_schemes,
                 )
                 # apply security
                 connect_handler = with_security(connect_handler)

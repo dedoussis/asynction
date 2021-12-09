@@ -859,7 +859,7 @@ def test_init_app_registers_blueprint_if_docs_are_enabled(
     server = AsynctionSocketIO([spec], True, True, None)
     app = Flask(__name__)
     server.init_app(app)
-    assert "asynction_docs" in app.blueprints
+    assert server_info.title in app.blueprints
 
 
 def test_init_app_does_not_register_blueprint_if_docs_are_disabled(

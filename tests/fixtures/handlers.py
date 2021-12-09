@@ -30,6 +30,10 @@ def connect() -> None:
     pass
 
 
+def connect_true() -> bool:
+    return True
+
+
 def disconnect() -> None:
     # Dummy handler
     pass

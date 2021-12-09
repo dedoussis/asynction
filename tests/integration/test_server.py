@@ -21,6 +21,10 @@ AsynctionFactory = Callable[..., SocketIO]
 class FactoryFixture(Enum):
     ASYNCTION_SOCKET_IO = "asynction_socketio_server_factory"
     MOCK_ASYNCTION_SOCKET_IO = "mock_asynction_socketio_server_factory"
+    ASYNCTION_SOCKET_IO_MULTI_API = "asynction_socketio_multi_api_server_factory"
+    MOCK_ASYNCTION_SOCKET_IO_MULTI_API = (
+        "mock_asynction_socketio_multi_api_server_factory"
+    )
 
 
 @pytest.mark.parametrize(
@@ -521,3 +525,31 @@ def test_client_connects_with_namespace_security(
     )
 
     assert socketio_test_client.is_connected(secure_namespace) is True
+
+
+@pytest.mark.parametrize(
+    argnames="factory_fixture",
+    argvalues=[
+        FactoryFixture.ASYNCTION_SOCKET_IO_MULTI_API,
+        FactoryFixture.MOCK_ASYNCTION_SOCKET_IO_MULTI_API,
+    ],
+    ids=["server", "mock_server"],
+)
+def test_multi_api(
+    factory_fixture: FactoryFixture,
+    flask_app: Flask,
+    fixture_paths: FixturePaths,
+    request: pytest.FixtureRequest,
+):
+    server_factory: AsynctionFactory = request.getfixturevalue(factory_fixture.value)
+    socketio_server = server_factory()
+
+    flask_test_client = flask_app.test_client()
+    socketio_test_client = socketio_server.test_client(
+        flask_app, flask_test_client=flask_test_client, namespace="/channel1"
+    )
+
+    assert socketio_test_client.is_connected("/channel1")
+
+    socketio_test_client.connect("/channel2")
+    assert socketio_test_client.is_connected("/channel2")

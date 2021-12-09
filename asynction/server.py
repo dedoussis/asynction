@@ -121,7 +121,9 @@ class AsynctionSocketIO(SocketIO):
         if self.docs and app is not None:
             for spec in self.specs:
                 docs_bp = make_docs_blueprint(
-                    spec=spec, url_prefix=Path(self.sockio_mw.engineio_path).parent
+                    spec=spec,
+                    url_prefix=Path(self.sockio_mw.engineio_path).parent,
+                    name=spec.info.title,
                 )
                 app.register_blueprint(docs_bp)
 
@@ -231,7 +233,7 @@ class AsynctionSocketIO(SocketIO):
         Example::
 
             asio = AsynctionSocketIO.from_spec(
-                spec_path="./docs/asyncapi.yaml",
+                spec_paths=["./docs/asyncapi.yaml","./docs/asyncapi2.yaml"],
                 app=flask_app,
                 message_queue="redis://localhost:6379",
                 # any other kwarg that the flask_socketio.SocketIO constructor accepts

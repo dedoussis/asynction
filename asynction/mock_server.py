@@ -151,7 +151,7 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
         The server emits events containing payloads of fake data in regular intervals,
         through background subscription tasks.
         It also listens for events as per the spec definitions
-        and returns mock aknowledgements where applicable.
+        and returns mock acknowledgements where applicable.
         All event and acknowledgment payloads adhere to the schemata defined
         within the AsyncAPI spec.
 
@@ -199,6 +199,79 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
         """
         return super().from_spec(
             spec_path,
+            validation=validation,
+            server_name=server_name,
+            docs=docs,
+            default_error_handler=default_error_handler,
+            app=app,
+            custom_formats_sample_size=custom_formats_sample_size,
+            **kwargs,
+        )
+
+    @classmethod
+    def from_specs(
+        cls,
+        spec_paths: Sequence[Path],
+        validation: bool = True,
+        server_name: Optional[str] = None,
+        docs: bool = True,
+        default_error_handler: Optional[ErrorHandler] = None,
+        app: Optional[Flask] = None,
+        custom_formats_sample_size: int = 20,
+        **kwargs,
+    ) -> "MockAsynctionSocketIO":
+        """Create a Flask-SocketIO mock server given an AsyncAPI spec.
+        The server emits events containing payloads of fake data in regular intervals,
+        through background subscription tasks.
+        It also listens for events as per the spec definitions
+        and returns mock acknowledgements where applicable.
+        All event and acknowledgment payloads adhere to the schemata defined
+        within the AsyncAPI spec.
+
+        In addition to the args and kwargs of :meth:`AsynctionSocketIO.from_spec`,
+        this factory method accepts some extra keyword arguments:
+
+        * ``custom_formats_sample_size``
+
+        :param spec_paths: The paths where the AsyncAPI YAML specifications are located.
+        :param validation: When set to ``False``, message payloads, channel
+                           bindings and ack callbacks are NOT validated.
+                           Defaults to ``True``.
+        :param server_name: The server to pick from the AsyncAPI ``servers`` object.
+                            The server object is then used to configure
+                            the path ``kwarg`` of the SocketIO server.
+        :param docs: When set to ``True``, HTML rendered documentation is generated
+                     and served through the ``GET {base_path}/docs`` route of the app.
+                     The ``GET {base_path}/docs/asyncapi.json`` route is also exposed,
+                     returning the raw specification data for programmatic retrieval.
+                     Defaults to ``True``.
+        :param default_error_handler: The error handler that handles any namespace
+                                      without an explicit error handler.
+                                      Equivelant of ``@socketio.on_error_default``
+        :param app: The flask application instance. Defaults to ``None``.
+        :param custom_formats_sample_size: The ammout of the Faker provider samples
+                                           to be used for each custom string format.
+                                           Hypotheses uses these samples to generate
+                                           fake data. Set to ``0`` if custom formats
+                                           are not needed.
+                                           Defaults to ``20``.
+        :param kwargs: Flask-SocketIO, Socket.IO and Engine.IO server options.
+
+        :returns: A Flask-SocketIO mock server, emitting events of fake data in
+                  regular intervals.
+                  The server also has mock event and error handlers registered.
+
+        Example::
+
+            mock_asio = MockAsynctionSocketIO.from_spec(
+                spec_paths="["./docs/asyncapi.yaml","./docs/asyncapi2.yaml"],
+                app=flask_app,
+                # any other kwarg that the flask_socketio.SocketIO constructor accepts
+            )
+
+        """
+        return super().from_specs(
+            spec_paths,
             validation=validation,
             server_name=server_name,
             docs=docs,

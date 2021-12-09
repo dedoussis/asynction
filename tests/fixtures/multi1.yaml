@@ -10,4 +10,10 @@ servers:
     url: https://locallhost/test
     protocol: wss
 channels:
-  channel1: {}
+  /channel1:
+    subscripe:
+      message:
+        schema:
+          type: string
+    x-handlers:
+      connect: tests.fixtures.handlers.connect_true

@@ -115,6 +115,37 @@ def test_asynction_socketio_from_spec_registers_default_error_handler(
     assert asio.default_exception_handler == my_default_error_handler
 
 
+def test_asynction_socketio_from_specs(fixture_paths: FixturePaths):
+    specs = [fixture_paths.multi1, fixture_paths.multi2]
+    asio = AsynctionSocketIO.from_specs(specs, server_name="test")
+
+    assert len(asio.specs) == 2
+
+
+def test_asynction_socketio_from_specs_fails_missing_server_name(
+    fixture_paths: FixturePaths,
+):
+    specs = [fixture_paths.multi1, fixture_paths.multi2]
+    with pytest.raises(ValueError):
+        _ = AsynctionSocketIO.from_specs(specs, server_name="foo")
+
+
+def test_asynction_socketio_from_specs_fails_conflicting_server_paths(
+    fixture_paths: FixturePaths,
+):
+    specs = [fixture_paths.multi1, fixture_paths.multi2]
+    with pytest.raises(ValueError):
+        _ = AsynctionSocketIO.from_specs(specs, server_name="test2")
+
+
+def test_asynction_socketio_from_specs_fails_with_duplicate_spece(
+    fixture_paths: FixturePaths,
+):
+    specs = [fixture_paths.multi1, fixture_paths.multi1]
+    with pytest.raises(ValueError):
+        _ = AsynctionSocketIO.from_specs(specs, server_name="test")
+
+
 def test_resolve_references_resolves_successfully():
     raw_spec = {
         "asyncapi": "2.2.0",

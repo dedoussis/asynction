@@ -530,6 +530,52 @@ def test_register_namespace_handlers_includes_security_validator_if_security_nee
             assert True
 
 
+def test_register_namespace_handlers_emits_security_if_security_enabled_on_namespace():
+    channel_handlers = ChannelHandlers(connect="tests.fixtures.handlers.connect")
+    channel_security = [{"basic": []}]
+    spec = AsyncApiSpec(
+        asyncapi="2.2.0",
+        info=Info("test", "1.0.0"),
+        servers={"test": Server("https://localhost/", ServerProtocol.WSS, [])},
+        channels={
+            GLOBAL_NAMESPACE: Channel(
+                x_handlers=channel_handlers, x_security=channel_security
+            )
+        },
+        components=Components(
+            security_schemes={
+                "basic": SecurityScheme(
+                    type=SecuritySchemesType.HTTP,
+                    scheme=HTTPAuthenticationScheme.BASIC,
+                    x_basic_info_func="tests.fixtures.handlers.basic_info",
+                )
+            }
+        ),
+    )
+
+    server = AsynctionSocketIO(spec, False, True, None)
+    security = (
+        channel_security
+        if channel_security is not None
+        else server.spec.servers.get("test").security
+    )
+
+    server._register_namespace_handlers(
+        GLOBAL_NAMESPACE, channel_handlers, None, security
+    )
+    event_name, registered_handler, _ = server.handlers[0]
+    assert event_name == "connect"
+    handler_with_security = deep_unwrap(registered_handler, depth=1)
+    actual_handler = deep_unwrap(handler_with_security)
+
+    with Flask(__name__).test_client() as c:
+        c.post()  # Inject invalid POST request
+        actual_handler()
+        with pytest.raises(SecurityException):
+            handler_with_security()  # handler raises security exception
+            assert True
+
+
 def test_emit_event_with_non_existent_namespace_raises_validation_exc(
     server_info: Info, faker: Faker
 ):

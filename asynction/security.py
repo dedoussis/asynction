@@ -361,13 +361,13 @@ def build_security_handler(
 
 
 def security_handler_factory(
-    security: Sequence[SecurityRequirement],
+    security_requirements: Sequence[SecurityRequirement],
     security_schemes: Mapping[str, SecurityScheme],
 ) -> Callable:
     """
     Build a security handler decorator based on security object and securitySchemes provided in the API file.  # noqa: 501
     """
-    unpacked_security = unpack_security_requirements(security)
+    unpacked_security = unpack_security_requirements(security_requirements)
     security_handler = build_security_handler(unpacked_security, security_schemes)
 
     def decorator(handler: Callable):

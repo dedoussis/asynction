@@ -66,7 +66,34 @@ def test_validate_payload_with_single_object_schema_and_multiple_valid_args(
         )
 
 
-def test_validate_payload_with_array_schema_and_multiple_valid_args(
+def test_validate_payload_with_array_schema_and_single_valid_arg(
+    faker: Faker,
+):
+    validate_payload(
+        args=[faker.pylist(value_types=[str])],
+        schema={
+            "type": "array",
+            "items": {"type": "string"},
+        },
+    )
+    assert True
+
+
+def test_validate_payload_with_array_schema_and_single_invalid_arg(
+    faker: Faker,
+):
+    with pytest.raises(PayloadValidationException):
+        validate_payload(
+            args=[faker.pylist(value_types=[int])],
+            schema={
+                "type": "array",
+                "items": {"type": "string"},
+            },
+        )
+        assert True
+
+
+def test_validate_payload_with_tuple_schema_and_multiple_valid_args(
     faker: Faker,
 ):
     validate_payload(
@@ -82,7 +109,7 @@ def test_validate_payload_with_array_schema_and_multiple_valid_args(
     assert True
 
 
-def test_validate_payload_with_array_schema_and_multiple_invalid_args(
+def test_validate_payload_with_tuple_schema_and_multiple_invalid_args(
     faker: Faker,
 ):
     with pytest.raises(PayloadValidationException):
@@ -152,7 +179,38 @@ def test_validate_ack_args_with_single_object_schema_and_multiple_valid_args(
         )
 
 
-def test_validate_ack_args_with_array_schema_and_multiple_valid_args(
+def test_validate_ack_args_with_array_schema_and_single_valid_arg(
+    faker: Faker,
+):
+    validate_ack_args(
+        [faker.pylist(value_types=[str])],
+        MessageAck(
+            args={
+                "type": "array",
+                "items": {"type": "string"},
+            }
+        ),
+    )
+    assert True
+
+
+def test_validate_ack_args_with_array_schema_and_single_invalid_arg(
+    faker: Faker,
+):
+    with pytest.raises(MessageAckValidationException):
+        validate_ack_args(
+            [faker.pylist(value_types=[int])],
+            MessageAck(
+                args={
+                    "type": "array",
+                    "items": {"type": "string"},
+                }
+            ),
+        )
+        assert True
+
+
+def test_validate_ack_args_with_tuple_schema_and_multiple_valid_args(
     faker: Faker,
 ):
     validate_ack_args(
@@ -170,7 +228,7 @@ def test_validate_ack_args_with_array_schema_and_multiple_valid_args(
     assert True
 
 
-def test_validate_ack_args_with_array_schema_and_multiple_invalid_args(
+def test_validate_ack_args_with_tuple_schema_and_multiple_invalid_args(
     faker: Faker,
 ):
     with pytest.raises(MessageAckValidationException):

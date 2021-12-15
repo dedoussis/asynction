@@ -52,14 +52,13 @@ def validate_payload(args: Sequence, schema: Optional[JSONSchema]) -> None:
         # and no args have been provided.
         return
 
-    schema_type = schema["type"]
-    if schema_type == "array":
+    if schema["type"] == "array" and schema.get("prefixItems"):  # Tuple validation
         jsonschema_validate_payload(args, schema)
     else:
         if len(args) > 1:
             raise PayloadValidationException(
                 "Multiple handler arguments provided, "
-                f"although schema type is: {schema_type}"
+                f"although schema type is: {schema['type']}"
             )
 
         jsonschema_validate_payload(args[0], schema)

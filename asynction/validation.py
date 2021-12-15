@@ -53,7 +53,7 @@ def validate_payload(args: Sequence, schema: Optional[JSONSchema]) -> None:
         return
 
     if schema["type"] == "array" and schema.get("prefixItems"):  # Tuple validation
-        jsonschema_validate_payload(args, schema)
+        jsonschema_validate_payload(list(args), schema)
     else:
         if len(args) > 1:
             raise PayloadValidationException(
@@ -76,7 +76,7 @@ def validate_ack_args(args: Sequence, message_ack_spec: Optional[MessageAck]) ->
 
     schema_type = message_ack_spec.args["type"]
     if schema_type == "array" and message_ack_spec.args.get("prefixItems"):  # Tuple
-        jsonschema_validate_ack(args, message_ack_spec.args)
+        jsonschema_validate_ack(list(args), message_ack_spec.args)
     else:
         if len(args) > 1:
             raise MessageAckValidationException(

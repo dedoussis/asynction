@@ -30,14 +30,14 @@ def test_validate_payload_with_no_schema_and_no_args():
 
 def test_validate_payload_with_args_but_no_defined_schema_fails(faker: Faker):
     with pytest.raises(PayloadValidationException):
-        validate_payload(args=faker.pylist(), schema=None)
+        validate_payload(args=faker.pytuple(), schema=None)
 
 
 def test_validate_payload_with_single_object_schema_and_single_valid_arg(
     faker: Faker,
 ):
     validate_payload(
-        args=[{"hello": faker.pystr()}],
+        args=({"hello": faker.pystr()},),
         schema={"type": "object", "properties": {"hello": {"type": "string"}}},
     )
     assert True
@@ -48,7 +48,7 @@ def test_validate_payload_with_single_object_schema_and_single_invalid_arg(
 ):
     with pytest.raises(PayloadValidationException):
         validate_payload(
-            args=[{"hello": faker.pyint()}],
+            args=({"hello": faker.pyint()},),
             schema={"type": "object", "properties": {"hello": {"type": "string"}}},
         )
 
@@ -58,7 +58,9 @@ def test_validate_payload_with_single_object_schema_and_multiple_valid_args(
 ):
     with pytest.raises(PayloadValidationException):
         validate_payload(
-            args=[{"hello": faker.pystr()}] * faker.pyint(min_value=2, max_value=10),
+            args=tuple(
+                [{"hello": faker.pystr()}] * faker.pyint(min_value=2, max_value=10)
+            ),
             schema={
                 "type": "object",
                 "properties": {"hello": {"type": "string"}},
@@ -70,7 +72,7 @@ def test_validate_payload_with_array_schema_and_single_valid_arg(
     faker: Faker,
 ):
     validate_payload(
-        args=[faker.pylist(value_types=[str])],
+        args=(faker.pylist(value_types=[str]),),
         schema={
             "type": "array",
             "items": {"type": "string"},
@@ -84,7 +86,7 @@ def test_validate_payload_with_array_schema_and_single_invalid_arg(
 ):
     with pytest.raises(PayloadValidationException):
         validate_payload(
-            args=[faker.pylist(value_types=[int])],
+            args=(faker.pylist(value_types=[int]),),
             schema={
                 "type": "array",
                 "items": {"type": "string"},
@@ -97,7 +99,7 @@ def test_validate_payload_with_tuple_schema_and_multiple_valid_args(
     faker: Faker,
 ):
     validate_payload(
-        args=[{"hello": faker.pystr()}, faker.pyint()],
+        args=({"hello": faker.pystr()}, faker.pyint()),
         schema={
             "type": "array",
             "prefixItems": [
@@ -114,7 +116,7 @@ def test_validate_payload_with_tuple_schema_and_multiple_invalid_args(
 ):
     with pytest.raises(PayloadValidationException):
         validate_payload(
-            args=[{"hello": faker.pystr()}, faker.pyint()],
+            args=({"hello": faker.pystr()}, faker.pyint()),
             schema={
                 "type": "array",
                 "prefixItems": [
@@ -131,20 +133,20 @@ def test_validate_payload_with_tuple_schema_and_multiple_invalid_args(
 def test_validate_ack_args_suceeds_if_no_args_provided_and_message_ack_spec_is_none(
     faker: Faker,
 ):
-    validate_ack_args([], None)
+    validate_ack_args((), None)
     assert True
 
 
 def test_validate_ack_args_with_args_but_no_defined_schema_fails(faker: Faker):
     with pytest.raises(MessageAckValidationException):
-        validate_ack_args(faker.pylist(), None)
+        validate_ack_args(faker.pytuple(), None)
 
 
 def test_validate_ack_args_with_single_object_schema_and_single_valid_arg(
     faker: Faker,
 ):
     validate_ack_args(
-        [{"hello": faker.pystr()}],
+        ({"hello": faker.pystr()},),
         MessageAck(
             args={"type": "object", "properties": {"hello": {"type": "string"}}}
         ),
@@ -157,7 +159,7 @@ def test_validate_ack_args_with_single_object_schema_and_single_invalid_arg(
 ):
     with pytest.raises(MessageAckValidationException):
         validate_ack_args(
-            [{"hello": faker.pyint()}],
+            ({"hello": faker.pyint()},),
             MessageAck(
                 args={"type": "object", "properties": {"hello": {"type": "string"}}}
             ),
@@ -169,7 +171,7 @@ def test_validate_ack_args_with_single_object_schema_and_multiple_valid_args(
 ):
     with pytest.raises(MessageAckValidationException):
         validate_ack_args(
-            [{"hello": faker.pystr()}] * faker.pyint(min_value=2, max_value=10),
+            tuple([{"hello": faker.pystr()}] * faker.pyint(min_value=2, max_value=10)),
             MessageAck(
                 args={
                     "type": "object",
@@ -183,7 +185,7 @@ def test_validate_ack_args_with_array_schema_and_single_valid_arg(
     faker: Faker,
 ):
     validate_ack_args(
-        [faker.pylist(value_types=[str])],
+        (faker.pylist(value_types=[str]),),
         MessageAck(
             args={
                 "type": "array",
@@ -199,7 +201,7 @@ def test_validate_ack_args_with_array_schema_and_single_invalid_arg(
 ):
     with pytest.raises(MessageAckValidationException):
         validate_ack_args(
-            [faker.pylist(value_types=[int])],
+            (faker.pylist(value_types=[int]),),
             MessageAck(
                 args={
                     "type": "array",
@@ -214,7 +216,7 @@ def test_validate_ack_args_with_tuple_schema_and_multiple_valid_args(
     faker: Faker,
 ):
     validate_ack_args(
-        [{"hello": faker.pystr()}, faker.pyint()],
+        ({"hello": faker.pystr()}, faker.pyint()),
         MessageAck(
             args={
                 "type": "array",
@@ -233,7 +235,7 @@ def test_validate_ack_args_with_tuple_schema_and_multiple_invalid_args(
 ):
     with pytest.raises(MessageAckValidationException):
         validate_ack_args(
-            [{"hello": faker.pystr()}, faker.pyint()],
+            ({"hello": faker.pystr()}, faker.pyint()),
             MessageAck(
                 args={
                     "type": "array",

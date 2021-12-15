@@ -75,7 +75,7 @@ def validate_ack_args(args: Sequence, message_ack_spec: Optional[MessageAck]) ->
         return
 
     schema_type = message_ack_spec.args["type"]
-    if schema_type == "array":
+    if schema_type == "array" and message_ack_spec.args.get("prefixItems"):  # Tuple
         jsonschema_validate_ack(args, message_ack_spec.args)
     else:
         if len(args) > 1:

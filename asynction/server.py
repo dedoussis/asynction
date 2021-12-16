@@ -273,7 +273,12 @@ class AsynctionSocketIO(SocketIO):
                     f"Event {event} is not registered under the {namespace} namespace"
                 )
 
-            validate_payload(args, message.payload)
+            # tuples are expanded to multiple arguments, everything else is sent
+            # as a single argument
+            payload_args = (
+                args and args[0] if isinstance(args[0], tuple) else (args[0],)
+            )
+            validate_payload(payload_args, message.payload)
 
             callback = kwargs.get("callback")
             if callback is not None:

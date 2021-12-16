@@ -1,0 +1,33 @@
+asyncapi: 2.2.0
+info:
+  title: Simple API
+  version: 0.0.1
+channels:
+  /:
+    publish:
+      message:
+        oneOf:
+          - $ref: "#/components/messages/Tuple"
+          - $ref: "#/components/messages/Array"
+    subscribe:
+      message:
+        oneOf:
+          - $ref: "#/components/messages/Tuple"
+          - $ref: "#/components/messages/Array"
+components:
+  messages:
+    Tuple:
+      name: tuple
+      x-handler: tests.fixtures.handlers.tuple_message
+      payload:
+        type: array
+        prefixItems:
+          - type: number
+          - enum: [foo, bar, baz]
+    Array:
+      name: array
+      x-handler: tests.fixtures.handlers.array_message
+      payload:
+        type: array
+        items:
+          type: number

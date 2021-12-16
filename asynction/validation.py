@@ -52,14 +52,13 @@ def validate_payload(args: Sequence, schema: Optional[JSONSchema]) -> None:
         # and no args have been provided.
         return
 
-    schema_type = schema["type"]
-    if schema_type == "array":
-        jsonschema_validate_payload(args, schema)
+    if schema["type"] == "array" and schema.get("prefixItems"):  # Tuple validation
+        jsonschema_validate_payload(list(args), schema)
     else:
         if len(args) > 1:
             raise PayloadValidationException(
                 "Multiple handler arguments provided, "
-                f"although schema type is: {schema_type}"
+                f"although schema type is: {schema['type']}"
             )
 
         jsonschema_validate_payload(args[0], schema)
@@ -76,8 +75,8 @@ def validate_ack_args(args: Sequence, message_ack_spec: Optional[MessageAck]) ->
         return
 
     schema_type = message_ack_spec.args["type"]
-    if schema_type == "array":
-        jsonschema_validate_ack(args, message_ack_spec.args)
+    if schema_type == "array" and message_ack_spec.args.get("prefixItems"):  # Tuple
+        jsonschema_validate_ack(list(args), message_ack_spec.args)
     else:
         if len(args) > 1:
             raise MessageAckValidationException(

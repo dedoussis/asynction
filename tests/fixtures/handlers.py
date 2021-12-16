@@ -137,3 +137,11 @@ def token_info_bad(*args, **kwargs) -> Optional[SecurityInfo]:
 def token_info_missing_required(*args, **kwargs) -> Optional[Mapping]:
     # using a dict instead of the SecurityInfo to force bad values through for the tests
     return dict(something="")
+
+
+def array_message(nums: Sequence[int]) -> None:
+    emit("array", nums)
+
+
+def tuple_message(num: int, word: str) -> None:
+    emit("tuple", (num, word))

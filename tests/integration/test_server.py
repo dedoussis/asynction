@@ -70,6 +70,45 @@ def test_client_emits_and_receives_message_successfully(
     assert received_args[0] == message_to_echo
 
 
+def test_client_emitting_tuple_vs_array(
+    asynction_socketio_server_factory: AsynctionFactory,
+    flask_app: Flask,
+    fixture_paths: FixturePaths,
+):
+    socketio_server = asynction_socketio_server_factory(
+        spec_path=fixture_paths.array_vs_tuple
+    )
+    flask_test_client = flask_app.test_client()
+    socketio_test_client = socketio_server.test_client(
+        flask_app, flask_test_client=flask_test_client
+    )
+    socketio_test_client.get_received()
+
+    # array validation
+    socketio_test_client.emit("array", [1, 2, 3])
+    received = socketio_test_client.get_received()
+    assert len(received) == 1
+    received_args = received[0]["args"]
+    assert len(received_args) == 1
+    assert received_args[0] == [1, 2, 3]
+
+    with pytest.raises(PayloadValidationException):
+        socketio_test_client.emit("array", 1, 2, 3)
+
+    #  tuple validation
+    socketio_test_client.emit("tuple", 1, "foo")
+    received = socketio_test_client.get_received()
+    assert len(received) == 1
+    received_args = received[0]["args"]
+    print(received[0])
+    assert len(received_args) == 2
+    assert received_args[0] == 1
+    assert received_args[1] == "foo"
+
+    with pytest.raises(PayloadValidationException):
+        socketio_test_client.emit("tuple", [1, "foo"])
+
+
 @pytest.mark.parametrize(
     argnames="factory_fixture",
     argvalues=[

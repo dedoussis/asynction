@@ -1,4 +1,4 @@
 pre-commit==2.16.0
 Sphinx==4.3.2
 twine==3.7.1
-wheel==0.37.0
+wheel==0.37.1

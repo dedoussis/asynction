@@ -29,6 +29,7 @@ from asynction.mock_server import task_runner
 from asynction.mock_server import task_scheduler
 from asynction.server import AsynctionSocketIO
 from asynction.server import _noop_handler
+from asynction.server import load_spec
 from asynction.types import GLOBAL_NAMESPACE
 from asynction.types import AsyncApiSpec
 from asynction.types import Channel
@@ -136,6 +137,13 @@ def test_generate_fake_data_from_schema_using_custom_formats(faker: Faker):
 
 def test_mock_asynction_socketio_from_spec(fixture_paths: FixturePaths):
     mock_asio = MockAsynctionSocketIO.from_spec(spec_path=fixture_paths.simple)
+    assert isinstance(mock_asio, MockAsynctionSocketIO)
+    assert isinstance(mock_asio.faker, Faker)
+
+
+def test_mock_asynction_socketio_from_spec_object(fixture_paths: FixturePaths):
+    spec = load_spec(fixture_paths.simple)
+    mock_asio = MockAsynctionSocketIO.from_spec(spec_path=spec)
     assert isinstance(mock_asio, MockAsynctionSocketIO)
     assert isinstance(mock_asio.faker, Faker)
 

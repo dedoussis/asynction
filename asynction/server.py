@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 from typing import Optional
 from typing import Sequence
+from typing import Union
 from urllib.parse import urlparse
 
 import jsonschema
@@ -113,7 +114,7 @@ class AsynctionSocketIO(SocketIO):
     @classmethod
     def from_spec(
         cls,
-        spec_path: Path,
+        spec_path: Union[Path, AsyncApiSpec],
         validation: bool = True,
         server_name: Optional[str] = None,
         docs: bool = True,
@@ -124,7 +125,8 @@ class AsynctionSocketIO(SocketIO):
         """Create a Flask-SocketIO server from an AsyncAPI spec.
         This is the single entrypoint to the Asynction server API.
 
-        :param spec_path: The path where the AsyncAPI YAML specification is located.
+        :param spec_path: The path where the AsyncAPI YAML specification is located,
+                     or a pre loaded AsyncApiSpec object.
         :param validation: When set to ``False``, message payloads, channel
                            bindings and ack callbacks are NOT validated.
                            Defaults to ``True``.
@@ -155,7 +157,11 @@ class AsynctionSocketIO(SocketIO):
             )
 
         """
-        spec = load_spec(spec_path=spec_path)
+        if isinstance(spec_path, AsyncApiSpec):
+            spec = spec_path
+        else:
+            spec = load_spec(spec_path=spec_path)
+
         server_security: Sequence[SecurityRequirement] = []
         if (
             server_name is not None

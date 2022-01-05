@@ -50,6 +50,12 @@ def test_asynction_socketio_from_spec(fixture_paths: FixturePaths):
     assert isinstance(asio, AsynctionSocketIO)
 
 
+def test_asynction_socketio_from_spec_object(fixture_paths: FixturePaths):
+    spec = load_spec(fixture_paths.simple)
+    asio = AsynctionSocketIO.from_spec(spec_path=spec)
+    assert isinstance(asio, AsynctionSocketIO)
+
+
 def test_asynction_socketio_from_spec_uses_spec_server_path_as_socketio_path(
     fixture_paths: FixturePaths,
 ):

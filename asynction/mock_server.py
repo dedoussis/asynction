@@ -162,7 +162,7 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
         * ``custom_formats_sample_size``
 
         :param spec_path: The path where the AsyncAPI YAML specification is located,
-                     or a pre loaded AsyncApiSpec object.
+                          or a pre loaded AsyncApiSpec object.
         :param validation: When set to ``False``, message payloads, channel
                            bindings and ack callbacks are NOT validated.
                            Defaults to ``True``.

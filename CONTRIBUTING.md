@@ -23,6 +23,7 @@ The current areas of focus are:
 ## Roadmap
 
 - [ ] Improving the existing generated documentation.
+- [ ] Support for [Class-Based Namespaces](https://flask-socketio.readthedocs.io/en/latest/getting_started.html#class-based-namespaces). See the [relevant issue](https://github.com/dedoussis/asynction/issues/147).
 - [ ] Extend CLI to allow running actual apps (and not just mocks).
 - [ ] Type casting: Whenever possible Asynction should try to parse the argument values and do type casting to the related Python native values.
 - [ ] Dynamic rendering of the [AsyncAPI](https://www.asyncapi.com/) spec. Could use [Jinja2](https://jinja.palletsprojects.com/en/3.0.x/) to allow the parametrisation of the spec.

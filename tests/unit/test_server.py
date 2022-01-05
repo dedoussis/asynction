@@ -738,6 +738,136 @@ def test_emit_valid_event_invokes_super_method(
 
 
 @mock.patch.object(SocketIO, "emit")
+def test_emit_event_with_array_payload_is_treated_as_single_arg(
+    super_method_mock: mock.Mock, server_info: Info, faker: Faker
+):
+    namespace = f"/{faker.pystr()}"
+    event_name = faker.pystr()
+    spec = AsyncApiSpec(
+        asyncapi=faker.pystr(),
+        info=server_info,
+        channels={
+            namespace: Channel(
+                subscribe=Operation(
+                    message=OneOfMessages(
+                        oneOf=[
+                            Message(
+                                name=event_name,
+                                payload={"type": "array", "items": {"type": "number"}},
+                            )
+                        ]
+                    ),
+                )
+            )
+        },
+    )
+    server = AsynctionSocketIO(spec, True, True, None)
+    payload = faker.pylist(value_types=[int])
+    server.emit(event_name, payload, namespace=namespace)
+    super_method_mock.assert_called_once_with(event_name, payload, namespace=namespace)
+
+
+def test_emit_event_with_array_payload_fails_tuple_schema_validation(
+    server_info: Info, faker: Faker
+):
+    namespace = f"/{faker.pystr()}"
+    event_name = faker.pystr()
+    spec = AsyncApiSpec(
+        asyncapi=faker.pystr(),
+        info=server_info,
+        channels={
+            namespace: Channel(
+                subscribe=Operation(
+                    message=OneOfMessages(
+                        oneOf=[
+                            Message(
+                                name=event_name,
+                                payload={
+                                    "type": "array",
+                                    "prefixItems": [
+                                        {"type": "number"},
+                                        {"type": "string"},
+                                    ],
+                                },
+                            )
+                        ]
+                    ),
+                )
+            )
+        },
+    )
+    server = AsynctionSocketIO(spec, True, True, None)
+    payload = [1, "foo"]  # valid element types, but invalid container type
+    with pytest.raises(PayloadValidationException):
+        server.emit(event_name, payload, namespace=namespace)
+
+
+@mock.patch.object(SocketIO, "emit")
+def test_emit_event_with_tuple_payload_is_treated_as_multiple_args(
+    super_method_mock: mock.Mock, server_info: Info, faker: Faker
+):
+    namespace = f"/{faker.pystr()}"
+    event_name = faker.pystr()
+    spec = AsyncApiSpec(
+        asyncapi=faker.pystr(),
+        info=server_info,
+        channels={
+            namespace: Channel(
+                subscribe=Operation(
+                    message=OneOfMessages(
+                        oneOf=[
+                            Message(
+                                name=event_name,
+                                payload={
+                                    "type": "array",
+                                    "prefixItems": [
+                                        {"type": "number"},
+                                        {"type": "string"},
+                                    ],
+                                },
+                            )
+                        ]
+                    ),
+                )
+            )
+        },
+    )
+    server = AsynctionSocketIO(spec, True, True, None)
+    payload = (faker.pyint(), faker.pystr())
+    server.emit(event_name, payload, namespace=namespace)
+    super_method_mock.assert_called_once_with(event_name, payload, namespace=namespace)
+
+
+def test_emit_event_with_tuple_payload_fails_array_schema_validation(
+    server_info: Info, faker: Faker
+):
+    namespace = f"/{faker.pystr()}"
+    event_name = faker.pystr()
+    spec = AsyncApiSpec(
+        asyncapi=faker.pystr(),
+        info=server_info,
+        channels={
+            namespace: Channel(
+                subscribe=Operation(
+                    message=OneOfMessages(
+                        oneOf=[
+                            Message(
+                                name=event_name,
+                                payload={"type": "array", "items": {"type": "string"}},
+                            )
+                        ]
+                    ),
+                )
+            )
+        },
+    )
+    server = AsynctionSocketIO(spec, True, True, None)
+    payload = ("foo", "bar")  # valid element types, but invalid container type
+    with pytest.raises(PayloadValidationException):
+        server.emit(event_name, payload, namespace=namespace)
+
+
+@mock.patch.object(SocketIO, "emit")
 def test_emit_validiation_is_ignored_if_validation_flag_is_false(
     super_method_mock: mock.Mock, server_info: Info, faker: Faker
 ):

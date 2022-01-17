@@ -114,7 +114,7 @@ class AsynctionSocketIO(SocketIO):
     @classmethod
     def from_spec(
         cls,
-        spec_path: Union[Path, AsyncApiSpec],
+        spec_path: Union[Path, JSONMapping],
         validation: bool = True,
         server_name: Optional[str] = None,
         docs: bool = True,
@@ -126,7 +126,7 @@ class AsynctionSocketIO(SocketIO):
         This is the single entrypoint to the Asynction server API.
 
         :param spec_path: The path where the AsyncAPI YAML specification is located,
-                          or a pre loaded AsyncApiSpec object.
+                          or a pre loaded JSONMapping object.
         :param validation: When set to ``False``, message payloads, channel
                            bindings and ack callbacks are NOT validated.
                            Defaults to ``True``.
@@ -157,10 +157,11 @@ class AsynctionSocketIO(SocketIO):
             )
 
         """
-        if isinstance(spec_path, AsyncApiSpec):
-            spec = spec_path
-        else:
+        if isinstance(spec_path, Path):
             spec = load_spec(spec_path=spec_path)
+        else:
+            raw_resolved = resolve_references(raw_spec=spec_path)
+            spec = AsyncApiSpec.from_dict(raw_resolved)
 
         server_security: Sequence[SecurityRequirement] = []
         if (

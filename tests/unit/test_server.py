@@ -2,6 +2,7 @@ from typing import Optional
 from unittest import mock
 
 import pytest
+import yaml
 from faker import Faker
 from flask import Flask
 
@@ -51,7 +52,8 @@ def test_asynction_socketio_from_spec(fixture_paths: FixturePaths):
 
 
 def test_asynction_socketio_from_spec_object(fixture_paths: FixturePaths):
-    spec = load_spec(fixture_paths.simple)
+    with open(fixture_paths.simple, "r") as simple:
+        spec = yaml.safe_load(simple)
     asio = AsynctionSocketIO.from_spec(spec_path=spec)
     assert isinstance(asio, AsynctionSocketIO)
 

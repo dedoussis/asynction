@@ -12,6 +12,7 @@ from uuid import uuid4
 
 import jsonschema
 import pytest
+import yaml
 from faker import Faker
 from flask.app import Flask
 from flask_socketio import SocketIO
@@ -29,7 +30,6 @@ from asynction.mock_server import task_runner
 from asynction.mock_server import task_scheduler
 from asynction.server import AsynctionSocketIO
 from asynction.server import _noop_handler
-from asynction.server import load_spec
 from asynction.types import GLOBAL_NAMESPACE
 from asynction.types import AsyncApiSpec
 from asynction.types import Channel
@@ -142,7 +142,8 @@ def test_mock_asynction_socketio_from_spec(fixture_paths: FixturePaths):
 
 
 def test_mock_asynction_socketio_from_spec_object(fixture_paths: FixturePaths):
-    spec = load_spec(fixture_paths.simple)
+    with open(fixture_paths.simple, "r") as simple:
+        spec = yaml.safe_load(simple)
     mock_asio = MockAsynctionSocketIO.from_spec(spec_path=spec)
     assert isinstance(mock_asio, MockAsynctionSocketIO)
     assert isinstance(mock_asio.faker, Faker)

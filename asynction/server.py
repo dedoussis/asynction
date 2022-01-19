@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 from typing import Optional
 from typing import Sequence
+from typing import Union
 from urllib.parse import urlparse
 
 import jsonschema
@@ -67,13 +68,15 @@ def resolve_references(raw_spec: JSONMapping) -> JSONMapping:
     return deep_resolve(raw_spec, resolver)
 
 
-def load_spec(spec_path: Path) -> AsyncApiSpec:
-    with open(spec_path) as f:
-        serialized = f.read()
-        raw = yaml.safe_load(serialized)
+def load_spec(spec_path: Union[Path, JSONMapping]) -> AsyncApiSpec:
+    if isinstance(spec_path, Path):
+        with open(spec_path) as f:
+            serialized = f.read()
+            spec = yaml.safe_load(serialized)
+    else:
+        spec = spec_path
 
-    raw_resolved = resolve_references(raw_spec=raw)
-
+    raw_resolved = resolve_references(spec)
     return AsyncApiSpec.from_dict(raw_resolved)
 
 
@@ -113,7 +116,7 @@ class AsynctionSocketIO(SocketIO):
     @classmethod
     def from_spec(
         cls,
-        spec_path: Path,
+        spec_path: Union[Path, JSONMapping],
         validation: bool = True,
         server_name: Optional[str] = None,
         docs: bool = True,
@@ -124,7 +127,8 @@ class AsynctionSocketIO(SocketIO):
         """Create a Flask-SocketIO server from an AsyncAPI spec.
         This is the single entrypoint to the Asynction server API.
 
-        :param spec_path: The path where the AsyncAPI YAML specification is located.
+        :param spec_path: The path where the AsyncAPI YAML specification is located,
+                          or a dictionary object of the AsyncAPI data structure
         :param validation: When set to ``False``, message payloads, channel
                            bindings and ack callbacks are NOT validated.
                            Defaults to ``True``.
@@ -156,6 +160,7 @@ class AsynctionSocketIO(SocketIO):
 
         """
         spec = load_spec(spec_path=spec_path)
+
         server_security: Sequence[SecurityRequirement] = []
         if (
             server_name is not None

@@ -12,6 +12,7 @@ from uuid import uuid4
 
 import jsonschema
 import pytest
+import yaml
 from faker import Faker
 from flask.app import Flask
 from flask_socketio import SocketIO
@@ -136,6 +137,14 @@ def test_generate_fake_data_from_schema_using_custom_formats(faker: Faker):
 
 def test_mock_asynction_socketio_from_spec(fixture_paths: FixturePaths):
     mock_asio = MockAsynctionSocketIO.from_spec(spec_path=fixture_paths.simple)
+    assert isinstance(mock_asio, MockAsynctionSocketIO)
+    assert isinstance(mock_asio.faker, Faker)
+
+
+def test_mock_asynction_socketio_from_spec_object(fixture_paths: FixturePaths):
+    with open(fixture_paths.simple, "r") as simple:
+        spec = yaml.safe_load(simple)
+    mock_asio = MockAsynctionSocketIO.from_spec(spec_path=spec)
     assert isinstance(mock_asio, MockAsynctionSocketIO)
     assert isinstance(mock_asio.faker, Faker)
 

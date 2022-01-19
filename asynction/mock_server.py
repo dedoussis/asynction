@@ -17,6 +17,7 @@ from typing import Mapping
 from typing import MutableSequence
 from typing import Optional
 from typing import Sequence
+from typing import Union
 
 from faker import Faker
 from faker.exceptions import UnsupportedFeature
@@ -138,7 +139,7 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
     @classmethod
     def from_spec(
         cls,
-        spec_path: Path,
+        spec_path: Union[Path, JSONMapping],
         validation: bool = True,
         server_name: Optional[str] = None,
         docs: bool = True,
@@ -160,7 +161,8 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
 
         * ``custom_formats_sample_size``
 
-        :param spec_path: The path where the AsyncAPI YAML specification is located.
+        :param spec_path: The path where the AsyncAPI YAML specification is located,
+                          or a dictionary object of the AsyncAPI data structure
         :param validation: When set to ``False``, message payloads, channel
                            bindings and ack callbacks are NOT validated.
                            Defaults to ``True``.

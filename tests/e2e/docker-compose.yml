@@ -19,6 +19,11 @@ services:
       dockerfile: tests/e2e/Dockerfile-cli
     command: ["--subscription-task-interval", "0.1", "--debugger"]
 
+  redis_message_queue:
+    image: redis:6.2.6
+    ports:
+      - 6379:6379
+
   test_runner:
     build:
       context: ${PWD}
@@ -29,6 +34,11 @@ services:
       CLI_MOCK_SERVER_URL: ws://cli_mock_asynction_server:5000
       MOCK_CLIENT_WAIT_TIMEOUT: 10
       MOCK_CLIENT_WAIT_INTERVAL: 20 # To make sure that all mock events have been emitted
+      MESSAGE_QUEUE_URL: redis://redis_message_queue:6379
+      EXTERNAL_PROCESS_SPEC_PATH: /opt/asynction/example/asyncapi.yml
     command: [-vvv, --mypy, tests/e2e]
     depends_on:
-      [asynction_server, mock_asynction_server, cli_mock_asynction_server]
+      - asynction_server
+      - mock_asynction_server
+      - cli_mock_asynction_server
+      - redis_message_queue

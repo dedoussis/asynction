@@ -13,7 +13,7 @@ from asynction import MockAsynctionSocketIO
 flask_app = Flask(__name__)
 
 mock_asio = MockAsynctionSocketIO.from_spec(
-    spec_path=Path(__file__).parent.joinpath("asyncapi.yml"),
+    spec_path=Path(__file__).parent / "asyncapi.yml",
     server_name=os.environ.get("ASYNCAPI_SERVER_NAME", "demo"),
     logger=True,
     async_mode="gevent",

@@ -5,7 +5,7 @@ an :class:`AsynctionSocketIO` server that:
 * Periodically emits events containing payloads of fake data,
   through tasks running on the background.
 * Listens for all events defined in the given AsyncAPI specification,
-  returning fake acknowledgmentds where applicable.
+  returning fake acknowledgements where applicable.
 """
 import threading
 from functools import partial
@@ -35,12 +35,10 @@ from hypothesis_jsonschema._from_schema import STRING_FORMATS
 from asynction.security import security_handler_factory
 from asynction.server import AsynctionSocketIO
 from asynction.server import _noop_handler
-from asynction.types import AsyncApiSpec
 from asynction.types import ErrorHandler
 from asynction.types import JSONMapping
 from asynction.types import JSONSchema
 from asynction.types import Message
-from asynction.types import SecurityRequirement
 from asynction.validation import bindings_validator_factory
 from asynction.validation import publish_message_validator_factory
 
@@ -121,20 +119,17 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
 
     def __init__(
         self,
-        spec: AsyncApiSpec,
-        validation: bool,
-        docs: bool,
-        app: Optional[Flask],
+        *args,
         custom_formats_sample_size: int,
         **kwargs,
     ):
         """This is a private constructor.
         Use the :meth:`MockAsynctionSocketIO.from_spec` factory instead.
         """
-        super().__init__(spec, validation=validation, docs=docs, app=app, **kwargs)
         self.faker = Faker()
         self.custom_formats = make_faker_formats(self.faker, custom_formats_sample_size)
         self._subscription_tasks: Sequence[SubscriptionTask] = []
+        super().__init__(*args, **kwargs)
 
     @classmethod
     def from_spec(
@@ -210,11 +205,7 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
             **kwargs,
         )
 
-    def _register_handlers(
-        self,
-        server_security: Sequence[SecurityRequirement] = (),
-        default_error_handler: Optional[ErrorHandler] = None,
-    ) -> None:
+    def _register_handlers(self) -> None:
         for namespace, channel in self.spec.channels.items():
             if channel.publish is not None:
                 for message in channel.publish.message.oneOf:
@@ -246,7 +237,7 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
             security = (
                 channel.x_security
                 if channel.x_security is not None
-                else server_security
+                else self.server_security
             )
             if security:
                 # create a security handler wrapper
@@ -260,8 +251,8 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
             if connect_handler is not _noop_handler:
                 self.on_event("connect", connect_handler, namespace)
 
-        if default_error_handler is not None:
-            self.on_error_default(default_error_handler)
+        if self.default_error_handler is not None:
+            self.on_error_default(self.default_error_handler)
 
     def make_subscription_task(
         self, message: Message, namespace: str

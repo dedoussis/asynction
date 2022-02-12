@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from typing import Callable
 
 import pytest
@@ -28,6 +29,16 @@ def mock_client_wait_timeout() -> float:
 @pytest.fixture
 def mock_client_wait_interval() -> float:
     return float(os.environ["MOCK_CLIENT_WAIT_INTERVAL"])
+
+
+@pytest.fixture
+def message_queue_url() -> str:
+    return os.environ["MESSAGE_QUEUE_URL"]
+
+
+@pytest.fixture
+def external_process_spec_path() -> Path:
+    return Path(os.environ["EXTERNAL_PROCESS_SPEC_PATH"])
 
 
 @pytest.fixture

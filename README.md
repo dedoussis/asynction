@@ -196,6 +196,10 @@ The `base_path` is determined automagically through the Socket.IO path argument.
 
 Docs can be disabled by toggling the `docs` kwarg of the `AsynctionSocketIO.from_spec` factory method.
 
+## Emitting from an external process
+
+All validation features of Asynction can be used when emitting/sending events from an external process. See the [relevant Flask-SocketIO documentation](https://flask-socketio.readthedocs.io/en/latest/deployment.html#emitting-from-an-external-process). Note that the SocketIO instance of the external process needs to be constructed using the same `AsynctionSocketIO.from_spec` factory.
+
 ##  Mock server
 
 Asynction can also create a fake "mock" based off an AsyncAPI document. This enables the consumers of a SocketIO API to interract with the API before it's even built.

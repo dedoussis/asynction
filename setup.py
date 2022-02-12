@@ -13,7 +13,7 @@ with open("README.md") as readme_file:
 
 
 with open("requirements.txt") as requiremets_file:
-    requirements = requiremets_file.read().split()
+    requirements = requiremets_file.read().split(os.linesep)
 
 
 def parse_requirements(file_path: Path) -> Sequence[str]:

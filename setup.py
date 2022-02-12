@@ -12,10 +12,6 @@ with open("README.md") as readme_file:
     readme = readme_file.read()
 
 
-with open("requirements.txt") as requiremets_file:
-    requirements = requiremets_file.read().split()
-
-
 def parse_requirements(file_path: Path) -> Sequence[str]:
     reqs = []
     with file_path.open() as f:
@@ -49,6 +45,8 @@ def make_extra_requirements() -> Mapping[str, str]:
 
     return extra_requirements
 
+
+requirements = parse_requirements(Path(__file__).parent / "requirements.txt")
 
 version = os.environ["PKG_VERSION"]
 

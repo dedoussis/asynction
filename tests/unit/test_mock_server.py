@@ -352,7 +352,7 @@ def test_register_handlers_registers_connection_handler_with_bindings_validation
 def test_register_namespace_handlers_includes_server_security_validation():
     channel_handlers = ChannelHandlers(connect="tests.fixtures.handlers.connect")
     spec = AsyncApiSpec(
-        asyncapi="2.2.0",
+        asyncapi="2.3.0",
         info=Info("test", "1.0.0"),
         servers={
             "test": Server("https://localhost/", ServerProtocol.WSS, [{"basic": []}])
@@ -389,7 +389,7 @@ def test_register_namespace_handlers_includes_server_security_validation():
 def test_register_namespace_handlers_channel_security_overrides_server_security():
     channel_handlers = ChannelHandlers(connect="tests.fixtures.handlers.connect")
     spec = AsyncApiSpec(
-        asyncapi="2.2.0",
+        asyncapi="2.3.0",
         info=Info("test", "1.0.0"),
         servers={"test": Server("https://localhost/", ServerProtocol.WSS, [])},
         channels={

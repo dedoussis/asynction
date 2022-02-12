@@ -34,7 +34,7 @@ class HTTPAuthenticationScheme(Enum):
 
 class OAuth2FlowType(Enum):
     """
-    https://www.asyncapi.com/docs/specifications/v2.2.0#oauthFlowsObject
+    https://www.asyncapi.com/docs/specifications/v2.3.0#oauthFlowsObject
     """
 
     IMPLICIT = "implicit"
@@ -46,7 +46,7 @@ class OAuth2FlowType(Enum):
 @dataclass
 class OAuth2Flow:
     """
-    https://www.asyncapi.com/docs/specifications/v2.2.0#oauthFlowObject
+    https://www.asyncapi.com/docs/specifications/v2.3.0#oauthFlowObject
     """
 
     scopes: Mapping[str, str]
@@ -126,7 +126,7 @@ register_forge(OAuth2Flows, OAuth2Flows.forge)
 
 class SecuritySchemesType(Enum):
     """
-    https://www.asyncapi.com/docs/specifications/v2.2.0#securitySchemeObjectType
+    https://www.asyncapi.com/docs/specifications/v2.3.0#securitySchemeObjectType
     """
 
     USER_PASSWORD = "userPassword"
@@ -146,7 +146,7 @@ class SecuritySchemesType(Enum):
 
 class ApiKeyLocation(Enum):
     """
-    https://www.asyncapi.com/docs/specifications/v2.2.0#securitySchemeObject
+    https://www.asyncapi.com/docs/specifications/v2.3.0#securitySchemeObject
     """
 
     USER = "user"
@@ -159,7 +159,7 @@ class ApiKeyLocation(Enum):
 @dataclass
 class SecurityScheme:
     """
-    https://www.asyncapi.com/docs/specifications/v2.2.0#securitySchemeObject
+    https://www.asyncapi.com/docs/specifications/v2.3.0#securitySchemeObject
     """
 
     type: SecuritySchemesType
@@ -264,7 +264,7 @@ class MessageAck:
 @dataclass
 class Message:
     """
-    https://www.asyncapi.com/docs/specifications/2.2.0#messageObject
+    https://www.asyncapi.com/docs/specifications/2.3.0#messageObject
 
     The above message object is extended as follows:
     * `x-handler`: Allows the coupling of the message specification to
@@ -275,7 +275,7 @@ class Message:
     to the callback of the `emit`/`send` function. Deserialized to `x_ack`.
 
     The extentions are implemented as per:
-    https://www.asyncapi.com/docs/specifications/2.2.0#specificationExtensions
+    https://www.asyncapi.com/docs/specifications/2.3.0#specificationExtensions
     """
 
     name: str
@@ -326,7 +326,7 @@ register_forge(OneOfMessages, OneOfMessages.forge)
 
 @dataclass
 class Operation:
-    """https://www.asyncapi.com/docs/specifications/2.2.0#operationObject"""
+    """https://www.asyncapi.com/docs/specifications/2.3.0#operationObject"""
 
     message: OneOfMessages
 
@@ -345,7 +345,7 @@ class WebSocketsChannelBindings:
 
 @dataclass
 class ChannelBindings:
-    """https://www.asyncapi.com/docs/specifications/2.2.0#channelBindingsObject"""
+    """https://www.asyncapi.com/docs/specifications/2.3.0#channelBindingsObject"""
 
     ws: WebSocketsChannelBindings
 
@@ -360,11 +360,11 @@ class ChannelHandlers:
 @dataclass
 class Channel:
     """
-    https://www.asyncapi.com/docs/specifications/2.2.0#channelItemObject
+    https://www.asyncapi.com/docs/specifications/2.3.0#channelItemObject
 
     The above channel item object is extended to
     support default namespace handlers as per:
-    https://www.asyncapi.com/docs/specifications/2.2.0#specificationExtensions
+    https://www.asyncapi.com/docs/specifications/2.3.0#specificationExtensions
 
     The `x_handlers` field is serialized as `x-handlers`.
     """
@@ -412,7 +412,7 @@ class ServerProtocol(Enum):
 
 @dataclass
 class Server:
-    """https://www.asyncapi.com/docs/specifications/2.2.0#serverObject"""
+    """https://www.asyncapi.com/docs/specifications/2.3.0#serverObject"""
 
     url: str
     protocol: ServerProtocol
@@ -421,7 +421,7 @@ class Server:
 
 @dataclass
 class Info:
-    """https://www.asyncapi.com/docs/specifications/v2.2.0#infoObject"""
+    """https://www.asyncapi.com/docs/specifications/v2.3.0#infoObject"""
 
     title: str
     version: str
@@ -430,7 +430,7 @@ class Info:
 
 @dataclass
 class Components:
-    """https://www.asyncapi.com/docs/specifications/v2.2.0#componentsObject"""
+    """https://www.asyncapi.com/docs/specifications/v2.3.0#componentsObject"""
 
     security_schemes: Mapping[str, SecurityScheme] = field(default_factory=dict)
 
@@ -451,7 +451,7 @@ register_forge(Components, Components.forge)
 
 @dataclass
 class AsyncApiSpec:
-    """https://www.asyncapi.com/docs/specifications/2.2.0#A2SObject"""
+    """https://www.asyncapi.com/docs/specifications/2.3.0#A2SObject"""
 
     asyncapi: str
     channels: Mapping[str, Channel]

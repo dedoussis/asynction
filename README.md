@@ -83,7 +83,7 @@ def admin_error(e):
 Example specification located at `./docs/asyncapi.yaml`:
 
 ```yaml
-asyncapi: 2.2.0
+asyncapi: 2.3.0
 
 info:
   title: User Account Service
@@ -176,7 +176,7 @@ Without Asynction, one would need to add additional boilerplate to register the 
 
 ## Security (Authentication and Authorization)
 
-Asynction supports authentication of incoming connections through the security mechanisms specified in the AsyncAPI spec of an application. See [this guide](https://www.asyncapi.com/docs/getting-started/security) on how to add security as part of an API specification. To take advantage of this feature, a security handler callable should be attached to each security scheme definition under the [components](https://www.asyncapi.com/docs/specifications/v2.2.0#componentsObjectSecuritySchemes) section. To attach a security handler(s), see the [security specification extention](#security-handers) section below.
+Asynction supports authentication of incoming connections through the security mechanisms specified in the AsyncAPI spec of an application. See [this guide](https://www.asyncapi.com/docs/getting-started/security) on how to add security as part of an API specification. To take advantage of this feature, a security handler callable should be attached to each security scheme definition under the [components](https://www.asyncapi.com/docs/specifications/v2.3.0#componentsObjectSecuritySchemes) section. To attach a security handler(s), see the [security specification extention](#security-handers) section below.
 
 The security handler callable(s) will be called upon every new client connection and MUST return a [`SecurityInfo`](https://asynction.dedouss.is/#asynction.SecurityInfo) typed dictionary (which allows extra keys). Asynction then validates this returned dictionary, refusing the connection to any unauthenticated/unauthorised requests. Finally, the validated `SecurityInfo` dictionary is passed to the connection handler as an extra `token_info` kwarg, to allow further/custom processing if needed.
 
@@ -336,7 +336,7 @@ In the future, the Message Ack Object may be extended with extra fields to enabl
 
 ### Security handers
 
-In order to support the [AuthN/AuthZ functionality](#security-authentication-and-authorization) of asynction, the [Security Scheme Object](https://www.asyncapi.com/docs/specifications/v2.2.0#securitySchemeObject) needs to be extended as follows:
+In order to support the [AuthN/AuthZ functionality](#security-authentication-and-authorization) of asynction, the [Security Scheme Object](https://www.asyncapi.com/docs/specifications/v2.3.0#securitySchemeObject) needs to be extended as follows:
 
 - A Security Scheme Object of `oauth2` type MUST include the `x-tokenInfoFunc` field.
 - A Security Scheme Object of `oauth2` type MAY include the `x-scopeValidateFunc` field.

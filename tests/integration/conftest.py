@@ -1,6 +1,7 @@
 from pathlib import Path
-from typing import Callable
+from typing import Any
 from typing import Optional
+from typing import Union
 
 import pytest
 from flask import Flask
@@ -8,7 +9,9 @@ from flask_socketio import SocketIO
 
 from asynction import AsynctionSocketIO
 from asynction import MockAsynctionSocketIO
+from asynction.types import JSONMapping
 from tests.fixtures import FixturePaths
+from tests.utils import AsynctionFactory
 
 
 @pytest.fixture
@@ -19,14 +22,17 @@ def flask_app() -> Flask:
 @pytest.fixture
 def asynction_socketio_server_factory(
     fixture_paths: FixturePaths, flask_app: Flask
-) -> Callable[[Path], SocketIO]:
+) -> AsynctionFactory:
     def factory(
-        spec_path: Path = fixture_paths.simple, server_name: Optional[str] = None
+        *args: Any,
+        app: Optional[Flask] = flask_app,
+        spec_path: Union[Path, JSONMapping] = fixture_paths.simple,
+        **kwargs: Any
     ) -> SocketIO:
         return AsynctionSocketIO.from_spec(
             spec_path=spec_path,
-            server_name=server_name,
-            app=flask_app,
+            app=app,
+            **kwargs,
         )
 
     return factory
@@ -35,16 +41,18 @@ def asynction_socketio_server_factory(
 @pytest.fixture
 def mock_asynction_socketio_server_factory(
     fixture_paths: FixturePaths, flask_app: Flask
-) -> Callable[[Path], MockAsynctionSocketIO]:
+) -> AsynctionFactory:
     def factory(
-        spec_path: Path = fixture_paths.simple,
-        server_name: Optional[str] = None,
+        *args: Any,
+        app: Optional[Flask] = flask_app,
+        spec_path: Union[Path, JSONMapping] = fixture_paths.simple,
+        **kwargs: Any
     ) -> SocketIO:
         return MockAsynctionSocketIO.from_spec(
             spec_path=spec_path,
-            server_name=server_name,
-            app=flask_app,
+            app=app,
             async_mode="threading",
+            **kwargs,
         )
 
     return factory

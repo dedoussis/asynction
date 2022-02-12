@@ -92,6 +92,8 @@ class AsynctionSocketIO(SocketIO):
         spec: AsyncApiSpec,
         validation: bool,
         docs: bool,
+        server_security: Sequence[SecurityRequirement],
+        default_error_handler: Optional[ErrorHandler],
         app: Optional[Flask],
         **kwargs,
     ):
@@ -101,13 +103,21 @@ class AsynctionSocketIO(SocketIO):
         self.spec = spec
         self.validation = validation
         self.docs = docs
+        self.server_security = server_security
+        self.default_error_handler = default_error_handler
 
         super().__init__(app=app, **kwargs)
 
     def init_app(self, app: Optional[Flask], **kwargs) -> None:
+        if app is not None:
+            # Register the handlers ONLY if the current process is the Socket.IO server.
+            # Handlers should not be registered for any other external process that
+            # interracts with the message queue.
+            self._register_handlers()
+
         super().init_app(app, **kwargs)
 
-        if self.docs and app is not None:
+        if app is not None and self.docs:
             docs_bp = make_docs_blueprint(
                 spec=self.spec, url_prefix=Path(self.sockio_mw.engineio_path).parent
             )
@@ -180,8 +190,15 @@ class AsynctionSocketIO(SocketIO):
 
             server_security = server.security
 
-        asio = cls(spec, validation, docs, app, **kwargs)
-        asio._register_handlers(server_security, default_error_handler)
+        asio = cls(
+            spec,
+            validation,
+            docs,
+            server_security,
+            default_error_handler,
+            app,
+            **kwargs,
+        )
         return asio
 
     def _register_namespace_handlers(
@@ -189,17 +206,20 @@ class AsynctionSocketIO(SocketIO):
         namespace: str,
         channel_handlers: Optional[ChannelHandlers],
         channel_bindings: Optional[ChannelBindings],
-        security: Sequence[SecurityRequirement],
+        channel_security: Optional[Sequence[SecurityRequirement]],
     ) -> None:
-        on_connect = _noop_handler
+        connect_handler = _noop_handler
+        security = (
+            channel_security if channel_security is not None else self.server_security
+        )
 
         # if a connection handler is defined then load it
         if channel_handlers and channel_handlers.connect is not None:
-            on_connect = load_handler(channel_handlers.connect)
+            connect_handler = load_handler(channel_handlers.connect)
 
             if self.validation:
                 with_bindings_validation = bindings_validator_factory(channel_bindings)
-                on_connect = with_bindings_validation(on_connect)
+                connect_handler = with_bindings_validation(connect_handler)
 
         if security:
             # create a security handler wrapper
@@ -207,12 +227,12 @@ class AsynctionSocketIO(SocketIO):
                 security, self.spec.components.security_schemes
             )
             # apply security
-            on_connect = with_security(on_connect)
+            connect_handler = with_security(connect_handler)
 
         # if no user defined connection handler was specified
         # or no security scheme was required then on_connect should still be None
-        if on_connect is not _noop_handler:
-            self.on_event("connect", on_connect, namespace)
+        if connect_handler is not _noop_handler:
+            self.on_event("connect", connect_handler, namespace)
 
         if channel_handlers:
             if channel_handlers.disconnect is not None:
@@ -223,11 +243,7 @@ class AsynctionSocketIO(SocketIO):
                 handler = load_handler(channel_handlers.error)
                 self.on_error(namespace)(handler)
 
-    def _register_handlers(
-        self,
-        server_security: Sequence[SecurityRequirement] = (),
-        default_error_handler: Optional[ErrorHandler] = None,
-    ) -> None:
+    def _register_handlers(self) -> None:
         for namespace, channel in self.spec.channels.items():
             if channel.publish is not None:
                 for message in channel.publish.message.oneOf:
@@ -242,18 +258,12 @@ class AsynctionSocketIO(SocketIO):
 
                     self.on_event(message.name, handler, namespace)
 
-            security = (
-                channel.x_security
-                if channel.x_security is not None
-                else server_security
-            )
-
             self._register_namespace_handlers(
-                namespace, channel.x_handlers, channel.bindings, security
+                namespace, channel.x_handlers, channel.bindings, channel.x_security
             )
 
-        if default_error_handler is not None:
-            self.on_error_default(default_error_handler)
+        if self.default_error_handler is not None:
+            self.on_error_default(self.default_error_handler)
 
     def emit(self, event: str, *args, **kwargs) -> None:
         if self.validation:

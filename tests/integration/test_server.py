@@ -1,12 +1,10 @@
 import base64
 from enum import Enum
-from typing import Callable
 
 import pytest
 import yaml
 from faker import Faker
 from flask import Flask
-from flask_socketio import SocketIO
 
 import asynction
 from asynction.exceptions import BindingsValidationException
@@ -14,8 +12,7 @@ from asynction.exceptions import MessageAckValidationException
 from asynction.exceptions import PayloadValidationException
 from asynction.server import resolve_references
 from tests.fixtures import FixturePaths
-
-AsynctionFactory = Callable[..., SocketIO]
+from tests.utils import AsynctionFactory
 
 
 class FactoryFixture(Enum):

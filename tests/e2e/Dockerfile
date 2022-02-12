@@ -6,8 +6,8 @@ WORKDIR /opt/asynction
 
 ENV PKG_VERSION=tests
 
-RUN pip install .
-RUN make example/install-server-requirements
+RUN pip install . && \
+    make example/install-server-requirements
 
 FROM python:slim
 

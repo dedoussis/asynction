@@ -16,6 +16,7 @@ from flask import Flask
 from flask_socketio import SocketIO
 
 from asynction.docs import blueprint as docs_blueprint
+from asynction.docs import set_current_spec
 from asynction.exceptions import ValidationException
 from asynction.security import security_handler_factory
 from asynction.types import GLOBAL_NAMESPACE
@@ -118,7 +119,7 @@ class AsynctionSocketIO(SocketIO):
         super().init_app(app, **kwargs)
 
         if app is not None and self.docs:
-            app.config["ASYNCAPI_SPEC_OBJ"] = self.spec
+            set_current_spec(app, self.spec)
             url_prefix_path = Path(self.sockio_mw.engineio_path).parent
             app.register_blueprint(docs_blueprint, url_prefix=str(url_prefix_path))
 

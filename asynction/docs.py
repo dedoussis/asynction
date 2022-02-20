@@ -13,6 +13,10 @@ def current_spec(app: Flask) -> AsyncApiSpec:
     return app.config["ASYNCAPI_SPEC_OBJ"]
 
 
+def set_current_spec(app: Flask, spec: AsyncApiSpec) -> None:
+    app.config["ASYNCAPI_SPEC_OBJ"] = spec
+
+
 @blueprint.route("/docs")
 def html_view():
     spec = current_spec(current_app)

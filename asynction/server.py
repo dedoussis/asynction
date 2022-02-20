@@ -15,8 +15,9 @@ import yaml
 from flask import Flask
 from flask_socketio import SocketIO
 
+from asynction.docs import blueprint as docs_blueprint
+from asynction.docs import set_current_spec
 from asynction.exceptions import ValidationException
-from asynction.playground_docs import make_docs_blueprint
 from asynction.security import security_handler_factory
 from asynction.types import GLOBAL_NAMESPACE
 from asynction.types import AsyncApiSpec
@@ -118,10 +119,9 @@ class AsynctionSocketIO(SocketIO):
         super().init_app(app, **kwargs)
 
         if app is not None and self.docs:
-            docs_bp = make_docs_blueprint(
-                spec=self.spec, url_prefix=Path(self.sockio_mw.engineio_path).parent
-            )
-            app.register_blueprint(docs_bp)
+            set_current_spec(app, self.spec)
+            url_prefix_path = Path(self.sockio_mw.engineio_path).parent
+            app.register_blueprint(docs_blueprint, url_prefix=str(url_prefix_path))
 
     @classmethod
     def from_spec(
@@ -172,21 +172,18 @@ class AsynctionSocketIO(SocketIO):
         spec = load_spec(spec_path=spec_path)
 
         server_security: Sequence[SecurityRequirement] = []
-        if (
-            server_name is not None
-            and kwargs.get("path") is None
-            and kwargs.get("resource") is None
-        ):
+        if server_name is not None:
             server = spec.servers.get(server_name)
             if server is None:
                 raise ValueError(f"Server {server_name} is not defined in the spec.")
 
-            url_parse_result = urlparse(
-                url=f"//{server.url}", scheme=server.protocol.value
-            )
+            if kwargs.get("path") is None and kwargs.get("resource") is None:
+                url_parse_result = urlparse(
+                    url=f"//{server.url}", scheme=server.protocol.value
+                )
 
-            if url_parse_result.path:
-                kwargs["path"] = url_parse_result.path
+                if url_parse_result.path:
+                    kwargs["path"] = url_parse_result.path
 
             server_security = server.security
 

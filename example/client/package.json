@@ -7,7 +7,7 @@
   "private": true,
   "license": "BSD",
   "dependencies": {
-    "express": "~4.17.2"
+    "express": "~4.17.3"
   },
   "scripts": {
     "start": "node index.js",

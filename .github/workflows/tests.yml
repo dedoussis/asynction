@@ -37,7 +37,7 @@ jobs:
         run: make typecheck
       - name: Type checking the example code
         run: make example/typecheck-server
-      - uses: actions/setup-node@v2
+      - uses: actions/setup-node@v3.0.0
         with:
           node-version: "16"
       - uses: actions/cache@v2

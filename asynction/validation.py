@@ -52,7 +52,7 @@ def validate_payload(args: Sequence, schema: Optional[JSONSchema]) -> None:
         # and no args have been provided.
         return
 
-    if schema["type"] == "array" and schema.get("prefixItems"):  # Tuple validation
+    if schema.get("type") == "array" and schema.get("prefixItems"):  # Tuple validation
         jsonschema_validate_payload(list(args), schema)
     else:
         if len(args) > 1:

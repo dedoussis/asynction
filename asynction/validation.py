@@ -1,9 +1,10 @@
 from functools import partial
 from functools import wraps
-from typing import Callable
+from typing import Any
 from typing import Optional
 from typing import Sequence
 from typing import Type
+from typing import TypeVar
 
 import jsonschema
 from flask import Request
@@ -18,6 +19,8 @@ from asynction.types import JSONMapping
 from asynction.types import JSONSchema
 from asynction.types import Message
 from asynction.types import MessageAck
+from asynction.utils import Decorator
+from asynction.utils import Func
 
 
 def jsonschema_validate_with_custom_error(
@@ -26,7 +29,7 @@ def jsonschema_validate_with_custom_error(
     try:
         jsonschema.validate(instance, schema)
     except jsonschema.ValidationError as e:
-        raise exc_type(vars(e))
+        raise exc_type.create_from(e)
 
 
 jsonschema_validate_payload = partial(
@@ -65,12 +68,15 @@ def validate_ack_args(args: Sequence, message_ack_spec: Optional[MessageAck]) ->
         jsonschema_validate_payload(args[0], message_ack_spec.args)
 
 
-def publish_message_validator_factory(message: Message) -> Callable:
+T = TypeVar("T")
+
+
+def publish_message_validator_factory(message: Message) -> Decorator[T]:
     """Constructs a validating wrapper for any incoming (`publish`) message handler"""
 
-    def decorator(handler: Callable):
+    def decorator(handler: Func[T]) -> Func[T]:
         @wraps(handler)
-        def handler_with_validation(*args, **kwargs):
+        def handler_with_validation(*args: Any, **kwargs: Any) -> T:
             validate_payload(args, message.payload)
 
             ack = handler(*args, **kwargs)
@@ -86,10 +92,10 @@ def publish_message_validator_factory(message: Message) -> Callable:
     return decorator
 
 
-def callback_validator_factory(message: Message) -> Callable:
-    def decorator(callback: Callable):
+def callback_validator_factory(message: Message) -> Decorator[T]:
+    def decorator(callback: Func[T]) -> Func[T]:
         @wraps(callback)
-        def callback_with_validation(*args):
+        def callback_with_validation(*args: Any) -> T:
             # the callback should only be called with positional arguments
             validate_ack_args(args, message.x_ack)
             return callback(*args)
@@ -121,10 +127,10 @@ def validate_request_bindings(
         jsonschema_validate_bindings(request.args.to_dict(), bindings.ws.query)
 
 
-def bindings_validator_factory(bindings: Optional[ChannelBindings]) -> Callable:
-    def decorator(handler: Callable):
+def bindings_validator_factory(bindings: Optional[ChannelBindings]) -> Decorator[T]:
+    def decorator(handler: Func[T]) -> Func[T]:
         @wraps(handler)
-        def handler_with_validation(*args, **kwargs):
+        def handler_with_validation(*args: Any, **kwargs: Any) -> T:
             validate_request_bindings(current_flask_request, bindings)
             return handler(*args, **kwargs)
 

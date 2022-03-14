@@ -27,6 +27,7 @@ from asynction.types import ErrorHandler
 from asynction.types import JSONMapping
 from asynction.types import SecurityRequirement
 from asynction.utils import load_handler
+from asynction.validation import Decorator
 from asynction.validation import bindings_validator_factory
 from asynction.validation import callback_validator_factory
 from asynction.validation import publish_message_validator_factory
@@ -215,12 +216,14 @@ class AsynctionSocketIO(SocketIO):
             connect_handler = load_handler(channel_handlers.connect)
 
             if self.validation:
-                with_bindings_validation = bindings_validator_factory(channel_bindings)
+                with_bindings_validation: Decorator[None] = bindings_validator_factory(
+                    channel_bindings
+                )
                 connect_handler = with_bindings_validation(connect_handler)
 
         if security:
             # create a security handler wrapper
-            with_security = security_handler_factory(
+            with_security: Decorator = security_handler_factory(
                 security, self.spec.components.security_schemes
             )
             # apply security
@@ -248,8 +251,8 @@ class AsynctionSocketIO(SocketIO):
                     handler = load_handler(message.x_handler)
 
                     if self.validation:
-                        with_payload_validation = publish_message_validator_factory(
-                            message=message
+                        with_payload_validation: Decorator = (
+                            publish_message_validator_factory(message=message)
                         )
                         handler = with_payload_validation(handler)
 
@@ -294,7 +297,7 @@ class AsynctionSocketIO(SocketIO):
 
             callback = kwargs.get("callback")
             if callback is not None:
-                with_validation = callback_validator_factory(message=message)
+                with_validation: Decorator = callback_validator_factory(message=message)
                 kwargs["callback"] = with_validation(callback)
 
         return super().emit(event, *args, **kwargs)

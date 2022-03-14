@@ -39,6 +39,7 @@ from asynction.types import ErrorHandler
 from asynction.types import JSONMapping
 from asynction.types import JSONSchema
 from asynction.types import Message
+from asynction.utils import Decorator
 from asynction.validation import bindings_validator_factory
 from asynction.validation import publish_message_validator_factory
 
@@ -212,8 +213,8 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
                     handler = self.make_publish_handler(message)
 
                     if self.validation:
-                        with_payload_validation = publish_message_validator_factory(
-                            message=message
+                        with_payload_validation: Decorator = (
+                            publish_message_validator_factory(message=message)
                         )
                         handler = with_payload_validation(handler)
 
@@ -231,7 +232,9 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
             connect_handler = _noop_handler
 
             if self.validation:
-                with_bindings_validation = bindings_validator_factory(channel.bindings)
+                with_bindings_validation: Decorator = bindings_validator_factory(
+                    channel.bindings
+                )
                 connect_handler = with_bindings_validation(connect_handler)
 
             security = (
@@ -241,7 +244,7 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
             )
             if security:
                 # create a security handler wrapper
-                with_security = security_handler_factory(
+                with_security: Decorator = security_handler_factory(
                     security,
                     self.spec.components.security_schemes,
                 )

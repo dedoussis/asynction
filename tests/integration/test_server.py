@@ -67,6 +67,7 @@ def test_client_emits_and_receives_message_successfully(
     assert received_args[0] == message_to_echo
 
 
+@pytest.mark.xfail(reason="https://github.com/dedoussis/asynction/issues/205")
 def test_client_emitting_tuple_vs_array(
     asynction_socketio_server_factory: AsynctionFactory,
     flask_app: Flask,

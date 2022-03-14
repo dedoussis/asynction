@@ -73,8 +73,9 @@ components:
             type: string
             format: first_name
           message:
-            type: string
-            format: sentence
+            oneOf:
+              - type: string
+                format: sentence
         required: [username, message]
     UserTyping:
       name: typing

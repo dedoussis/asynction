@@ -1,4 +1,5 @@
 """Asynction's exceptions to be caught via Flask-SocketIO error handlers."""
+from jsonschema import ValidationError as _JSONSchemaValidationError
 
 
 class AsynctionException(RuntimeError):
@@ -7,7 +8,7 @@ class AsynctionException(RuntimeError):
     pass
 
 
-class ValidationException(AsynctionException):
+class ValidationException(_JSONSchemaValidationError, AsynctionException):
     """The base class for all asynction validation exceptions."""
 
     pass
@@ -40,7 +41,7 @@ class MessageAckValidationException(ValidationException):
     pass
 
 
-class SecurityException(AsynctionException, ConnectionRefusedError):
+class SecurityException(ConnectionRefusedError, AsynctionException):
     """
     Raised when an incoming connection fails to meet the requirements of
     any of the specified security schemes.

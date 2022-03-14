@@ -16,7 +16,7 @@ from asynction.types import MessageAck
 from asynction.types import WebSocketsChannelBindings
 from asynction.validation import bindings_validator_factory
 from asynction.validation import callback_validator_factory
-from asynction.validation import jsonschema_validate_with_error_handling
+from asynction.validation import jsonschema_validate_with_custom_error
 from asynction.validation import publish_message_validator_factory
 from asynction.validation import validate_ack_args
 from asynction.validation import validate_payload
@@ -532,11 +532,11 @@ def test_bindings_validator_factory_invalid_request_fails_validation(faker: Fake
     ],
     ids=["payload_validation_exc", "bindings_validation_exc", "random_exc"],
 )
-def test_jsonschema_validate_with_error_handling_uses_given_exc_type(
+def test_jsonschema_validate_with_custom_error_uses_given_exc_type(
     exc_type: Type[Exception], faker: Faker
 ):
     with pytest.raises(exc_type):
-        jsonschema_validate_with_error_handling(
+        jsonschema_validate_with_custom_error(
             faker.pyint(), {"type": "string"}, exc_type
         )
 

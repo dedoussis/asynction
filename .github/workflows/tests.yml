@@ -93,6 +93,7 @@ jobs:
           name: codecov-umbrella
           fail_ci_if_error: true
           verbose: true
+          version: v0.1.15  # See https://github.com/codecov/codecov-action/issues/598
 
   integration:
     needs: unit

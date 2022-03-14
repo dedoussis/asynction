@@ -8,6 +8,7 @@ from typing import Mapping
 from typing import Optional
 from typing import Sequence
 from typing import Tuple
+from typing import TypeVar
 
 from flask import Request
 from flask import request as current_flask_request
@@ -19,6 +20,8 @@ from asynction.types import HTTPAuthenticationScheme
 from asynction.types import SecurityRequirement
 from asynction.types import SecurityScheme
 from asynction.types import SecuritySchemesType
+from asynction.utils import Decorator
+from asynction.utils import Func
 from asynction.utils import load_handler
 
 
@@ -360,22 +363,25 @@ def build_security_handler(
     return security_handler
 
 
+T = TypeVar("T")
+
+
 def security_handler_factory(
     security_requirements: Sequence[SecurityRequirement],
     security_schemes: Mapping[str, SecurityScheme],
-) -> Callable:
+) -> Decorator[T]:
     """
     Build a security handler decorator based on security object and securitySchemes provided in the API file.  # noqa: 501
     """
     unpacked_security = unpack_security_requirements(security_requirements)
     security_handler = build_security_handler(unpacked_security, security_schemes)
 
-    def decorator(handler: Callable):
+    def decorator(handler: Func[T]) -> Func[T]:
         if handler is None:
             raise SecurityException("invalid or missing handler")
 
         @wraps(handler)
-        def handler_with_security(*args, **kwargs):
+        def handler_with_security(*args: Any, **kwargs: Any) -> T:
             # match the args that connexion passes to handlers after a security check
             token_info = security_handler(current_flask_request)
             user = token_info.get("sub", token_info.get("uid"))

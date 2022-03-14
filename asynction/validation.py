@@ -51,6 +51,7 @@ def validate_payload(args: Sequence, schema: Optional[JSONSchema]) -> None:
         # Validation skipped since there is no message payload specified
         return
 
+    # TODO: This check should be driven by the schema rather than the input args
     if len(args) > 1:
         jsonschema_validate_payload(list(args), schema)
     else:
@@ -62,10 +63,11 @@ def validate_ack_args(args: Sequence, message_ack_spec: Optional[MessageAck]) ->
         # Validation skipped since there is no message ack specified
         return
 
+    # TODO: This check should be driven by the schema rather than the input args
     if len(args) > 1:
-        jsonschema_validate_payload(list(args), message_ack_spec.args)
+        jsonschema_validate_ack(list(args), message_ack_spec.args)
     else:
-        jsonschema_validate_payload(args[0], message_ack_spec.args)
+        jsonschema_validate_ack(args[0], message_ack_spec.args)
 
 
 T = TypeVar("T")

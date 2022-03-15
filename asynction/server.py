@@ -207,32 +207,6 @@ class AsynctionSocketIO(SocketIO):
         channel_security: Optional[Sequence[SecurityRequirement]],
     ) -> None:
         connect_handler = _noop_handler
-        security = (
-            channel_security if channel_security is not None else self.server_security
-        )
-
-        # if a connection handler is defined then load it
-        if channel_handlers and channel_handlers.connect is not None:
-            connect_handler = load_handler(channel_handlers.connect)
-
-            if self.validation:
-                with_bindings_validation: Decorator[None] = bindings_validator_factory(
-                    channel_bindings
-                )
-                connect_handler = with_bindings_validation(connect_handler)
-
-        if security:
-            # create a security handler wrapper
-            with_security: Decorator = security_handler_factory(
-                security, self.spec.components.security_schemes
-            )
-            # apply security
-            connect_handler = with_security(connect_handler)
-
-        # if no user defined connection handler was specified
-        # or no security scheme was required then on_connect should still be None
-        if connect_handler is not _noop_handler:
-            self.on_event("connect", connect_handler, namespace)
 
         if channel_handlers:
             if channel_handlers.disconnect is not None:
@@ -243,18 +217,40 @@ class AsynctionSocketIO(SocketIO):
                 handler = load_handler(channel_handlers.error)
                 self.on_error(namespace)(handler)
 
+            if channel_handlers.connect is not None:
+                connect_handler = load_handler(channel_handlers.connect)
+
+        if self.validation:
+            with_bindings_validation: Decorator[None] = bindings_validator_factory(
+                channel_bindings
+            )
+            connect_handler = with_bindings_validation(connect_handler)
+
+        security = (
+            channel_security if channel_security is not None else self.server_security
+        )
+
+        if security:
+            with_security: Decorator = security_handler_factory(
+                security, self.spec.components.security_schemes
+            )
+            connect_handler = with_security(connect_handler)
+
+        if connect_handler is not _noop_handler:
+            self.on_event("connect", connect_handler, namespace)
+
     def _register_handlers(self) -> None:
         for namespace, channel in self.spec.channels.items():
             if channel.publish is not None:
-                for message in channel.publish.message.oneOf:
+                for message in channel.publish.message.one_of:
                     assert message.x_handler is not None
                     handler = load_handler(message.x_handler)
 
                     if self.validation:
-                        with_payload_validation: Decorator = (
-                            publish_message_validator_factory(message=message)
+                        with_validation: Decorator = publish_message_validator_factory(
+                            message=message
                         )
-                        handler = with_payload_validation(handler)
+                        handler = with_validation(handler)
 
                     self.on_event(message.name, handler, namespace)
 

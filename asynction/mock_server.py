@@ -209,7 +209,7 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
     def _register_handlers(self) -> None:
         for namespace, channel in self.spec.channels.items():
             if channel.publish is not None:
-                for message in channel.publish.message.oneOf:
+                for message in channel.publish.message.one_of:
                     handler = self.make_publish_handler(message)
 
                     if self.validation:
@@ -225,7 +225,7 @@ class MockAsynctionSocketIO(AsynctionSocketIO):
                     *self._subscription_tasks,
                     *[
                         self.make_subscription_task(message, namespace)
-                        for message in channel.subscribe.message.oneOf
+                        for message in channel.subscribe.message.one_of
                     ],
                 ]
 

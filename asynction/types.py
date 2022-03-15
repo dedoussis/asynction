@@ -100,14 +100,14 @@ class OAuth2Flows:
     def __post_init__(self):
         if self.implicit is not None and self.implicit.authorization_url is None:
             raise ValueError("Implicit OAuth flow is missing Authorization URL")
-        elif self.password is not None and self.password.token_url is None:
+        if self.password is not None and self.password.token_url is None:
             raise ValueError("Password OAuth flow is missing Token URL")
-        elif (
+        if (
             self.client_credentials is not None
             and self.client_credentials.token_url is None
         ):
             raise ValueError("Client Credentials OAuth flow is missing Token URL")
-        elif (
+        if (
             self.authorization_code is not None
             and self.authorization_code.token_url is None
         ):
@@ -183,7 +183,7 @@ class SecurityScheme:
             SecuritySchemesType.OPENID_CONNECT,
         ]:
             raise ValueError(
-                "flows field should be be defined " f"for {self.type} security schemes"
+                f"flows field should be be defined for {self.type} security schemes"
             )
 
         if self.type is SecuritySchemesType.HTTP:
@@ -197,7 +197,7 @@ class SecurityScheme:
                 ApiKeyLocation.HEADER,
                 ApiKeyLocation.COOKIE,
             ]
-            if not self.in_ or self.in_ not in options:
+            if self.in_ not in options:
                 raise ValueError(
                     f'"in" field must be one of {options} '
                     f"for {self.type} security schemes"
@@ -300,7 +300,7 @@ register_forge(Message, Message.forge)
 class OneOfMessages:
     """Using `oneOf` to specify multiple messages per operation"""
 
-    oneOf: Sequence[Message]
+    one_of: Sequence[Message]
 
     @staticmethod
     def forge(
@@ -308,13 +308,13 @@ class OneOfMessages:
     ) -> "OneOfMessages":
         if "oneOf" in data:
             return type_(
-                oneOf=forge(type_.__annotations__["oneOf"], data["oneOf"]),
+                one_of=forge(type_.__annotations__["one_of"], data["oneOf"]),
             )
 
-        return type_(oneOf=[forge(Message, data)])
+        return type_(one_of=[forge(Message, data)])
 
     def with_name(self, name: str) -> Optional[Message]:
-        for message in self.oneOf:
+        for message in self.one_of:
             if message.name == name:
                 return message
 
@@ -377,7 +377,7 @@ class Channel:
 
     def __post_init__(self):
         if self.publish is not None:
-            for message in self.publish.message.oneOf:
+            for message in self.publish.message.one_of:
                 if message.x_handler is None:
                     raise ValueError(
                         f"Message {message.name} is missing the x-handler attribute.\n"

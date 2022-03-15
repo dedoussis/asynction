@@ -67,7 +67,7 @@ def test_one_of_messages_deserialisation_of_one_of_structure(faker: Faker):
     }
 
     one_of_messages = forge(OneOfMessages, data)
-    assert len(one_of_messages.oneOf) == n
+    assert len(one_of_messages.one_of) == n
 
 
 def test_one_of_messages_deserialisation_of_message_structure(faker: Faker):
@@ -77,10 +77,10 @@ def test_one_of_messages_deserialisation_of_message_structure(faker: Faker):
     data = {"name": name, "payload": payload, "x-handler": x_handler}
 
     one_of_messages = forge(OneOfMessages, data)
-    assert len(one_of_messages.oneOf) == 1
-    assert one_of_messages.oneOf[0].name == name
-    assert one_of_messages.oneOf[0].payload == payload
-    assert one_of_messages.oneOf[0].x_handler == x_handler
+    assert len(one_of_messages.one_of) == 1
+    assert one_of_messages.one_of[0].name == name
+    assert one_of_messages.one_of[0].payload == payload
+    assert one_of_messages.one_of[0].x_handler == x_handler
 
 
 def test_channel_deserialization(faker: Faker):
@@ -138,7 +138,7 @@ def test_channel_raises_value_error_if_publish_messages_miss_handler(faker: Fake
         Channel(
             subscribe=Operation(
                 message=OneOfMessages(
-                    oneOf=[
+                    one_of=[
                         Message(
                             name=faker.pystr(),
                             payload=faker.pydict(value_types=[str, int]),
@@ -148,7 +148,7 @@ def test_channel_raises_value_error_if_publish_messages_miss_handler(faker: Fake
             ),
             publish=Operation(
                 message=OneOfMessages(
-                    oneOf=[
+                    one_of=[
                         *[
                             Message(
                                 name=faker.pystr(),

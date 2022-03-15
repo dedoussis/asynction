@@ -182,7 +182,7 @@ def test_register_handlers_registers_noop_handler_for_message_with_no_ack(
             namespace: Channel(
                 publish=Operation(
                     message=OneOfMessages(
-                        oneOf=[
+                        one_of=[
                             Message(
                                 name=event_name,
                                 payload={"type": "object"},
@@ -232,7 +232,7 @@ def test_register_handlers_registers_valid_handler_for_message_with_ack(
             namespace: Channel(
                 publish=Operation(
                     message=OneOfMessages(
-                        oneOf=[
+                        one_of=[
                             Message(
                                 name=event_name,
                                 payload={"type": "object"},
@@ -271,7 +271,7 @@ def test_register_handlers_adds_payload_validator_if_validation_is_enabled(
             namespace: Channel(
                 publish=Operation(
                     message=OneOfMessages(
-                        oneOf=[
+                        one_of=[
                             Message(
                                 name=faker.word(),
                                 payload={"type": "string"},
@@ -460,7 +460,7 @@ def test_run_spawns_background_tasks_and_calls_super_run(
             namespace: Channel(
                 subscribe=Operation(
                     message=OneOfMessages(
-                        oneOf=[
+                        one_of=[
                             Message(
                                 name=faker.word(),
                                 payload={"type": "string"},
@@ -504,7 +504,7 @@ def test_run_respects_maximum_number_of_workers(server_info: Info, faker: Faker)
             namespace: Channel(
                 subscribe=Operation(
                     message=OneOfMessages(
-                        oneOf=[
+                        one_of=[
                             Message(
                                 name=faker.word(),
                                 payload={"type": "string"},
@@ -545,7 +545,7 @@ def test_run_spawns_minimum_number_of_workers(server_info: Info, faker: Faker):
             namespace: Channel(
                 subscribe=Operation(
                     message=OneOfMessages(
-                        oneOf=[
+                        one_of=[
                             Message(
                                 name=faker.word(),
                                 payload={"type": "string"},
@@ -609,7 +609,7 @@ def test_make_subscription_task_with_message_payload_and_ack(
         channels={
             namespace: Channel(
                 subscribe=Operation(
-                    message=OneOfMessages(oneOf=[message]),
+                    message=OneOfMessages(one_of=[message]),
                 )
             )
         },
@@ -646,7 +646,7 @@ def test_make_subscription_task_with_no_message_payload_but_ack(
         channels={
             namespace: Channel(
                 subscribe=Operation(
-                    message=OneOfMessages(oneOf=[message]),
+                    message=OneOfMessages(one_of=[message]),
                 )
             )
         },
@@ -678,7 +678,7 @@ def test_make_subscription_task_with_message_payload_but_no_ack(
         channels={
             namespace: Channel(
                 subscribe=Operation(
-                    message=OneOfMessages(oneOf=[message]),
+                    message=OneOfMessages(one_of=[message]),
                 )
             )
         },

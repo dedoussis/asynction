@@ -242,7 +242,7 @@ class AsynctionSocketIO(SocketIO):
     def _register_handlers(self) -> None:
         for namespace, channel in self.spec.channels.items():
             if channel.publish is not None:
-                for message in channel.publish.message.oneOf:
+                for message in channel.publish.message.one_of:
                     assert message.x_handler is not None
                     handler = load_handler(message.x_handler)
 

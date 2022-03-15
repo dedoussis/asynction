@@ -257,7 +257,7 @@ def test_register_handlers_registers_callables_with_correct_event_name_and_names
             namespace: Channel(
                 publish=Operation(
                     message=OneOfMessages(
-                        oneOf=[
+                        one_of=[
                             Message(
                                 name=event_name,
                                 payload={"type": "object"},
@@ -331,7 +331,7 @@ def test_register_handlers_adds_payload_validator_if_validation_is_enabled(
             namespace: Channel(
                 publish=Operation(
                     message=OneOfMessages(
-                        oneOf=[
+                        one_of=[
                             Message(
                                 name=event_name,
                                 payload={"type": "string"},
@@ -368,7 +368,7 @@ def test_register_handlers_adds_ack_validator_if_validation_is_enabled(
             namespace: Channel(
                 publish=Operation(
                     message=OneOfMessages(
-                        oneOf=[
+                        one_of=[
                             Message(
                                 name=event_name,
                                 payload={"type": "string"},
@@ -415,7 +415,7 @@ def test_register_handlers_skips_payload_validator_if_validation_is_disabled(
             namespace: Channel(
                 publish=Operation(
                     message=OneOfMessages(
-                        oneOf=[
+                        one_of=[
                             Message(
                                 name=event_name,
                                 payload={"type": "string"},
@@ -605,7 +605,7 @@ def test_emit_event_with_non_existent_namespace_raises_validation_exc(
             namespace: Channel(
                 subscribe=Operation(
                     message=OneOfMessages(
-                        oneOf=[
+                        one_of=[
                             Message(
                                 name=event_name,
                                 payload={"type": "object"},
@@ -635,7 +635,7 @@ def test_emit_event_that_has_no_subscribe_operation_raises_validation_exc(
             namespace: Channel(
                 publish=Operation(
                     message=OneOfMessages(
-                        oneOf=[
+                        one_of=[
                             Message(
                                 name=event_name,
                                 payload={"type": "object"},
@@ -667,7 +667,7 @@ def test_emit_event_not_defined_under_given_valid_namespace_raises_validation_ex
             namespace: Channel(
                 subscribe=Operation(
                     message=OneOfMessages(
-                        oneOf=[
+                        one_of=[
                             Message(
                                 name=faker.pystr(),
                                 payload={"type": "object"},
@@ -697,7 +697,7 @@ def test_emit_event_with_invalid_args_fails_validation(server_info: Info, faker:
             namespace: Channel(
                 subscribe=Operation(
                     message=OneOfMessages(
-                        oneOf=[
+                        one_of=[
                             Message(
                                 name=event_name,
                                 payload={"type": "number"},
@@ -728,7 +728,7 @@ def test_emit_valid_event_invokes_super_method(
             namespace: Channel(
                 subscribe=Operation(
                     message=OneOfMessages(
-                        oneOf=[
+                        one_of=[
                             Message(
                                 name=event_name,
                                 payload={"type": "string"},
@@ -761,7 +761,7 @@ def test_emit_event_with_array_payload_is_treated_as_single_arg(
             namespace: Channel(
                 subscribe=Operation(
                     message=OneOfMessages(
-                        oneOf=[
+                        one_of=[
                             Message(
                                 name=event_name,
                                 payload={"type": "array", "items": {"type": "number"}},
@@ -791,7 +791,7 @@ def test_emit_event_with_array_payload_fails_tuple_schema_validation(
             namespace: Channel(
                 subscribe=Operation(
                     message=OneOfMessages(
-                        oneOf=[
+                        one_of=[
                             Message(
                                 name=event_name,
                                 payload={
@@ -827,7 +827,7 @@ def test_emit_event_with_tuple_payload_is_treated_as_multiple_args(
             namespace: Channel(
                 subscribe=Operation(
                     message=OneOfMessages(
-                        oneOf=[
+                        one_of=[
                             Message(
                                 name=event_name,
                                 payload={
@@ -863,7 +863,7 @@ def test_emit_event_with_tuple_payload_fails_array_schema_validation(
             namespace: Channel(
                 subscribe=Operation(
                     message=OneOfMessages(
-                        oneOf=[
+                        one_of=[
                             Message(
                                 name=event_name,
                                 payload={"type": "array", "items": {"type": "string"}},
@@ -894,7 +894,7 @@ def test_emit_validiation_is_ignored_if_validation_flag_is_false(
             namespace: Channel(
                 subscribe=Operation(
                     message=OneOfMessages(
-                        oneOf=[
+                        one_of=[
                             Message(
                                 name=event_name,
                                 payload={"type": "number"},
@@ -929,7 +929,7 @@ def test_emit_event_wraps_callback_with_validator(
             namespace: Channel(
                 subscribe=Operation(
                     message=OneOfMessages(
-                        oneOf=[
+                        one_of=[
                             Message(
                                 name=event_name,
                                 payload={"type": "number"},
@@ -1006,7 +1006,7 @@ def test_init_app_registers_handlers_if_app_is_not_none(
             namespace: Channel(
                 publish=Operation(
                     message=OneOfMessages(
-                        oneOf=[
+                        one_of=[
                             Message(
                                 name=event_name,
                                 payload={"type": "object"},
@@ -1038,7 +1038,7 @@ def test_init_app_does_not_register_handlers_if_app_is_none(
             namespace: Channel(
                 publish=Operation(
                     message=OneOfMessages(
-                        oneOf=[
+                        one_of=[
                             Message(
                                 name=event_name,
                                 payload={"type": "object"},

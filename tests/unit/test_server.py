@@ -12,6 +12,7 @@ from asynction.exceptions import SecurityException
 from asynction.exceptions import ValidationException
 from asynction.server import AsynctionSocketIO
 from asynction.server import SocketIO
+from asynction.server import _noop_handler
 from asynction.server import load_handler
 from asynction.server import load_spec
 from asynction.server import resolve_references
@@ -271,10 +272,17 @@ def test_register_handlers_registers_callables_with_correct_event_name_and_names
     server = AsynctionSocketIO(spec, True, True, [], None, None)
 
     server._register_handlers()
-    assert len(server.handlers) == 1
-    registered_event, registered_handler, registered_namespace = server.handlers[0]
+    assert len(server.handlers) == 2  # connection handler is also registered
+    ping_handler_entry, connect_handler_entry = server.handlers
+
+    registered_event, registered_handler, registered_namespace = ping_handler_entry
     assert registered_event == event_name
     assert deep_unwrap(registered_handler) == ping
+    assert registered_namespace == namespace
+
+    connection_event, connection_handler, registered_namespace = connect_handler_entry
+    assert connection_event == "connect"
+    assert deep_unwrap(connection_handler) == _noop_handler
     assert registered_namespace == namespace
 
 

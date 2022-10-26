@@ -3,7 +3,7 @@ Faker==13.3.4
 flake8==4.0.1
 isort==5.10.1
 mypy==0.942
-pytest==7.1.1
+pytest==7.2.0
 pytest-cov==3.0.0
 pytest-mypy==0.9.1
 python-socketio[client]~=5.5

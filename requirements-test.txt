@@ -8,4 +8,4 @@ pytest-cov==3.0.0
 pytest-mypy==0.9.1
 python-socketio[client]~=5.5
 redis==4.2.2
-types-PyYAML==6.0.5
+types-PyYAML==6.0.12.2
